@@ -2,6 +2,7 @@
 #define ALIENWARS_RENDER_H
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
 #include "volume.h"
 #include <math.h>
 
@@ -15,11 +16,11 @@ typedef struct {
 } AwBuilder;
 
 typedef struct {
-    Mesh terrain, scenery, overlay, water;
+    Mesh terrain, scenery, overlay, water, tunnels, tunnel_lights;
     Material land_material, water_material;
     Shader land_shader, water_shader;
     Texture2D coast;
-    int land_reveal, water_time, cut_eye, cut_target, cut_mode;
+    int land_reveal, water_time, cut_eye, cut_target, cut_mode, tunnel_view;
     int built;
 } AwScene;
 
@@ -42,16 +43,17 @@ static const char *aw_land_fragment =
     "#version 330\n"
 #endif
     "precision highp float;\n"
-    "in vec3 position; in vec3 normal; in vec4 color; in vec2 uv; out vec4 finalColor; uniform float reveal; uniform vec3 cutEye; uniform vec3 cutTarget; uniform int cutMode;\n"
+    "in vec3 position; in vec3 normal; in vec4 color; in vec2 uv; out vec4 finalColor; uniform float reveal; uniform vec3 cutEye; uniform vec3 cutTarget; uniform int cutMode; uniform int tunnelView;\n"
     "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n"
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);"
     "return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.0),f.x),f.y);}\n"
     "void main(){if(uv.x>reveal)discard;"
+    "if(tunnelView==1 && normal.y< -0.1)discard;"
     "if(cutMode==2 && position.y>cutTarget.y+1.5)discard;"
     "if(cutMode>0 && position.y>cutTarget.y+0.15){vec3 ray=cutTarget-cutEye;float t=dot(position-cutEye,ray)/dot(ray,ray);"
     "float r=length(position-(cutEye+clamp(t,0.0,1.0)*ray));"
     "if(t>0.0 && t<1.0 && r<3.6){float screen=fract(dot(floor(gl_FragCoord.xy),vec2(0.5,0.25)));"
-    "if(r<2.7 || screen>smoothstep(2.7,3.6,r))discard;}}vec3 n=normalize(normal);"
+    "if(r<2.7 || screen>smoothstep(2.7,3.6,r))discard;}}vec3 n=normalize(normal);if(tunnelView>0 && !gl_FrontFacing)n=-n;"
     "float light=max(dot(n,normalize(vec3(-0.55,0.85,-0.4))),0.0);"
     "float grain=noise(position.xz*8.0)*0.12+noise(position.xz*1.8)*0.16+noise(position.xz*0.22)*0.2;"
     "vec3 base=color.rgb;"
@@ -199,7 +201,7 @@ static Color aw_tile_color(const Color colors[4],float x,float z){
         (uint8_t)aw_bilinear(colors[0].g,colors[1].g,colors[2].g,colors[3].g,x,z),
         (uint8_t)aw_bilinear(colors[0].b,colors[1].b,colors[2].b,colors[3].b,x,z),255};
 }
-typedef struct {AwBuilder*b;const AwMap*m;float rank;} AwVolumeRender;
+typedef struct {AwBuilder*b,*tunnels;const AwMap*m;float rank;} AwVolumeRender;
 static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint b,AwVolumePoint c){
     AwVolumeRender*r=opaque;const AwMap*m=r->m;AwVolumePoint p[3]={a,b,c};aw_reserve(r->b,3);
     for(int k=0;k<3;k++){
@@ -218,22 +220,40 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
         }
         int n=r->b->count++;r->b->positions[n]=(Vector3){x*AW_UNIT,aw_y(q/4),z*AW_UNIT};r->b->normals[n]=normal;r->b->colors[n]=color;r->b->uv[n]=(Vector2){r->rank,10+lava};
     }
+    /* Keep actual excavated triangles for inspection. No proxy boxes or second
+     * mesher: the isolated shell uses the same vertices as the world surface.
+     * Include entrance floors where the terrain and passage floor coincide. */
+    float x=(a.x+b.x+c.x)/3,z=(a.z+b.z+c.z)/3,q=(a.q+b.q+c.q)/3;
+    int cell=aw_clamp((int)z,0,63)*64+aw_clamp((int)x,0,63),excavated=0;
+    if(m->cave_bin_count[cell]){
+        for(int k=0;k<3;k++)excavated|=p[k].q<aw_height_q(m,p[k].x,p[k].z)-0.001f;
+        excavated|=aw_cave_field(m,x,q+0.1f,z)<0;
+    }
+    if(excavated){
+        AwBuilder*t=r->tunnels;aw_reserve(t,3);
+        for(int k=r->b->count-3;k<r->b->count;k++){
+            int n=t->count++;t->positions[n]=r->b->positions[k];t->normals[n]=r->b->normals[k];
+            t->colors[n]=r->b->colors[k];t->uv[n]=r->b->uv[k];
+        }
+    }
 }
 static void aw_destroy_scene(AwScene*s){
     if(!s->built)return;
+    if(s->tunnels.vertexCount)UnloadMesh(s->tunnels);
+    if(s->tunnel_lights.vertexCount)UnloadMesh(s->tunnel_lights);
     UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->water);
     MemFree(s->land_material.maps);MemFree(s->water_material.maps);
     UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);
     memset(s,0,sizeof(*s));
 }
 static void aw_build_scene(AwScene*s,const AwMap*m){
-    aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},water={0};
+    aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},water={0},tunnels={0},tunnel_lights={0};
     for(int index=0;index<AW_CELLS;index++){
         int c=m->order[index],x=c%AW_SIZE,z=c/AW_SIZE;float rank=index;
         const AwCell*t=&m->cells[c];int mat=t->material;Color ground=aw_palette[mat];
         Vector3 v[4]={{x*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,(z+1)*AW_UNIT},{x*AW_UNIT,0,(z+1)*AW_UNIT}};
         for(int k=0;k<4;k++)v[k].y=aw_y(t->q[k]/4.0f);
-        AwVolumeRender render={&terrain,m,rank};aw_volume_cell(m,c,aw_render_volume_triangle,&render);
+        AwVolumeRender render={&terrain,&tunnels,m,rank};aw_volume_cell(m,c,aw_render_volume_triangle,&render);
 
         if(mat==AW_SHALLOW||mat==AW_ICE){
             Vector3 p=aw_center(m,c);p.y+=0.025f;
@@ -262,6 +282,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     for(int i=0;i<m->cave_count;i++)if(i%3==0){
         Vector3 p=aw_center(m,AW_CELLS+i);p.y+=0.06f;
         aw_rock(&scenery,p,0.10f,0.14f,i,(Color){94,244,216,255},0,2);
+        aw_rock(&tunnel_lights,p,0.10f,0.14f,i,(Color){94,244,216,255},0,2);
     }
     for(int r=0;r<4;r++){
         Vector3 p=aw_center(m,m->resources[r]);
@@ -269,12 +290,15 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     }
     Vector3 sea[4]={{-60,-0.12f,-60},{188,-0.12f,-60},{188,-0.12f,188},{-60,-0.12f,188}};
     aw_top(&water,sea,4,WHITE,0,0);
+    if(tunnels.count)s->tunnels=aw_upload(&tunnels);
+    if(tunnel_lights.count)s->tunnel_lights=aw_upload(&tunnel_lights);
     s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->water=aw_upload(&water);
     s->land_shader=LoadShaderFromMemory(aw_vertex_shader,aw_land_fragment);
     s->water_shader=LoadShaderFromMemory(aw_vertex_shader,aw_water_fragment);
     s->land_reveal=GetShaderLocation(s->land_shader,"reveal");s->water_time=GetShaderLocation(s->water_shader,"time");
     s->cut_eye=GetShaderLocation(s->land_shader,"cutEye");s->cut_target=GetShaderLocation(s->land_shader,"cutTarget");s->cut_mode=GetShaderLocation(s->land_shader,"cutMode");
-    if(s->land_reveal<0||s->water_time<0||s->cut_mode<0){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
+    s->tunnel_view=GetShaderLocation(s->land_shader,"tunnelView");
+    if(s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
     s->land_material=LoadMaterialDefault();s->land_material.shader=s->land_shader;
     s->water_material=LoadMaterialDefault();s->water_material.shader=s->water_shader;
     Image coast=GenImageColor(AW_SIZE,AW_SIZE,BLACK);Color*pixels=coast.data;
@@ -288,13 +312,24 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);
     s->water_material.maps[MATERIAL_MAP_DIFFUSE].texture=s->coast;s->built=1;
 }
-static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,Vector3 eye,Vector3 target,int cut){
+static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,Vector3 eye,Vector3 target,int cut,int tunnel_view){
+    if(tunnel_view){reveal=AW_CELLS;cut=0;}
+    SetShaderValue(s->land_shader,s->tunnel_view,&tunnel_view,SHADER_UNIFORM_INT);
     SetShaderValue(s->land_shader,s->land_reveal,&reveal,SHADER_UNIFORM_FLOAT);
     SetShaderValue(s->land_shader,s->cut_eye,&eye,SHADER_UNIFORM_VEC3);
     SetShaderValue(s->land_shader,s->cut_target,&target,SHADER_UNIFORM_VEC3);
     SetShaderValue(s->land_shader,s->cut_mode,&cut,SHADER_UNIFORM_INT);
     SetShaderValue(s->water_shader,s->water_time,&time,SHADER_UNIFORM_FLOAT);
-    Matrix identity=MatrixIdentity();DrawMesh(s->water,s->water_material,identity);DrawMesh(s->terrain,s->land_material,identity);DrawMesh(s->scenery,s->land_material,identity);
+    Matrix identity=MatrixIdentity();
+    if(tunnel_view){
+        /* Cave faces point into their void. Two-sided inspection also exposes
+         * the outside of the arch when the viewer orbits around the shell. */
+        rlDrawRenderBatchActive();rlDisableBackfaceCulling();
+        if(s->tunnels.vertexCount)DrawMesh(s->tunnels,s->land_material,identity);
+        if(s->tunnel_lights.vertexCount)DrawMesh(s->tunnel_lights,s->land_material,identity);
+        rlEnableBackfaceCulling();return;
+    }
+    DrawMesh(s->water,s->water_material,identity);DrawMesh(s->terrain,s->land_material,identity);DrawMesh(s->scenery,s->land_material,identity);
     if(overlay)DrawMesh(s->overlay,s->land_material,identity);
 }
 #endif

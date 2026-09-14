@@ -21,12 +21,33 @@ static AwScene scene;
 static AwOptions settings={1,6,6,0,1};
 static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,show_tiles=0,scout_tour=0;
 static float scout_floor=1;
+static int isolate_tunnels=0,show_tunnel_ceilings=0;
+static struct {Vector3 focus;float yaw,pitch,zoom;} landscape_camera;
 static Camera3D camera;
 static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
 static Vector3 focus={64,10,64};
 static float revealed=AW_CELLS,animation_time=0,unit_progress=0;
 static int show_overlay=0,show_path=1,paused=0,unit_paused=0;
 static double generation_ms=0;
+
+static void aw_frame_tunnels(void){
+    if(!world.cave_count)return;
+    Vector3 lo={1000,1000,1000},hi={-1000,-1000,-1000};
+    for(int i=0;i<world.cave_count;i++){
+        const AwCaveNode*n=&world.cave[i];
+        float x=(n->x+0.5f)*AW_UNIT,z=(n->z+0.5f)*AW_UNIT,r=aw_cave_radius(n->profile)*AW_UNIT;
+        lo.x=fminf(lo.x,x-r);hi.x=fmaxf(hi.x,x+r);lo.z=fminf(lo.z,z-r);hi.z=fmaxf(hi.z,z+r);
+        lo.y=fminf(lo.y,aw_y(n->q/4.0f));hi.y=fmaxf(hi.y,aw_y((n->q+aw_cave_height(n->profile))/4.0f));
+    }
+    focus=Vector3Scale(Vector3Add(lo,hi),0.5f);yaw=0.75f;pitch=0.8f;
+    zoom=Clamp(Vector3Distance(lo,hi)*1.12f,16,210);
+}
+static void aw_set_isolation(int value){
+    value=!!value&&world.cave_count>0;
+    if(value&&!isolate_tunnels){landscape_camera.focus=focus;landscape_camera.yaw=yaw;landscape_camera.pitch=pitch;landscape_camera.zoom=zoom;}
+    if(!value&&isolate_tunnels){focus=landscape_camera.focus;yaw=landscape_camera.yaw;pitch=landscape_camera.pitch;zoom=landscape_camera.zoom;}
+    isolate_tunnels=value;if(value)aw_frame_tunnels();
+}
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
@@ -42,6 +63,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
     }
     generation_ms=(GetTime()-start)*1000;
     aw_build_scene(&scene,&world);
+    if(isolate_tunnels)aw_set_isolation(world.cave_count>0);
     revealed=watch?0:AW_CELLS;
     unit_progress=0;paused=0;scout_tour=0;
     aw_publish();
@@ -59,6 +81,8 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==4)cut_mode=aw_clamp(value,0,2);
     if(option==5)follow_scout=!!value;
     if(option==6)show_tiles=!!value;
+    if(option==7)aw_set_isolation(value);
+    if(option==8)show_tunnel_ceilings=!!value;
     aw_publish();
 }
 
@@ -73,7 +97,7 @@ AW_EXPORT void aw_step(void) {
 }
 
 AW_EXPORT void aw_camera_control(int action) {
-    if(action==0){yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};follow_scout=0;}
+    if(action==0){if(isolate_tunnels)aw_frame_tunnels();else{yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};follow_scout=0;}}
     if(action==1)zoom=fmaxf(16,zoom*0.84f);
     if(action==2)zoom=fminf(210,zoom/0.84f);
     if(action==3)yaw-=0.22f;
@@ -93,7 +117,7 @@ AW_EXPORT void aw_resize(int width,int height) {
 }
 
 static void aw_draw_markers(void) {
-    if(cut_mode==2)return; /* Surface beacons are outside the underground section. */
+    if(cut_mode==2||isolate_tunnels)return; /* Surface beacons are outside the underground section. */
     for(int s=0;s<2;s++){
         Vector3 p=aw_center(&world,world.spawns[s]);
         Color accent=s?(Color){249,161,88,255}:(Color){101,225,222,255};
@@ -191,7 +215,7 @@ static void aw_update(void) {
     if(IsKeyPressed(KEY_SPACE))aw_watch();
 #endif
     Vector3 scout=aw_unit_position();
-    if(follow_scout)focus=scout;
+    if(follow_scout&&!isolate_tunnels)focus=scout;
     camera.target=focus;
     camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*100,focus.y+sinf(pitch)*100,focus.z+cosf(yaw)*cosf(pitch)*100};
     float aspect=(float)GetScreenWidth()/(float)GetScreenHeight();
@@ -203,10 +227,10 @@ static void aw_update(void) {
         Vector3 target=scout;target.y+=0.55f;
         Vector3 eye=Vector3Add(target,Vector3Scale(Vector3Normalize(Vector3Subtract(camera.position,camera.target)),190));
         int blocked=aw_occluded(&world,eye.x/AW_UNIT,(eye.y+1.2f)/0.75f,eye.z/AW_UNIT,target.x/AW_UNIT,(target.y+1.2f)/0.75f,target.z/AW_UNIT);
-        cut_active=cut_mode==2||(cut_mode==1&&blocked);
-        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,eye,target,cut_active?cut_mode:0);
-        if(revealed>=AW_CELLS){
-            if(show_tiles){
+        cut_active=!isolate_tunnels&&(cut_mode==2||(cut_mode==1&&blocked));
+        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,eye,target,cut_active?cut_mode:0,isolate_tunnels?(show_tunnel_ceilings?2:1):0);
+        if(revealed>=AW_CELLS||isolate_tunnels){
+            if(show_tiles&&!isolate_tunnels){
                 for(int c=0;c<AW_CELLS;c++)for(int d=0;d<2;d++)for(int i=0;i<AW_SUBDIV;i++){
                     float a=(float)i/AW_SUBDIV,b=(float)(i+1)/AW_SUBDIV;
                     float ax=d?1:a,az=d?a:1,bx=d?1:b,bz=d?b:1;
@@ -217,7 +241,17 @@ static void aw_update(void) {
                 }
             }
             aw_draw_markers();
-            if(show_path){
+            if(show_path&&isolate_tunnels){
+                for(int i=0;i<world.cave_edge_count;i++){
+                    Vector3 a=aw_center(&world,AW_CELLS+world.cave_edges[i].a),b=aw_center(&world,AW_CELLS+world.cave_edges[i].b);
+                    a.y+=0.12f;b.y+=0.12f;DrawCylinderEx(a,Vector3Lerp(a,b,0.72f),0.055f,0.055f,4,(Color){245,201,100,220});
+                }
+                for(int i=0;i<world.cave_count;i++)if(world.cave[i].portal>=0){
+                    Vector3 p=aw_center(&world,AW_CELLS+i);p.y+=0.15f;
+                    DrawCylinderWires(p,0.6f,0.6f,0.04f,12,(Color){101,225,222,255});
+                }
+            }
+            if(show_path&&!isolate_tunnels){
                 for(int i=1;i<world.path_length;i++){
                     Vector3 a=aw_center(&world,world.path[i-1]),b=aw_center(&world,world.path[i]);
                     a.y+=0.12f;b.y+=0.12f;
@@ -230,7 +264,7 @@ static void aw_update(void) {
                     DrawCylinderEx(a,end,0.055f,0.055f,4,(Color){245,201,100,220});
                 }
             }
-            aw_draw_unit();
+            if(!isolate_tunnels||scout_layer)aw_draw_unit();
         }else{
             /* The wire footprint makes the incomplete terrain readable. */
             for(int z=0;z<=AW_SIZE;z+=4)DrawLine3D((Vector3){0,0.02f,z*AW_UNIT},(Vector3){128,0.02f,z*AW_UNIT},(Color){56,100,108,90});

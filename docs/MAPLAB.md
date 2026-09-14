@@ -122,6 +122,16 @@ not imply that every point in a wide chamber is navigable.
 entrances. Unpause and enable **Follow scout** to traverse that route. Load a
 world again to restore the base-to-base route.
 
+**Isolate tunnels** hides the landscape, ocean and surface props, then frames
+the complete passage network at every depth. **Show tunnel ceilings** switches
+between an open-top view of floors and ramps and the full arched shell. Both
+views use the actual excavated terrain triangles, rendered from either side;
+entrance floors are retained where they meet the surface. **Passage guides**
+shows the entire cave graph and marks entrances. Toggle isolation off to return
+to the previous landscape camera and cutaway settings. These controls only
+change rendering and camera state: they do not regenerate the map or replace
+the scout's route. Shared URLs retain `isolate=1` and optional `ceilings=1`.
+
 **Auto cutaway** tests the orthographic camera-to-scout ray against the meshed
 solid and removes intervening fragments above the scout. **Horizontal section**
 clips geometry above a plane near the scout to expose the network. **Off** shows
@@ -159,8 +169,10 @@ python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 
 The checker also compares four configurations through the packaged viewer,
 verifies artifact hashes and checks JavaScript syntax. Real Chrome review must
-cover the entrance, interior, opaque mountain, section, auto cutaway and terrain
-continuation. Generation timing in the UI excludes mesh construction.
+cover the entrance, interior, opaque mountain, section, auto cutaway, isolated
+network with and without ceilings, and terrain continuation. Verify unchanged
+hash and route when toggling isolation. Generation timing in the UI excludes
+mesh construction.
 
 For Pages, commit authored source first, rebuild from that source revision,
 validate and inspect the real browser, then commit generated `docs/maplab/`

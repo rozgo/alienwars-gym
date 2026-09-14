@@ -115,8 +115,8 @@
         <button data-camera="2" aria-label="Zoom out" title="Zoom out">−</button><button data-camera="8" aria-label="Pan down" title="Pan down">↓</button><button data-camera="1" aria-label="Zoom in" title="Zoom in">+</button>
       </div>
       <div class="viewport-footer">
-        <div><div class="legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch gold"></i>Scout route</span></div><p class="gesture-help">Drag to orbit · Shift-drag to pan · Scroll to zoom</p></div>
-        <div class="scout">NAVIGATION SCOUT / A ↔ B<span><span id="scout-status">Scripted path · Terrain validation</span></span></div>
+        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to orbit · Shift-drag to pan · Scroll to zoom</p></div>
+        <div class="scout"><div id="scout-heading">NAVIGATION SCOUT / A ↔ B</div><span id="scout-status">Scripted path · Terrain validation</span></div>
       </div>
       <div class="loading" id="loading" role="status"><p id="loading-text">Preparing the map…</p><progress aria-label="Loading map runtime"></progress><small>Generated and rendered on your device.</small></div>
     </section>
@@ -145,9 +145,14 @@
       </section>
       <section class="panel-section">
         <h2 class="section-title">Inspect terrain <small>03 / EXPLORE</small></h2>
+        <label class="toggle" for="isolate-tunnels">Isolate tunnels<input type="checkbox" id="isolate-tunnels"></label>
+        <div id="isolation-options" hidden>
+          <label class="toggle" for="tunnel-ceilings">Show tunnel ceilings<input type="checkbox" id="tunnel-ceilings"></label>
+          <p class="seed-note">Landscape hidden. Drag to orbit around the full passage network.</p>
+        </div>
         <label class="toggle" for="tile-boundaries">Tile boundaries<input type="checkbox" id="tile-boundaries"></label>
         <label class="toggle" for="walkability">Walkability overlay<input type="checkbox" id="walkability"></label>
-        <label class="toggle" for="path">Scout route<input type="checkbox" id="path" checked></label>
+        <label class="toggle" for="path"><span id="path-toggle-label">Scout route</span><input type="checkbox" id="path" checked></label>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
         <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
         <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Horizontal section</option><option value="0">Off · solid terrain</option></select>
@@ -188,6 +193,8 @@
     $('seed').value = String(currentSeed);
     $('walkability').checked = params.get('grid') === '1';
     $('tile-boundaries').checked=params.get('tiles')==='1';
+    $('isolate-tunnels').checked=params.get('isolate')==='1';
+    $('tunnel-ceilings').checked=params.get('ceilings')==='1';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
@@ -195,9 +202,22 @@
     $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
     $('biome').value=bounded('biome',0,0,4);$('tunnels').checked=bounded('tunnels',1,0,1)===1;
     $('cutaway').value=bounded('cut',1,0,2);
+    function syncIsolation(){
+      const isolated=$('isolate-tunnels').checked;
+      $('isolation-options').hidden=!isolated;
+      $('surface-legend').hidden=isolated;$('tunnel-legend').hidden=!isolated;
+      $('path-toggle-label').textContent=isolated?'Passage guides':'Scout route';
+      $('scout-heading').textContent=isolated?'TUNNEL STRUCTURE / ALL PASSAGES':'NAVIGATION SCOUT / A ↔ B';
+      $('overlay-key').hidden=isolated||!$('walkability').checked;
+      for(const id of ['cutaway','tile-boundaries','walkability','follow'])$(id).disabled=isolated||!ready;
+      $('isolate-tunnels').disabled=!$('tunnels').checked||!ready;
+      $('tunnel-ceilings').disabled=!isolated||!ready;
+    }
     function syncSettings(){
       const symmetric=$('symmetry').value==='1';
       if(symmetric)$('floor-b').value=$('floor-a').value;
+      if(!$('tunnels').checked)$('isolate-tunnels').checked=false;
+      syncIsolation();
       $('floor-b').disabled=symmetric||!ready;$('inspect-tunnel').disabled=$('inspect-entrance').disabled=!$('tunnels').checked||!ready;
     }
     function settingsArgs(){return [Number($('symmetry').value),Number($('floor-a').value),Number($('floor-b').value),Number($('biome').value),Number($('tunnels').checked)];}
@@ -215,6 +235,7 @@
       if (!$('path').checked) url.searchParams.set('path','0'); else url.searchParams.delete('path');
       for(const [key,value] of Object.entries({sym:$('symmetry').value,a:$('floor-a').value,b:$('floor-b').value,biome:$('biome').value,tunnels:Number($('tunnels').checked),cut:$('cutaway').value}))url.searchParams.set(key,String(value));
       if($('tile-boundaries').checked)url.searchParams.set('tiles','1');else url.searchParams.delete('tiles');
+      for(const [id,key] of [['isolate-tunnels','isolate'],['tunnel-ceilings','ceilings']]){if($(id).checked)url.searchParams.set(key,'1');else url.searchParams.delete(key);}
       history.replaceState(null, '', url);
     }
     function resizeCanvas() {
@@ -245,6 +266,8 @@
           Module._aw_option(2,Number($('scout-pause').checked));
           Module._aw_option(4,Number($('cutaway').value));
           Module._aw_option(6,Number($('tile-boundaries').checked));
+          Module._aw_option(8,Number($('tunnel-ceilings').checked));
+          Module._aw_option(7,Number($('isolate-tunnels').checked));
         });
         syncSettings();syncUrl();
       }
@@ -260,7 +283,7 @@
       }
       $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
       $('route-label').textContent=report.tour?'Cave inspection route':'Base-to-base path';
-      $('cut-status').textContent=$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
+      $('cut-status').textContent=$('isolate-tunnels').checked?`Tunnels isolated · ceilings ${$('tunnel-ceilings').checked?'shown':'hidden'}`:$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
       $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${report.floor} · Scripted scout`;
       if(!progressChanged) return;
       $('resolved').textContent=`${report.resolved.toLocaleString()} / 4,096`;
@@ -291,6 +314,8 @@
       if(!$('floor-a').checkValidity()||!$('floor-b').checkValidity()){$('seed-form').reportValidity();return;}
       loadSeed(currentSeed);
     });
+    $('isolate-tunnels').addEventListener('change',()=>{Module._aw_option(7,Number($('isolate-tunnels').checked));syncIsolation();syncUrl();});
+    $('tunnel-ceilings').addEventListener('change',()=>{Module._aw_option(8,Number($('tunnel-ceilings').checked));syncUrl();});
     $('cutaway').addEventListener('change',()=>{Module._aw_option(4,Number($('cutaway').value));syncUrl();});
     $('follow').addEventListener('change',()=>Module._aw_option(5,Number($('follow').checked)));
     $('inspect-entrance').addEventListener('click',()=>{Module._aw_inspect_entrance();$('scout-pause').checked=true;$('follow').checked=false;});
