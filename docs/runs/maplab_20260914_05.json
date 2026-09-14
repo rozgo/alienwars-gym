@@ -1,0 +1,128 @@
+{
+  "milestone": "Tunnel isolation and ceiling visibility",
+  "generator_version": 4,
+  "source_commit": "52085bae9b746aa1995432552e0e7644e1bd92a4",
+  "source_dirty": false,
+  "checks": {
+    "generator_version": 4,
+    "native": "MAP_TEST version=4 seeds=256 digest=4094b43c terrains=12 max_structure=84 geometry_choices=202810 PASS",
+    "wasm": "MAP_TEST version=4 seeds=256 digest=4094b43c terrains=12 max_structure=84 geometry_choices=202810 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "4",
+        "hash": "24a37e41",
+        "walk": "1838",
+        "reached": "1501",
+        "path": "166",
+        "decisions": "2628",
+        "attempts": "1",
+        "structure": "33",
+        "tunnels": "64",
+        "cost": "1948",
+        "shapes": "1106"
+      },
+      {
+        "seed": "1",
+        "version": "4",
+        "hash": "27fbd1e5",
+        "walk": "1774",
+        "reached": "1351",
+        "path": "164",
+        "decisions": "2609",
+        "attempts": "1",
+        "structure": "35",
+        "tunnels": "64",
+        "cost": "1927",
+        "shapes": "1142"
+      },
+      {
+        "seed": "73",
+        "version": "4",
+        "hash": "c25ac358",
+        "walk": "1745",
+        "reached": "1487",
+        "path": "164",
+        "decisions": "2570",
+        "attempts": "1",
+        "structure": "31",
+        "tunnels": "60",
+        "cost": "1910",
+        "shapes": "1120"
+      },
+      {
+        "seed": "4294967295",
+        "version": "4",
+        "hash": "ac551dbf",
+        "walk": "1826",
+        "reached": "1577",
+        "path": "160",
+        "decisions": "2595",
+        "attempts": "1",
+        "structure": "38",
+        "tunnels": "62",
+        "cost": "1892",
+        "shapes": "1087"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "browser_review": {
+    "browser": "Chrome, WebGL2",
+    "visibility_only": {
+      "symmetric_seed73": {
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "hash_before_and_after": "683245b9",
+        "path_steps_before_and_after": 142,
+        "cave_waypoints": 60
+      },
+      "asymmetric_seed1": {
+        "floors": [
+          10,
+          3
+        ],
+        "biome": 3,
+        "hash_before_and_after": "5ed144ed",
+        "path_steps_before_and_after": 165,
+        "cave_waypoints": 64
+      }
+    },
+    "verified": [
+      "Full network framed without landscape, ocean or surface props",
+      "Open-top floors and ramps, complete ceilings, rotation and zoom",
+      "Passage guides toggled independently",
+      "Landscape camera and horizontal-section preference restored when leaving isolation",
+      "Shared isolate and ceilings URL flags applied on load",
+      "New seed while isolated retains inspection view and reframes network",
+      "Disabling cave creation exits isolation and disables tunnel inspection controls"
+    ],
+    "console": "No runtime or shader errors; existing Raylib VAO/NPOT capability warnings only"
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 25407,
+      "sha256": "c3af14f1af4c4c129d43843b65594b39b674d412f37e112ed2bd98822f8c881b"
+    },
+    "maplab.js": {
+      "bytes": 230524,
+      "sha256": "23008df629ca85be1e6003f599b31c28e74c8720dfb923db88769881318d111f"
+    },
+    "maplab.wasm": {
+      "bytes": 217547,
+      "sha256": "57918dfe5411bc7cab2d66036dd2304dc3b5887ec781136e1f9eeebcf8e1b8c1"
+    }
+  },
+  "baseline_breakout_unchanged": true,
+  "generation_and_collision_unchanged": true,
+  "limitations": [
+    "Ceiling hiding is a visual cut of downward-facing shell surfaces; it does not change excavation or collision.",
+    "Existing bounded two-entrance layout; no new cave placement logic."
+  ]
+}
