@@ -3377,9 +3377,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             Dict* key_src = &log_history.items[log_history.size - 1];
             for (int k = 0; k < key_src->size; k++) {
                 const char* key = key_src->items[k].key;
-                if (strncmp(key, "loss/", 5) == 0) {
-                    continue;
-                }
                 log_history_bin_mean(&log_history, key, metric_points, out);
                 fprintf(fp, "%s = ", key);
                 for (int i = 0; i < metric_points; i++) {
@@ -3389,6 +3386,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             }
             free(out);
         }
+        // Preserve exact run totals alongside the downsampled metric series.
+        fprintf(fp, "\n[run]\nsteps = %.0f\ntraining_seconds = %.9g\nscore = %.9g\n",
+            result.steps, result.cost, result.score);
         fclose(fp);
     }
     for (int i = 0; i < log_history.size; i++) {

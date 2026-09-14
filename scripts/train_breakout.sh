@@ -42,8 +42,11 @@ command=(./build/puffer-breakout train
 printf '%q ' "${command[@]}" > "$run_dir/command.txt"
 printf '\n' >> "$run_dir/command.txt"
 python3 - "$run_dir" "${command[@]}" <<'PY'
+import array
+import configparser
 import hashlib
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -79,9 +82,31 @@ report['checkpoints'] = [
      'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
     for p in sorted((out / 'checkpoints').rglob('*.bin'))
 ]
+errors = []
+if report['exit_code'] == 0:
+    config = configparser.ConfigParser(interpolation=None)
+    config.read(out / 'logs' / 'breakout' / (out.name + '.ini'))
+    metrics = dict(config['metrics']) if config.has_section('metrics') else {}
+    if not any(key.startswith('loss/') for key in metrics):
+        errors.append('Missing loss metrics')
+    report['metrics_finite'] = bool(metrics) and all(
+        math.isfinite(float(value))
+        for values in metrics.values() for value in values.split(','))
+    if not report['metrics_finite']:
+        errors.append('Missing or nonfinite metrics')
+    report['native_run'] = dict(config['run']) if config.has_section('run') else {}
+    for item in report['checkpoints']:
+        weights = array.array('f')
+        weights.frombytes(pathlib.Path(item['path']).read_bytes())
+        item['weights_finite'] = bool(weights) and all(map(math.isfinite, weights))
+        if not item['weights_finite']:
+            errors.append('Nonfinite or empty checkpoint: ' + item['path'])
+    if not report['checkpoints']:
+        errors.append('Training exited without saving a checkpoint')
+report['validation_errors'] = errors
 (out / 'run.json').write_text(json.dumps(report, indent=2) + '\n')
-if not report['checkpoints'] and report['exit_code'] == 0:
-    raise SystemExit('Training exited without saving a checkpoint')
+if errors:
+    raise SystemExit('; '.join(errors))
 raise SystemExit(report['exit_code'])
 PY
 echo "Run artifacts: $run_dir"

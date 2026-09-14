@@ -25,7 +25,10 @@ Website caveats at import: `binding.c` references describe an older interface;
 current metadata lives in environment headers. The upstream Mac build used Bash
 4 uppercase expansion despite its `/bin/bash` shebang, and disabled sanitizers.
 This project uses Bash 3-compatible uppercase conversion and enables Mac
-ASan/UBSan. No trainer algorithm or Breakout gameplay changes are part of bring-up.
+ASan/UBSan. The native log retains loss series (upstream omitted them) and adds
+exact steps, training time and final score in a `[run]` section so the wrapper
+can verify finite metrics and report exact totals. No trainer algorithm or
+Breakout gameplay changes are part of bring-up.
 
 To inspect future changes, use `git fetch upstream 5.0` and review the diff
 before merging. Rebuild and repeat the native checks and bounded GPU baseline
