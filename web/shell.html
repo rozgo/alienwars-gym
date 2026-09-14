@@ -53,8 +53,9 @@
     .explanation { color: var(--muted); max-width: 78ch; padding-top: 4px; }
     .explanation p { margin: 14px 0 0; }
     footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 23px 0 32px; color: var(--muted); font-size: 14px; }
-    .screen:fullscreen { display: grid; place-items: center; background: #000; aspect-ratio: auto; }
-    .screen:fullscreen canvas { width: min(100vw, calc(100vh * 576 / 330)) !important; height: min(100vh, calc(100vw * 330 / 576)) !important; }
+    .player.expanded { position: fixed; inset: 0; z-index: 10; border: 0; border-radius: 0; display: flex; flex-direction: column; }
+    .player.expanded .screen { flex: 1; min-height: 0; aspect-ratio: auto; }
+    .player.expanded .toolbar { flex-shrink: 0; }
     @media (max-width: 650px) {
       .wrap { width: calc(100% - 28px); } header { min-height: 70px; }
       .brand span { margin-left: 6px; } main { padding-top: 24px; }
@@ -90,7 +91,7 @@
         </div>
         <div class="toolbar">
           <p id="status" aria-live="polite">Preparing browser runtime</p>
-          <div class="buttons"><button id="restart" type="button">Restart</button><button id="fullscreen" type="button" disabled>Fullscreen</button></div>
+          <div class="buttons"><button id="restart" type="button">Restart</button><button id="expand" type="button" aria-expanded="false" disabled>Expand</button></div>
         </div>
       </section>
       <p class="help">The agent plays automatically. On desktop, click the game, then hold <kbd>Left Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to take control. Release to return to the policy.</p>
@@ -117,7 +118,7 @@
     const loading = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
     const progress = document.getElementById('progress');
-    const fullscreenButton = document.getElementById('fullscreen');
+    const expandButton = document.getElementById('expand');
     let failed = false;
     let initialized = false;
     function fail(message) {
@@ -126,7 +127,7 @@
       progress.hidden = true;
       loadingText.textContent = 'The demo could not start. Try restarting or use a browser with WebGL 2.';
       statusText.textContent = 'Unable to start';
-      fullscreenButton.disabled = true;
+      expandButton.disabled = true;
       console.error(message);
     }
     var Module = {
@@ -145,7 +146,7 @@
         initialized = true;
         loading.hidden = true;
         statusText.textContent = 'Policy running on your device';
-        fullscreenButton.disabled = !document.getElementById('screen').requestFullscreen;
+        expandButton.disabled = false;
       },
       onAbort: fail
     };
@@ -154,9 +155,15 @@
     Module.canvas.addEventListener('pointerdown', () => Module.canvas.focus({preventScroll: true}));
     Module.canvas.addEventListener('keydown', (event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(event.key)) event.preventDefault(); });
     document.getElementById('restart').addEventListener('click', () => location.reload());
-    fullscreenButton.addEventListener('click', async () => {
-      try { await document.getElementById('screen').requestFullscreen(); Module.canvas.focus(); }
-      catch (error) { console.warn('Fullscreen request failed:', error); statusText.textContent = 'Fullscreen unavailable; the policy keeps running'; }
+    function toggleExpanded() {
+      const expanded = document.querySelector('.player').classList.toggle('expanded');
+      expandButton.textContent = expanded ? 'Back to page' : 'Expand';
+      expandButton.setAttribute('aria-expanded', String(expanded));
+      document.body.style.overflow = expanded ? 'hidden' : '';
+    }
+    expandButton.addEventListener('click', toggleExpanded);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.querySelector('.player').classList.contains('expanded')) toggleExpanded();
     });
     window.addEventListener('error', (event) => { if (!initialized) fail(event.message || 'Runtime failed to load'); });
     window.addEventListener('unhandledrejection', (event) => fail(event.reason));

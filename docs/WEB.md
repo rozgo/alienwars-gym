@@ -61,7 +61,7 @@ No secrets or machine-specific GPU connection details are bundled.
 The checker verifies artifact hashes and runs the exact WASM module in Node.js
 for ten headless episodes, requiring loaded weights and the correct network
 shape. This validates simulation/inference; inspect the browser separately for
-loading, visible gameplay, keyboard control, restart, fullscreen and layout.
+loading, visible gameplay, keyboard control, restart, expanded viewing and layout.
 WASM and native CPU builds may use different C-library RNG implementations;
 do not interpret their scores as exact cross-device equivalence.
 
