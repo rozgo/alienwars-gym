@@ -60,6 +60,11 @@ if [ "$ENV" = "robot_arm" ]; then
     esac
 fi
 
+if [ "$ENV" = "alienwars" ] && [ "${MODE:-native}" != "cpu" ] && [ "${MODE:-native}" != "web" ]; then
+    echo 'AlienWars currently provides the terrain Map Lab. Use --cpu or --web; the RL environment interface comes next.' >&2
+    exit 1
+fi
+
 if [ "$ENV" = "all" ]; then
     FAILED=""
     for env_dir in ocean/*/; do
@@ -282,7 +287,7 @@ if [ "$MODE" = "cpu" ]; then
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
-        osrs_*|nethack)
+        osrs_*|nethack|alienwars)
             STANDALONE_SOURCE="$SRC_FILE"
             ;;
         *)

@@ -3,11 +3,15 @@
 A native C/CUDA reinforcement-learning workspace based on **PufferLib 5.0**.
 The first baseline is upstream **Breakout**: train on an NVIDIA GPU, then watch
 the learned policy run in your browser through Raylib and WebAssembly.
-AlienWars gameplay is the next implementation stage; it is not present yet.
+The AlienWars **Map Lab** now generates seeded 3D terrain with WFC tiles,
+validates navigation and runs a scripted scout. Combat and AlienWars policy
+training are the next implementation stage.
 
-**[Watch the live browser demo](https://rozgo.github.io/alienwars-gym/)**
+**[Explore the 3D Map Lab](https://rozgo.github.io/alienwars-gym/maplab/?seed=73)**
+· [Watch trained Breakout](https://rozgo.github.io/alienwars-gym/)
 
 - [Agent instructions](AGENTS.md)
+- [Map Lab specification, build and validation](docs/MAPLAB.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Raylib web build and GitHub Pages workflow](docs/WEB.md)
 - [Upstream version and source references](docs/UPSTREAM.md)

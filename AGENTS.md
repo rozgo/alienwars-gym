@@ -5,8 +5,9 @@
 This is a source-based PufferLib 5.0 project. Start with `README.md`,
 `docs/DEVELOPMENT.md`, and `docs/UPSTREAM.md`. Check `git status` before edits and
 preserve unrelated work. Follow explicit user instructions over this guide.
-The initial playable/training baseline is upstream Breakout; AlienWars gameplay
-has not been implemented. Do not describe the baseline as an AlienWars policy.
+The initial training baseline is upstream Breakout. AlienWars has a procedural
+3D Map Lab with a scripted navigation scout; combat and an AlienWars policy are
+not implemented. Do not describe the scout or Breakout as an AlienWars policy.
 
 User direction, September 14, 2026: the repository is public and the first
 browser release uses the existing **Raylib web path**, published through
@@ -36,6 +37,9 @@ current minimal template. Inspect headers before following an older tutorial.
 - `outputs/`, `build/`, `checkpoints/`, `logs/`: ignored generated artifacts.
 - `docs/runs/`: concise checked-in measurements and artifact hashes.
 - `web/shell.html`: authored browser presentation for the Raylib web build.
+- `ocean/alienwars/map.h`: deterministic, renderer-independent WFC and navigation.
+- `ocean/alienwars/render.h`, `alienwars.c`: Raylib Map Lab renderer and viewer.
+- `web/maplab/shell.html`, `docs/maplab/`: Map Lab source and compiled Pages output.
 - `docs/index.html`, `docs/game.*`, `docs/web-build.json`: deliberate compiled
   Pages artifacts; regenerate with `scripts/build_web.sh`, never hand-edit.
 
@@ -74,6 +78,9 @@ Run from the repository root (configuration/resources use relative paths).
 ./scripts/play_breakout.sh PATH/TO/CHECKPOINT.bin
 ./scripts/build_web.sh                         # Emscripten 6.0.9, Raylib web
 python3 scripts/check_web.py                   # artifact hashes + actual WASM inference
+./build.sh alienwars build/maplab --cpu --debug # terrain viewer, not training
+./scripts/build_maplab.sh
+python3 scripts/check_maplab.py                # native/WASM parity + navigation
 ```
 
 Use `--cpu --debug` with ASan/UBSan for environment development on Linux and
@@ -126,3 +133,12 @@ Verify public deployment status and artifact hashes after pushing. The small
 compiled Pages artifacts are an explicit exception to the general rule keeping
 generated binaries out of Git; credentials, SDKs, raw logs and other build
 products remain ignored. Do not publish an untrained fallback as a trained demo.
+
+For Map Lab changes, follow `docs/MAPLAB.md`. Keep the fixed strategic anchors,
+WFC constraints, height surfaces, navigation and renderer coherent. Record a
+generator-version change when seed outputs change. Validate cardinal edge
+connections, all ramp lanes, resources and paths; test contradictions and
+disconnected maps. Keep cosmetic props separate from authoritative collision.
+The assembly view replays recorded cell resolution; do not call it a live solver
+or claim it visualizes retries. New global-layout, combat or RL behavior needs
+an explicit environment contract and appropriate validation.

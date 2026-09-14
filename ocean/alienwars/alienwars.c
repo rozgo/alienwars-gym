@@ -1,0 +1,216 @@
+/* Map Lab viewer. The shared map.h also serves the PufferLib environment. */
+#include "render.h"
+#include <inttypes.h>
+#ifdef PLATFORM_WEB
+#include <emscripten/emscripten.h>
+#define AW_EXPORT EMSCRIPTEN_KEEPALIVE
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds),{
+    if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
+        seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
+        walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds
+    });
+});
+#else
+#define AW_EXPORT
+static void aw_report(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double ms) {
+    (void)seed;(void)hash;(void)valid;(void)walk;(void)reached;(void)length;(void)decisions;
+    (void)reductions;(void)attempts;(void)resolved;(void)paused;(void)ms;
+}
+#endif
+
+static AwMap world;
+static AwScene scene;
+static Camera3D camera;
+static float yaw=0.75f,pitch=0.9f,zoom=107.0f;
+static Vector3 focus={48,1.8f,48};
+static float revealed=AW_CELLS,animation_time=0,unit_progress=0;
+static int show_overlay=0,show_path=1,paused=0,unit_paused=0;
+static double generation_ms=0;
+
+static void aw_publish(void) {
+    aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms);
+}
+
+AW_EXPORT void aw_new(uint32_t seed,int watch) {
+    double start=GetTime();
+    if(!aw_generate(&world,seed)){
+        generation_ms=(GetTime()-start)*1000;
+        aw_publish();
+        return;
+    }
+    generation_ms=(GetTime()-start)*1000;
+    aw_build_scene(&scene,&world);
+    revealed=watch?0:AW_CELLS;
+    unit_progress=0;paused=0;
+    aw_publish();
+}
+
+AW_EXPORT void aw_option(int option,int value) {
+    if(option==0)show_overlay=!!value;
+    if(option==1)show_path=!!value;
+    if(option==2)unit_paused=!!value;
+    if(option==3)paused=!!value;
+    aw_publish();
+}
+
+AW_EXPORT void aw_watch(void) {
+    revealed=0;unit_progress=0;paused=0;aw_publish();
+}
+
+AW_EXPORT void aw_step(void) {
+    paused=1;
+    revealed=fminf((float)AW_CELLS,revealed+1);
+    aw_publish();
+}
+
+AW_EXPORT void aw_camera_control(int action) {
+    if(action==0){yaw=0.75f;pitch=0.9f;zoom=107;focus=(Vector3){48,1.8f,48};}
+    if(action==1)zoom=fmaxf(35,zoom*0.84f);
+    if(action==2)zoom=fminf(150,zoom/0.84f);
+    if(action==3)yaw-=0.22f;
+    if(action==4)yaw+=0.22f;
+    if(action>=5&&action<=8){
+        Vector3 right={cosf(yaw),0,-sinf(yaw)},forward={sinf(yaw),0,cosf(yaw)};
+        Vector3 shift=action<7?right:forward;
+        float amount=(action==5||action==7)?-3.0f:3.0f;
+        focus=Vector3Add(focus,Vector3Scale(shift,amount));
+        focus.x=Clamp(focus.x,12,84);focus.z=Clamp(focus.z,12,84);
+    }
+}
+
+AW_EXPORT void aw_resize(int width,int height) {
+    if(width<240||height<200||width>3840||height>2400)return;
+    if(IsWindowReady())SetWindowSize(width,height);
+}
+
+static void aw_draw_markers(void) {
+    for(int s=0;s<2;s++){
+        Vector3 p=aw_center(&world,world.spawns[s]);
+        Color accent=s?(Color){249,161,88,255}:(Color){101,225,222,255};
+        DrawCylinder((Vector3){p.x,p.y+0.04f,p.z},2.0f,2.0f,0.14f,8,(Color){43,55,57,255});
+        DrawCylinderWires((Vector3){p.x,p.y+0.2f,p.z},1.72f,1.72f,0.02f,8,accent);
+        for(int i=0;i<4;i++){
+            float a=PI*0.25f+i*PI*0.5f;
+            Vector3 column={p.x+cosf(a)*1.8f,p.y+0.5f,p.z+sinf(a)*1.8f};
+            DrawCube(column,0.28f,1.0f,0.28f,(Color){62,74,72,255});
+            column.y+=0.56f;DrawCube(column,0.3f,0.13f,0.3f,accent);
+        }
+    }
+    Vector3 p=aw_center(&world,world.center);
+    DrawCylinderWires((Vector3){p.x,p.y+0.07f,p.z},1.65f,1.65f,0.02f,6,(Color){164,147,106,255});
+    for(int i=0;i<3;i++){
+        Vector3 q={p.x+4.0f+i*0.8f,p.y+0.35f,p.z-3.2f};
+        DrawCube(q,0.45f,0.7f+i*0.6f,0.65f,(Color){91,93,78,255});
+    }
+}
+
+static Vector3 aw_unit_position(void) {
+    int length=world.path_length;
+    if(length<2)return aw_center(&world,world.spawns[0]);
+    float cycle=fmodf(unit_progress,(float)(length-1)*2);
+    float p=cycle>length-1?(length-1)*2-cycle:cycle;
+    int segment=(int)p;
+    if(segment>=length-1)segment=length-2;
+    return Vector3Lerp(aw_center(&world,world.path[segment]),aw_center(&world,world.path[segment+1]),p-segment);
+}
+
+static void aw_draw_unit(void) {
+    Vector3 p=aw_unit_position();
+    DrawCylinder((Vector3){p.x,p.y+0.025f,p.z},0.6f,0.6f,0.01f,12,(Color){26,39,38,170});
+    p.y+=0.55f+sinf(animation_time*4)*0.05f;
+    DrawCube(p,0.9f,0.28f,0.7f,(Color){214,175,82,255});
+    DrawCube((Vector3){p.x,p.y+0.2f,p.z},0.36f,0.17f,0.34f,(Color){83,220,230,255});
+    for(int i=0;i<4;i++){
+        Vector3 leg={p.x+(i&1?0.58f:-0.58f),p.y-0.12f,p.z+(i&2?0.4f:-0.4f)};
+        DrawSphereEx(leg,0.17f,4,6,(Color){46,64,69,255});
+    }
+}
+
+static void aw_update(void) {
+    float dt=fminf(GetFrameTime(),0.05f);
+    animation_time+=dt;
+    if(!paused&&revealed<AW_CELLS)revealed=fminf(AW_CELLS,revealed+dt*320);
+    if(revealed>=AW_CELLS&&!unit_paused)unit_progress+=dt*2.3f;
+    Vector2 mouse=GetMouseDelta();
+    if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&IsKeyDown(KEY_LEFT_SHIFT))){
+        Vector3 right={cosf(yaw),0,-sinf(yaw)},forward={sinf(yaw),0,cosf(yaw)};
+        focus=Vector3Add(focus,Vector3Scale(right,-mouse.x*zoom/GetScreenHeight()));
+        focus=Vector3Add(focus,Vector3Scale(forward,-mouse.y*zoom/GetScreenHeight()));
+        focus.x=Clamp(focus.x,12,84);focus.z=Clamp(focus.z,12,84);
+    }else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
+        yaw-=mouse.x*0.005f;pitch=Clamp(pitch+mouse.y*0.004f,0.42f,1.35f);
+    }
+    zoom=Clamp(zoom*(1-GetMouseWheelMove()*0.09f),35,150);
+    if(IsKeyDown(KEY_Q))yaw-=dt;
+    if(IsKeyDown(KEY_E))yaw+=dt;
+    if(IsKeyPressed(KEY_HOME))aw_camera_control(0);
+#ifndef PLATFORM_WEB
+    if(IsKeyPressed(KEY_R))aw_new(aw_hash(world.seed+1),0);
+    if(IsKeyPressed(KEY_G))aw_option(0,!show_overlay);
+    if(IsKeyPressed(KEY_P))aw_option(1,!show_path);
+    if(IsKeyPressed(KEY_SPACE))aw_watch();
+#endif
+    camera.target=focus;
+    camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*100,focus.y+sinf(pitch)*100,focus.z+cosf(yaw)*cosf(pitch)*100};
+    float aspect=(float)GetScreenWidth()/(float)GetScreenHeight();
+    camera.up=(Vector3){0,1,0};camera.fovy=zoom*fmaxf(1.0f,1.35f/aspect);camera.projection=CAMERA_ORTHOGRAPHIC;
+    BeginDrawing();
+    ClearBackground((Color){7,13,18,255});
+    BeginMode3D(camera);
+    if(world.valid){
+        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay);
+        if(revealed>=AW_CELLS){
+            aw_draw_markers();
+            if(show_path){
+                for(int i=1;i<world.path_length;i++){
+                    Vector3 a=aw_center(&world,world.path[i-1]),b=aw_center(&world,world.path[i]);
+                    a.y+=0.12f;b.y+=0.12f;
+                    Vector3 end=Vector3Lerp(a,b,0.72f);
+                    DrawCylinderEx(a,end,0.055f,0.055f,4,(Color){245,201,100,220});
+                }
+            }
+            aw_draw_unit();
+        }else{
+            /* The wire footprint makes the incomplete terrain readable. */
+            for(int z=0;z<=AW_SIZE;z+=4)DrawLine3D((Vector3){0,0.02f,z*AW_UNIT},(Vector3){96,0.02f,z*AW_UNIT},(Color){56,100,108,90});
+            for(int x=0;x<=AW_SIZE;x+=4)DrawLine3D((Vector3){x*AW_UNIT,0.02f,0},(Vector3){x*AW_UNIT,0.02f,96},(Color){56,100,108,90});
+        }
+    }
+    EndMode3D();
+#ifndef PLATFORM_WEB
+    DrawText(TextFormat("ALIENWARS / MAP LAB    SEED %u    %08x",world.seed,world.hash),24,22,20,(Color){223,233,229,255});
+    DrawText("Drag: orbit   Right drag: pan   Wheel: zoom   R: new seed   Space: assembly   G: walkability   P: path",24,GetScreenHeight()-30,16,(Color){159,182,183,255});
+#endif
+    EndDrawing();
+    static double last_report=0;
+    if(GetTime()-last_report>0.12){aw_publish();last_report=GetTime();}
+}
+
+int main(int argc,char **argv) {
+    uint32_t seed=73;
+    int headless=0,watch=0;
+    for(int i=1;i<argc;i++){
+        if(strncmp(argv[i],"--seed=",7)==0)seed=(uint32_t)strtoul(argv[i]+7,NULL,10);
+        if(strcmp(argv[i],"--headless")==0)headless=1;
+        if(strcmp(argv[i],"--watch")==0)watch=1;
+    }
+    if(headless){
+        if(!aw_generate(&world,seed))return 1;
+        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d\n",
+            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts);
+        return 0;
+    }
+    SetTraceLogLevel(LOG_WARNING);
+    SetConfigFlags(FLAG_MSAA_4X_HINT|FLAG_WINDOW_RESIZABLE);
+    InitWindow(1280,800,"AlienWars / Map Lab");
+    SetTargetFPS(60);
+    aw_new(seed,watch);
+#ifdef PLATFORM_WEB
+    emscripten_set_main_loop(aw_update,0,1);
+#else
+    while(!WindowShouldClose())aw_update();
+    aw_destroy_scene(&scene);CloseWindow();
+#endif
+    return 0;
+}
