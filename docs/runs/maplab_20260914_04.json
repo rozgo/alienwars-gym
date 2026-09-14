@@ -1,0 +1,143 @@
+{
+  "milestone": "Volumetric caves, ramp entrances and signed-depth navigation",
+  "generator_version": 4,
+  "source_commit": "3b47e6b1b845d3eb027476d88f58e0da0d3f8ff9",
+  "source_dirty": false,
+  "checks": {
+    "generator_version": 4,
+    "native": "MAP_TEST version=4 seeds=256 digest=4094b43c terrains=12 max_structure=84 geometry_choices=202810 PASS",
+    "wasm": "MAP_TEST version=4 seeds=256 digest=4094b43c terrains=12 max_structure=84 geometry_choices=202810 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "4",
+        "hash": "24a37e41",
+        "walk": "1838",
+        "reached": "1501",
+        "path": "166",
+        "decisions": "2628",
+        "attempts": "1",
+        "structure": "33",
+        "tunnels": "64",
+        "cost": "1948",
+        "shapes": "1106"
+      },
+      {
+        "seed": "1",
+        "version": "4",
+        "hash": "27fbd1e5",
+        "walk": "1774",
+        "reached": "1351",
+        "path": "164",
+        "decisions": "2609",
+        "attempts": "1",
+        "structure": "35",
+        "tunnels": "64",
+        "cost": "1927",
+        "shapes": "1142"
+      },
+      {
+        "seed": "73",
+        "version": "4",
+        "hash": "c25ac358",
+        "walk": "1745",
+        "reached": "1487",
+        "path": "164",
+        "decisions": "2570",
+        "attempts": "1",
+        "structure": "31",
+        "tunnels": "60",
+        "cost": "1910",
+        "shapes": "1120"
+      },
+      {
+        "seed": "4294967295",
+        "version": "4",
+        "hash": "ac551dbf",
+        "walk": "1826",
+        "reached": "1577",
+        "path": "160",
+        "decisions": "2595",
+        "attempts": "1",
+        "structure": "38",
+        "tunnels": "62",
+        "cost": "1892",
+        "shapes": "1087"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "validation_provenance": {
+    "full_check_source": "946b604cb54ffa9e0447fe68d39261439eceeffa",
+    "final_render_change": "Hide surface beacons in horizontal sections",
+    "final_packaged_native_wasm_parity": "passed, four seeds",
+    "generation_and_geometry_sources_unchanged": true
+  },
+  "browser_review": {
+    "browser": "Chrome, WebGL2",
+    "symmetric_seed73": {
+      "floors": [
+        6,
+        6
+      ],
+      "biome": 1,
+      "hash": "683245b9",
+      "walkable_spans": 1784,
+      "cave_waypoints": 60,
+      "base_path_steps": 142,
+      "cave_tour_steps": 58,
+      "observed_core_generation_ms": 41
+    },
+    "asymmetric_seed1": {
+      "floors": [
+        10,
+        3
+      ],
+      "biome": 3,
+      "hash": "5ed144ed",
+      "walkable_spans": 1775,
+      "cave_waypoints": 64,
+      "base_path_steps": 165,
+      "cave_tour_steps": 62,
+      "observed_core_generation_ms": 199
+    },
+    "tunnels_disabled_seed1": {
+      "hash": "f11c6012",
+      "cave_waypoints": 0,
+      "inspection_buttons_disabled": true
+    },
+    "verified": [
+      "Natural mountain and arched entrance with cutaway off",
+      "Scout descends ramp from floor 1 toward underground route",
+      "Automatic occlusion cutaway",
+      "Horizontal underground section without floating base beacons",
+      "Retained tile-edge continuation in frozen terrain",
+      "Three stacked spans and a surface breach in native/WASM mesh fixtures"
+    ],
+    "console": "No runtime/shader errors; existing Raylib VAO and NPOT capability warnings only",
+    "timing_scope": "Core generation only; excludes meshing and loading"
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 23471,
+      "sha256": "ebf0f29d14c07d94032edf9c3af092a63faea8595fcb3659d776c607e98737e0"
+    },
+    "maplab.js": {
+      "bytes": 230524,
+      "sha256": "59aec3956083fd510841fbdee569abb4444f64cda137fa71e93474f953498134"
+    },
+    "maplab.wasm": {
+      "bytes": 212635,
+      "sha256": "a2e60455b8a748f7350fd7ed40936dc8492557c62aa2ce074a782b49a008f1a2"
+    }
+  },
+  "baseline_breakout_unchanged": true,
+  "limitations": [
+    "Bounded two-entrance strategic cave layout",
+    "Conservative surface and passage-centerline navigation, not a free-roaming navmesh",
+    "No dynamic excavation, flooding, combat or AlienWars RL policy"
+  ]
+}
