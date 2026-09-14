@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,int floor,int cost),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,int floor,int cost,int shapes),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes
     });
 });
 #else
@@ -19,7 +19,7 @@ EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached
 static AwMap world;
 static AwScene scene;
 static AwOptions settings={1,6,6,0,1};
-static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,scout_floor=1;
+static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,scout_floor=1,show_tiles=0;
 static Camera3D camera;
 static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
 static Vector3 focus={64,10,64};
@@ -29,7 +29,7 @@ static double generation_ms=0;
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions,cut_active,scout_layer,scout_floor,world.path_cost);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -57,6 +57,7 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==3)paused=!!value;
     if(option==4)cut_mode=aw_clamp(value,0,2);
     if(option==5)follow_scout=!!value;
+    if(option==6)show_tiles=!!value;
     aw_publish();
 }
 
@@ -193,6 +194,15 @@ static void aw_update(void) {
         cut_active=cut_mode==2||(cut_mode==1&&blocked);
         aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,eye,target,cut_active?cut_mode:0);
         if(revealed>=AW_CELLS){
+            if(show_tiles){
+                for(int c=0;c<AW_CELLS;c++)for(int d=0;d<2;d++)for(int i=0;i<AW_SUBDIV;i++){
+                    float a=(float)i/AW_SUBDIV,b=(float)(i+1)/AW_SUBDIV;
+                    float ax=d?1:a,az=d?a:1,bx=d?1:b,bz=d?b:1;
+                    Vector3 p={(c%AW_SIZE+ax)*AW_UNIT,aw_ground_y(&world,c,ax,az)+0.045f,(c/AW_SIZE+az)*AW_UNIT};
+                    Vector3 q={(c%AW_SIZE+bx)*AW_UNIT,aw_ground_y(&world,c,bx,bz)+0.045f,(c/AW_SIZE+bz)*AW_UNIT};
+                    DrawLine3D(p,q,(Color){123,209,196,140});
+                }
+            }
             aw_draw_markers();
             if(show_path){
                 for(int i=1;i<world.path_length;i++){
@@ -234,8 +244,8 @@ int main(int argc,char **argv) {
     }
     if(headless){
         if(!aw_generate_options(&world,seed,settings))return 1;
-        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d\n",
-            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost);
+        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d\n",
+            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions);
         return 0;
     }
     SetTraceLogLevel(LOG_WARNING);

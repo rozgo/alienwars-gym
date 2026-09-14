@@ -55,13 +55,13 @@ static const char *aw_land_fragment =
     "float light=max(dot(n,normalize(vec3(-0.55,0.85,-0.4))),0.0);"
     "float grain=noise(position.xz*8.0)*0.12+noise(position.xz*1.8)*0.16+noise(position.xz*0.22)*0.2;"
     "vec3 base=color.rgb;"
-    "if(uv.y>4.5){float heat=noise(position.xz*1.5);base=mix(vec3(0.14,0.12,0.10),vec3(1.0,0.30,0.035),smoothstep(0.47,0.68,heat));}"
-    "if(uv.y<0.5){base*=0.75+grain; float mottling=smoothstep(0.45,0.74,noise(position.xz*0.15));"
+    "float lava=clamp(uv.y-10.0,0.0,1.0);if(lava>0.0){float heat=noise(position.xz*1.5);vec3 magma=mix(vec3(0.14,0.12,0.10),vec3(1.0,0.30,0.035),smoothstep(0.47,0.68,heat));base=mix(base,magma,lava);}"
+    "if(uv.y<0.5||uv.y>9.5){base*=0.75+grain; float mottling=smoothstep(0.45,0.74,noise(position.xz*0.15));"
     "base=mix(base,base*vec3(0.77,0.79,0.7),mottling*0.45);"
-    "if(n.y<0.65){float strata=0.78+0.22*smoothstep(0.1,0.6,fract(position.y*2.7+noise(position.xz*0.7)*0.6));"
+    "if(n.y<0.65){base=mix(base,vec3(0.34,0.33,0.29),0.68);float strata=0.88+0.12*smoothstep(0.1,0.6,fract(position.y*0.8+noise(position.xz*0.65)*2.0));"
     "base*=strata*(0.65+0.35*smoothstep(-0.7,4.2,position.y));}}"
     "vec3 lit=base*(vec3(0.36,0.43,0.49)+light*vec3(0.75,0.67,0.50));"
-    "if((uv.y>1.5 && uv.y<2.5)||uv.y>4.5)lit=mix(lit,base,0.76);"
+    "if(uv.y>1.5 && uv.y<2.5)lit=mix(lit,base,0.76);lit=mix(lit,base,lava*0.76);"
     "float fog=smoothstep(75.0,160.0,length(position.xz-vec2(64.0)));"
     "finalColor=vec4(mix(lit,vec3(0.055,0.10,0.13),fog*0.7),color.a);}\n";
 
@@ -172,6 +172,58 @@ static void aw_face(AwBuilder*b,Vector3 a,Vector3 c,float lowa,float lowc,Color 
     Vector3 d=c,e=a;d.y=fminf(c.y,lowc);e.y=fminf(a.y,lowa);
     aw_quad(b,a,c,d,e,color,rank,kind);
 }
+static float aw_world_q(const AwMap*m,float x,float z){
+    x=fminf(AW_SIZE-0.0001f,fmaxf(0,x));z=fminf(AW_SIZE-0.0001f,fmaxf(0,z));
+    int c=(int)z*AW_SIZE+(int)x;return aw_surface_q(m,c,x-(int)x,z-(int)z);
+}
+static Vector3 aw_surface_normal(const AwMap*m,float x,float z){
+    const float e=0.035f;
+    float dx=(aw_world_q(m,x+e,z)-aw_world_q(m,x-e,z))*0.75f;
+    float dz=(aw_world_q(m,x,z+e)-aw_world_q(m,x,z-e))*0.75f;
+    return Vector3Normalize((Vector3){-dx,2*e*AW_UNIT,-dz});
+}
+static Color aw_vertex_color(const AwMap*m,int vx,int vz){
+    int r=0,g=0,b=0,n=0;
+    for(int dz=-1;dz<=0;dz++)for(int dx=-1;dx<=0;dx++){
+        int x=vx+dx,z=vz+dz;if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE)continue;
+        int c=z*AW_SIZE+x,mat=m->cells[c].material;
+        /* The seabed shares the adjacent soil tint; the water is separate. */
+        Color color=aw_palette[mat==AW_DEEP?AW_SAND:mat];r+=color.r;g+=color.g;b+=color.b;n++;
+    }
+    return (Color){r/n,g/n,b/n,255};
+}
+static float aw_vertex_lava(const AwMap*m,int vx,int vz){
+    int lava=0,n=0;
+    for(int dz=-1;dz<=0;dz++)for(int dx=-1;dx<=0;dx++){
+        int x=vx+dx,z=vz+dz;if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE)continue;
+        lava+=m->cells[z*AW_SIZE+x].material==AW_LAVA;n++;
+    }
+    return (float)lava/n;
+}
+static Color aw_tile_color(const Color colors[4],float x,float z){
+    return (Color){
+        (uint8_t)aw_bilinear(colors[0].r,colors[1].r,colors[2].r,colors[3].r,x,z),
+        (uint8_t)aw_bilinear(colors[0].g,colors[1].g,colors[2].g,colors[3].g,x,z),
+        (uint8_t)aw_bilinear(colors[0].b,colors[1].b,colors[2].b,colors[3].b,x,z),255};
+}
+static void aw_surface_mesh(AwBuilder*b,const AwMap*m,int cell,float rank){
+    enum {SIDE=AW_SUBDIV+1};Vector3 points[SIDE*SIDE],normals[SIDE*SIDE];Color colors[SIDE*SIDE];
+    int cx=cell%AW_SIZE,cz=cell/AW_SIZE;float lava[SIDE*SIDE];
+    float molten[4]={aw_vertex_lava(m,cx,cz),aw_vertex_lava(m,cx+1,cz),aw_vertex_lava(m,cx+1,cz+1),aw_vertex_lava(m,cx,cz+1)};
+    Color corners[4]={aw_vertex_color(m,cx,cz),aw_vertex_color(m,cx+1,cz),aw_vertex_color(m,cx+1,cz+1),aw_vertex_color(m,cx,cz+1)};
+    for(int z=0;z<SIDE;z++)for(int x=0;x<SIDE;x++){
+        int i=z*SIDE+x;float fx=(float)x/AW_SUBDIV,fz=(float)z/AW_SUBDIV;
+        points[i]=(Vector3){(cx+fx)*AW_UNIT,aw_y(aw_tile_sample_q(m,cell,fx,fz)/4.0f),(cz+fz)*AW_UNIT};
+        normals[i]=aw_surface_normal(m,cx+fx,cz+fz);colors[i]=aw_tile_color(corners,fx,fz);lava[i]=aw_bilinear(molten[0],molten[1],molten[2],molten[3],fx,fz);
+    }
+    float kind=aw_roof(m,cell)?3:10;
+    aw_reserve(b,AW_SUBDIV*AW_SUBDIV*6);
+    for(int z=0;z<AW_SUBDIV;z++)for(int x=0;x<AW_SUBDIV;x++){
+        int a=z*SIDE+x,c=a+1,d=a+SIDE+1,e=a+SIDE;
+        int indices[6]={a,d,c,a,e,d};
+        for(int k=0;k<6;k++){int from=indices[k],n=b->count++;b->positions[n]=points[from];b->normals[n]=normals[from];b->colors[n]=colors[from];b->uv[n]=(Vector2){rank,kind+(kind==10?lava[from]:0)};}
+    }
+}
 static void aw_destroy_scene(AwScene*s){
     if(!s->built)return;
     UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->water);
@@ -188,17 +240,28 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         Vector3 v[4]={{x*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,(z+1)*AW_UNIT},{x*AW_UNIT,0,(z+1)*AW_UNIT}};
         for(int k=0;k<4;k++)v[k].y=aw_y(t->q[k]/4.0f);
         float roof=t->tunnel&&!t->portal?3:0;
-        aw_top(&terrain,v,4,ground,rank,roof?roof:mat==AW_LAVA?5:0);
+        aw_surface_mesh(&terrain,m,c,rank);
+        /* Only tunnel mouths need vertical adapters. Sample both complete
+         * boundary profiles so these faces meet the shaped neighbor exactly. */
         for(int d=0;d<4;d++){
             int n=aw_neighbor(c,d),a=edges[d][0],b=edges[d][1],e=(d+2)%4;
-            float la=n<0?-4:aw_y(m->cells[n].q[edges[e][0]]/4.0f);
-            float lb=n<0?-4:aw_y(m->cells[n].q[edges[e][1]]/4.0f);
-            Color cliff=mat==AW_SNOW||mat==AW_ICE?(Color){111,135,146,255}:(Color){99,97,89,255};
-            /* Subtract the actual tunnel aperture from exposed column faces. */
-            if(t->tunnel&&!t->portal&&n>=0&&m->cells[n].tunnel){
-                aw_face(&terrain,v[a],v[b],fmaxf(la,aw_y(2.5f)),fmaxf(lb,aw_y(2.5f)),cliff,rank,3);
-                Vector3 lowa=v[a],lowb=v[b];lowa.y=lowb.y=aw_y(1);aw_face(&terrain,lowa,lowb,la,lb,cliff,rank,0);
-            }else aw_face(&terrain,v[a],v[b],la,lb,cliff,rank,roof);
+            if(n<0||(!aw_roof(m,c)&&!aw_roof(m,n)))continue;
+            for(int i=0;i<AW_SUBDIV;i++){
+                float sa=(float)i/AW_SUBDIV,sb=(float)(i+1)/AW_SUBDIV;
+                Vector3 pa=Vector3Lerp(v[a],v[b],sa),pb=Vector3Lerp(v[a],v[b],sb);
+                const float coords[4][2]={{0,0},{1,0},{1,1},{0,1}};
+                float ax=aw_lerp(coords[a][0],coords[b][0],sa),az=aw_lerp(coords[a][1],coords[b][1],sa);
+                float bx=aw_lerp(coords[a][0],coords[b][0],sb),bz=aw_lerp(coords[a][1],coords[b][1],sb);
+                int na=edges[e][0],nb=edges[e][1];
+                float la=aw_y(aw_surface_q(m,n,aw_lerp(coords[na][0],coords[nb][0],sa),aw_lerp(coords[na][1],coords[nb][1],sa))/4);
+                float lb=aw_y(aw_surface_q(m,n,aw_lerp(coords[na][0],coords[nb][0],sb),aw_lerp(coords[na][1],coords[nb][1],sb))/4);
+                pa.y=aw_y(aw_surface_q(m,c,ax,az)/4);pb.y=aw_y(aw_surface_q(m,c,bx,bz)/4);
+                Color cliff=(Color){99,97,89,255};
+                if(aw_roof(m,c)&&m->cells[n].tunnel){
+                    aw_face(&terrain,pa,pb,fmaxf(la,aw_y(2.5f)),fmaxf(lb,aw_y(2.5f)),cliff,rank,3);
+                    pa.y=pb.y=aw_y(1);aw_face(&terrain,pa,pb,la,lb,cliff,rank,0);
+                }else aw_face(&terrain,pa,pb,la,lb,cliff,rank,roof);
+            }
         }
         if(t->tunnel&&!t->portal){
             Vector3 floor[4];for(int k=0;k<4;k++){floor[k]=v[k];floor[k].y=aw_y(1);}
@@ -212,9 +275,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
             Vector3 light=aw_center(m,c+AW_CELLS);light.y+=0.09f;
             aw_rock(&scenery,light,0.11f,0.16f,c,(Color){94,244,216,255},rank,2);
         }
-        if(mat==AW_DEEP){
-            for(int k=0;k<4;k++)v[k].y=-0.12f;aw_top(&water,v,4,WHITE,rank,0);
-        }
+
         if(mat==AW_SHALLOW||mat==AW_ICE){
             Vector3 p=aw_center(m,c);p.y+=0.025f;
             for(int k=0;k<3;k++){
@@ -224,12 +285,12 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         }
         int canonical=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c;
         uint32_t h=aw_hash(m->seed^(uint32_t)canonical*8191u);Vector3 p=aw_center(m,c);
-        if(!t->road&&!t->tunnel){
+        if(!t->road&&!t->tunnel&&m->walkable[c]){
             float jitter=((h&255)/255.0f-0.5f)*0.75f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;p.x+=jitter;p.z-=jitter;
             if(mat==AW_FOREST){
-                aw_rock(&scenery,p,0.15f,0.9f,h,(Color){79,67,51,255},rank,0);p.y+=0.5f;
-                aw_rock(&scenery,p,0.77f,1.8f+(h%7)*0.12f,h,(Color){49,94,67,255},rank,0);p.y+=0.6f;
-                aw_rock(&scenery,p,0.54f,1.5f,h,(Color){67,121,78,255},rank,0);
+                aw_rock(&scenery,p,0.15f,0.9f,h,(Color){79,67,51,255},rank,1);p.y+=0.5f;
+                aw_rock(&scenery,p,0.77f,1.8f+(h%7)*0.12f,h,(Color){49,94,67,255},rank,1);p.y+=0.6f;
+                aw_rock(&scenery,p,0.54f,1.5f,h,(Color){67,121,78,255},rank,1);
             }else if((mat==AW_ROCK||mat==AW_SNOW||mat==AW_DIRT)&&h%4==0){
                 aw_rock(&scenery,p,0.28f+(h%13)*0.035f,0.3f+(h%9)*0.1f,h,ground,rank,0);
             }else if(mat==AW_GRASS&&h%3==0){aw_rock(&scenery,p,0.34f,0.26f,h,(Color){97,151,70,255},rank,0);}
@@ -243,6 +304,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         Vector3 p=aw_center(m,m->resources[r]);
         for(int i=0;i<5;i++){Vector3 q=p;q.x+=cosf(i*1.4f)*0.65f;q.z+=sinf(i*1.4f)*0.65f;aw_rock(&scenery,q,0.22f,0.55f+(i%3)*0.2f,i,(Color){64,205,236,255},0,2);}
     }
+    Vector3 sea[4]={{-60,-0.12f,-60},{188,-0.12f,-60},{188,-0.12f,188},{-60,-0.12f,188}};
+    aw_top(&water,sea,4,WHITE,0,0);
     s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->water=aw_upload(&water);
     s->land_shader=LoadShaderFromMemory(aw_vertex_shader,aw_land_fragment);
     s->water_shader=LoadShaderFromMemory(aw_vertex_shader,aw_water_fragment);
@@ -251,7 +314,15 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     if(s->land_reveal<0||s->water_time<0||s->cut_mode<0){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
     s->land_material=LoadMaterialDefault();s->land_material.shader=s->land_shader;
     s->water_material=LoadMaterialDefault();s->water_material.shader=s->water_shader;
-    Image coast=GenImageColor(64,64,(Color){90,90,90,255});s->coast=LoadTextureFromImage(coast);UnloadImage(coast);
+    Image coast=GenImageColor(AW_SIZE,AW_SIZE,BLACK);Color*pixels=coast.data;
+    for(int z=0;z<AW_SIZE;z++)for(int x=0;x<AW_SIZE;x++){
+        int near=0;for(int dz=-3;dz<=3;dz++)for(int dx=-3;dx<=3;dx++){
+            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=AW_SIZE||nz>=AW_SIZE)continue;
+            if(aw_world_q(m,nx+0.5f,nz+0.5f)>1.5f){int value=255-45*(abs(dx)+abs(dz));if(value>near)near=value;}
+        }
+        pixels[z*AW_SIZE+x]=(Color){near,near,near,255};
+    }
+    s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);
     s->water_material.maps[MATERIAL_MAP_DIFFUSE].texture=s->coast;s->built=1;
 }
 static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,Vector3 eye,Vector3 target,int cut){

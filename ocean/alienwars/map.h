@@ -11,7 +11,9 @@
 #define AW_VERT (AW_SIZE+1)
 #define AW_CELLS (AW_SIZE*AW_SIZE)
 #define AW_NODES (2*AW_CELLS)
-#define AW_VERSION 2
+#define AW_VERSION 3
+#define AW_SUBDIV 6
+#define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
 #define AW_TILES 12
 #define AW_ALL ((1u<<AW_TILES)-1)
@@ -22,6 +24,10 @@ typedef struct {int symmetry,floors_a,floors_b,biome,tunnels;} AwOptions;
 typedef struct {uint8_t q[4],material,road,tunnel,portal;} AwCell;
 typedef struct {
     uint32_t seed,rng,hash,wave[AW_CELLS],compatible[AW_TILES];
+    uint16_t shape_wave[AW_CELLS],shape_compatible[AW_CELLS][4][AW_SHAPES];
+    uint8_t shape_lo[AW_CELLS][4],shape_hi[AW_CELLS][4],shape_preferred[AW_CELLS][4];
+    uint8_t blend[AW_VERT*AW_VERT];
+    int shape_decisions;
     AwOptions options;
     AwCell cells[AW_CELLS];
     uint8_t walkable[AW_NODES],reachable[AW_NODES];
@@ -187,7 +193,7 @@ static int aw_layout(AwMap*m){
         AwCell*c=&m->cells[z*AW_SIZE+x];c->road=1;
         for(int k=0;k<4;k++){int vz=z+(k>=2);c->q[k]=4+aw_clamp(vz-18<46-vz?vz-18:46-vz,0,12);}
     }
-    for(int side=0;side<2;side++)for(int z=17;z<=18;z++)for(int x=28;x<=32;x++){
+    for(int side=0;side<2;side++)for(int z=17;z<=17;z++)for(int x=28;x<=32;x++){
         int i=z*AW_SIZE+x;if(side)i=AW_CELLS-1-i;
         /* Do not overwrite the sloping cell at the foot of the upper road. */
         if(z==18&&x>=31)continue;
@@ -197,13 +203,144 @@ static int aw_layout(AwMap*m){
     m->center=31*AW_SIZE+31;
     return 1;
 }
+/* Surface tiles carry four elevation sockets. The 16 corner patterns use a
+ * local low/high elevation domain; propagation matches actual elevations, not
+ * paint IDs. Shared edge samples are authoritative for render and visibility. */
+static int aw_corner_vertex(int c,int k){
+    static const int offset[4]={0,1,AW_VERT+1,AW_VERT};
+    return (c/AW_SIZE)*AW_VERT+c%AW_SIZE+offset[k];
+}
+static int aw_roof(const AwMap*m,int c){return m->cells[c].tunnel&&!m->cells[c].portal;}
+static int aw_shape_q(const AwMap*m,int c,int pattern,int corner){
+    return (pattern&(1<<corner))?m->shape_hi[c][corner]:m->shape_lo[c][corner];
+}
+static int aw_isqrt(int n){int r=0;while((r+1)*(r+1)<=n)r++;return r;}
+static int aw_shape_domains(AwMap*m){
+    int pin[AW_VERT*AW_VERT],lo[AW_VERT*AW_VERT],hi[AW_VERT*AW_VERT],preferred[AW_VERT*AW_VERT];
+    for(int v=0;v<AW_VERT*AW_VERT;v++)pin[v]=-1;
+    for(int c=0;c<AW_CELLS;c++)if(m->cells[c].road)for(int k=0;k<4;k++){
+        int v=aw_corner_vertex(c,k),q=m->cells[c].q[k];
+        if(pin[v]>=0&&pin[v]!=q)return 0;
+        pin[v]=q;m->blend[v]=255;
+    }
+    /* A tunnel mouth has both a floor socket and an elevated roof socket. Its
+     * cliff/arch adapter closes that intentional vertical difference. */
+    for(int c=0;c<AW_CELLS;c++)if(aw_roof(m,c))for(int k=0;k<4;k++){
+        int v=aw_corner_vertex(c,k);if(pin[v]<0)pin[v]=16;
+    }
+    const int islands[7][3]={{13,13,15},{51,51,15},{32,32,15},{14,44,12},{50,20,12},{28,13,10},{36,51,10}};
+    for(int v=0;v<AW_VERT*AW_VERT;v++){
+        int cv=m->options.symmetry&&v>AW_VERT*AW_VERT/2?AW_VERT*AW_VERT-1-v:v;
+        int x=cv%AW_VERT,z=cv/AW_VERT,land=-10000;
+        for(int i=0;i<7;i++){
+            int dx=x-islands[i][0],dz=z-islands[i][1],r=islands[i][2];
+            int value=r*r-dx*dx-dz*dz;if(value>land)land=value;
+        }
+        land+=(aw_noise(m->seed,x,z,5)-128)/2+(aw_noise(m->seed^913u,x,z,2)-128)/5;
+        int target=land<-24?0:land<24?2:4;
+        if(land>24){
+            for(int i=0;i<2;i++){
+                int c=m->spawns[i],dx=x-(c%AW_SIZE),dz=z-(c/AW_SIZE),d=aw_isqrt(dx*dx+dz*dz);
+                int floor=i?m->options.floors_b:m->options.floors_a;
+                int q=floor*4-(d>6?(d-6)*2:0);if(q>target)target=q;
+            }
+            for(int i=0;i<2;i++){
+                int dx=x-(i?50:14),dz=z-(i?20:44),d=aw_isqrt(dx*dx+dz*dz);
+                int q=12-(d>4?(d-4)*2:0);if(q>target)target=q;
+            }
+        }
+        if(x<2||z<2||x>62||z>62)target=0;
+        /* Earth shoulders meet the road socket instead of extruding a road
+         * column above an unrelated terrain cell. */
+        int nearest=999,roadq=0;
+        for(int dz=-3;dz<=3;dz++)for(int dx=-3;dx<=3;dx++){
+            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=AW_VERT||nz>=AW_VERT)continue;
+            int nv=nz*AW_VERT+nx,dist=dx*dx+dz*dz;
+            if(pin[nv]>=0&&dist<nearest){nearest=dist;roadq=pin[nv];}
+        }
+        if(nearest<=9){int d=aw_isqrt(nearest);target=(roadq*(4-d)+target*d)/4;}
+        target=aw_clamp(target,0,40);
+        lo[v]=target/4*4;hi[v]=lo[v]+(target%4?4:0);
+        preferred[v]=target%4>=2?hi[v]:lo[v];
+        if(pin[v]>=0)lo[v]=hi[v]=preferred[v]=pin[v];
+    }
+    for(int c=0;c<AW_CELLS;c++){
+        uint16_t domain=0;
+        for(int k=0;k<4;k++){
+            int v=aw_corner_vertex(c,k);
+            m->shape_lo[c][k]=lo[v];m->shape_hi[c][k]=hi[v];m->shape_preferred[c][k]=preferred[v];
+            if(aw_roof(m,c)){m->shape_lo[c][k]=m->shape_hi[c][k]=m->shape_preferred[c][k]=16;}
+        }
+        for(int t=0;t<AW_SHAPES;t++){
+            int unique=1;
+            for(int k=0;k<4;k++)if((t&(1<<k))&&m->shape_lo[c][k]==m->shape_hi[c][k])unique=0;
+            if(unique)domain|=1u<<t;
+        }
+        m->shape_wave[c]=domain;
+    }
+    return 1;
+}
+static void aw_shape_catalog(AwMap*m){
+    static const int edges[4][2]={{0,1},{1,2},{3,2},{0,3}};
+    for(int c=0;c<AW_CELLS;c++)for(int d=0;d<4;d++){
+        int n=aw_neighbor(c,d),e=(d+2)%4;
+        for(int a=0;a<AW_SHAPES;a++){
+            uint16_t mask=0;
+            for(int b=0;b<AW_SHAPES;b++){
+                int match=n<0||aw_roof(m,c)||aw_roof(m,n);
+                if(!match)match=aw_shape_q(m,c,a,edges[d][0])==aw_shape_q(m,n,b,edges[e][0])&&aw_shape_q(m,c,a,edges[d][1])==aw_shape_q(m,n,b,edges[e][1]);
+                if(match)mask|=1u<<b;
+            }
+            m->shape_compatible[c][d][a]=mask;
+        }
+    }
+}
+static int aw_shape_propagate(AwMap*m,int initial){
+    int queue[AW_CELLS],head=0,tail=0,count=0;uint8_t queued[AW_CELLS]={0};
+    queue[tail++]=initial;queued[initial]=1;count++;
+    while(count){
+        int c=queue[head];head=(head+1)%AW_CELLS;count--;queued[c]=0;
+        for(int d=0;d<5;d++){
+            int n=d==4?(m->options.symmetry?AW_CELLS-1-c:-1):aw_neighbor(c,d);if(n<0)continue;
+            uint16_t allowed=0,bits=m->shape_wave[c];
+            while(bits){int t=__builtin_ctz(bits);bits&=bits-1;allowed|=d==4?(1u<<(((t<<2)|(t>>2))&15)):m->shape_compatible[c][d][t];}
+            uint16_t mask=m->shape_wave[n]&allowed;if(!mask)return 0;
+            if(mask!=m->shape_wave[n]){m->shape_wave[n]=mask;m->reductions++;if(!queued[n]){queue[tail]=n;tail=(tail+1)%AW_CELLS;queued[n]=1;count++;}}
+        }
+    }
+    return 1;
+}
+static int aw_shape_wfc(AwMap*m){
+    if(!aw_shape_domains(m))return 0;aw_shape_catalog(m);
+    for(int c=0;c<AW_CELLS;c++)if(!aw_shape_propagate(m,c))return 0;
+    uint8_t recorded[AW_CELLS]={0};
+    for(;;){
+        int best=-1,entropy=99;uint32_t tie=UINT_MAX;
+        for(int c=0;c<AW_CELLS;c++){
+            int n=__builtin_popcount(m->shape_wave[c]);
+            if(n==1&&!recorded[c]){recorded[c]=1;m->order[m->order_count++]=c;}
+            uint32_t h=aw_hash(m->seed^(uint32_t)c*31u);
+            if(n>1&&(n<entropy||(n==entropy&&h<tie))){best=c;entropy=n;tie=h;}
+        }
+        if(best<0)break;
+        int weight[AW_SHAPES]={0},total=0;
+        for(int t=0;t<AW_SHAPES;t++)if(m->shape_wave[best]&(1u<<t)){
+            int matches=0;for(int k=0;k<4;k++)matches+=aw_shape_q(m,best,t,k)==m->shape_preferred[best][k];
+            weight[t]=1<<matches;total+=weight[t];
+        }
+        int pick=aw_random(m)%total,t=0;while(pick>=weight[t])pick-=weight[t++];
+        m->shape_wave[best]=1u<<t;m->shape_decisions++;if(!aw_shape_propagate(m,best))return 0;
+    }
+    for(int c=0;c<AW_CELLS;c++)for(int k=0;k<4;k++)m->cells[c].q[k]=aw_shape_q(m,c,__builtin_ctz(m->shape_wave[c]),k);
+    return 1;
+}
 static int aw_material_ok(int a,int b){
     if((a==AW_LAVA&&(b==AW_FOREST||b==AW_SNOW||b==AW_ICE||b==AW_SHALLOW||b==AW_DEEP))||(b==AW_LAVA&&(a==AW_FOREST||a==AW_SNOW||a==AW_ICE||a==AW_SHALLOW||a==AW_DEEP)))return 0;
     if((a==AW_SAND&&(b==AW_SNOW||b==AW_ICE))||(b==AW_SAND&&(a==AW_SNOW||a==AW_ICE)))return 0;
     return 1;
 }
 static uint32_t aw_domain(AwMap*m,int c){
-    AwCell*t=&m->cells[c];if(t->road)return 1u<<AW_ROAD;if(!t->q[0])return 1u<<AW_DEEP;
+    AwCell*t=&m->cells[c];if(t->road)return 1u<<AW_ROAD;if(!(t->q[0]|t->q[1]|t->q[2]|t->q[3]))return 1u<<AW_DEEP;
     int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
     int climate=aw_noise(m->seed^71391u,x,z,12),wet=aw_noise(m->seed^317u,x,z,7),biome=m->options.biome;
     if(!biome)biome=climate<145?1:climate<190?2:climate<220?3:4;
@@ -248,12 +385,10 @@ static int aw_wfc(AwMap*m){
     for(int a=0;a<AW_TILES;a++){m->compatible[a]=0;for(int b=0;b<AW_TILES;b++)if(aw_material_ok(a,b))m->compatible[a]|=1u<<b;}
     for(int c=0;c<AW_CELLS;c++)m->wave[c]=aw_domain(m,c);
     for(int c=0;c<AW_CELLS;c++)if(!aw_propagate(m,c))return 0;
-    uint8_t recorded[AW_CELLS]={0};
     for(;;){
         int best=-1,entropy=99;uint32_t tie=UINT_MAX;
         for(int c=0;c<AW_CELLS;c++){
             int n=__builtin_popcount(m->wave[c]);
-            if(n==1&&!recorded[c]){recorded[c]=1;m->order[m->order_count++]=c;}
             uint32_t h=aw_hash(m->seed^(uint32_t)c*7919u);
             if(n>1&&(n<entropy||(n==entropy&&h<tie))){best=c;entropy=n;tie=h;}
         }
@@ -326,7 +461,11 @@ static int aw_validate(AwMap*m){
         if(t->tunnel&&!t->portal)for(int k=0;k<4;k++)if(t->q[k]<12)return 0;
         if(t->portal)for(int k=0;k<4;k++)if(t->q[k]!=4)return 0;
     }
-    for(int c=0;c<AW_CELLS;c++)for(int d=0;d<4;d++){int n=aw_neighbor(c,d);if(n>=0&&!aw_material_ok(m->cells[c].material,m->cells[n].material))return 0;}
+    for(int c=0;c<AW_CELLS;c++)for(int d=0;d<4;d++){
+        int n=aw_neighbor(c,d);if(n<0)continue;
+        if(!aw_material_ok(m->cells[c].material,m->cells[n].material))return 0;
+        if(!aw_roof(m,c)&&!aw_roof(m,n)&&!aw_edge_matches(m,c,n,d))return 0;
+    }
     aw_navigation(m);
     for(int s=0;s<2;s++){int floor=s?m->options.floors_b:m->options.floors_a;for(int k=0;k<4;k++)if(m->cells[m->spawns[s]].q[k]!=floor*4)return 0;}
     if(!m->reachable[m->spawns[1]]||!m->reachable[m->center])return 0;
@@ -343,15 +482,35 @@ static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
     memset(m,0,sizeof(*m));m->seed=seed;m->rng=seed;m->options=options;m->attempts=1;
-    if(!aw_layout(m)||!aw_wfc(m))return 0;
+    if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_wfc(m))return 0;
     m->valid=aw_validate(m);m->hash=aw_fingerprint(m);return m->valid;
 }
 static int aw_generate(AwMap*m,uint32_t seed){return aw_generate_options(m,seed,aw_defaults());}
 /* Visibility uses the same triangular surface and tunnel void as navigation.
  * Coordinates here are grid units horizontally and quarter-floors vertically. */
-static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
+static float aw_lerp(float a,float b,float t){return a+(b-a)*t;}
+static float aw_bilinear(float a,float b,float c,float d,float x,float z){return aw_lerp(aw_lerp(a,b,x),aw_lerp(d,c,x),z);}
+/* Beveled cliff cross-section: flat shelves with a shaped transition through
+ * each height band. Road sockets retain their linear grade. */
+static float aw_tile_sample_q(const AwMap*m,int c,float x,float z){
     const uint8_t*q=m->cells[c].q;
-    return fx>=fz?q[0]+(q[1]-q[0])*fx+(q[2]-q[1])*fz:q[0]+(q[2]-q[3])*fx+(q[3]-q[0])*fz;
+    float height=aw_bilinear(q[0],q[1],q[2],q[3],x,z);
+    float support=aw_bilinear(m->blend[aw_corner_vertex(c,0)],m->blend[aw_corner_vertex(c,1)],m->blend[aw_corner_vertex(c,2)],m->blend[aw_corner_vertex(c,3)],x,z)/255.0f;
+    if(m->cells[c].road||aw_roof(m,c))support=1;
+    float band=floorf(height/4),t=height/4-band;
+    t=fminf(1,fmaxf(0,(t-0.27f)/0.46f));t=t*t*(3-2*t);
+    float shaped=(band+t)*4;
+    return aw_lerp(shaped,height,support);
+}
+/* The same tessellated triangles are queried by collision, scout height and
+ * camera occlusion. Shared boundaries have exactly the same sample profile. */
+static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
+    float sx=fminf(1,fmaxf(0,fx))*AW_SUBDIV,sz=fminf(1,fmaxf(0,fz))*AW_SUBDIV;
+    int ix=aw_clamp((int)sx,0,AW_SUBDIV-1),iz=aw_clamp((int)sz,0,AW_SUBDIV-1);
+    float x=sx-ix,z=sz-iz,unit=1.0f/AW_SUBDIV;
+    float a=aw_tile_sample_q(m,c,ix*unit,iz*unit),b=aw_tile_sample_q(m,c,(ix+1)*unit,iz*unit);
+    float d=aw_tile_sample_q(m,c,ix*unit,(iz+1)*unit),e=aw_tile_sample_q(m,c,(ix+1)*unit,(iz+1)*unit);
+    return x>=z?a+(b-a)*x+(e-b)*z:a+(e-d)*x+(d-a)*z;
 }
 static int aw_solid(const AwMap*m,float x,float yq,float z){
     if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE||yq<0)return 0;

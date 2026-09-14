@@ -6,10 +6,14 @@ WebAssembly. The scout follows a scripted weighted path. Combat, harvesting,
 and an AlienWars RL policy are not implemented. The trained
 [Breakout baseline](https://rozgo.github.io/alienwars-gym/) is preserved.
 
-## World contract — generator version 2
+## World contract — generator version 3
 
 - 64 × 64 cells, two world units per cell, up to ten elevated floors. Each floor
   is three world units; roads use quarter-floor increments.
+- Natural terrain uses connected 3D tile shapes, never independent column tops.
+  Each tile carries four elevation sockets and a sampled boundary profile.
+  WFC resolves flat, slope, convex/concave cliff and saddle configurations.
+  Beveled height transitions and interpolated materials continue across tile edges.
 - Surface plus one overlapping tunnel span per cell. The central crossing has
   an upper road and a real underground passage, portals, ceiling and sidewalls.
   This is a two-span world, not an unrestricted multistory voxel building system.
@@ -42,12 +46,18 @@ The hybrid generator separates required global connections from local assembly:
    Two- and four-cell-width sockets must match; portals stay narrow. In symmetric
    maps, opposite modules couple with reversed sockets. A module's conservative
    cell footprint is rectangular: wider modules occupy four cells across.
-4. **Terrain WFC** resolves twelve material types inside biome domains. Neighbor
+4. **Shape WFC** restores geometric adjacency. Sixteen corner patterns select
+   low/high elevation sockets from the local height domains. Ordinary neighbors
+   must agree on both edge elevations; rotational partners share rotated patterns.
+   Road vertices pin the same geometry used by the surrounding terrain, with
+   earth shoulders transitioning into the road. Tunnel-mouth tiles additionally
+   carry a raised roof and low passage socket, joined by explicit cliff/arch adapters.
+5. **Material WFC** resolves twelve material types inside biome domains. Neighbor
    constraints exclude lava touching forest/ice/snow/water and sand directly
    touching snow/ice. Rock provides a neutral transition. Rotational pairs share
    domains and choices. In a uniform compatible palette this phase can have
    independent choices; constrained biome boundaries propagate exclusions.
-5. Validate the actual navigation graph and reject a failed map. There is no
+6. Validate the actual navigation graph and reject a failed map. There is no
    silently repaired or unchecked fallback. The current grammar uses one solve.
 
 WFC can build structures, not only decorate terrain. A strategic plan supplies
@@ -55,9 +65,9 @@ required connectivity because local socket matching alone does not guarantee
 base-to-base reachability. The [original WFC implementation](https://github.com/mxgmn/WaveFunctionCollapse#constrained-synthesis)
 explicitly supports combining constraints with other generators.
 
-The assembly animation replays the material solver's recorded cell-resolution
-order, including pinned structural tiles. It does not animate the separate road
-and tunnel solving steps. Statistics expose terrain and structural decisions
+The assembly animation replays the shape solver's recorded cell-resolution
+order, including pinned structural tiles and propagated edge constraints. It
+does not animate the separate road, tunnel or material solving steps. Statistics expose terrain and structural decisions
 separately. It is a replay, not a live time-sliced solver.
 
 ## Terrain and movement
@@ -89,11 +99,23 @@ The overlay shows connected surfaces in mint and isolated surfaces in coral.
 
 ## Rendering and camera visibility
 
-Batched triangle meshes share exact road vertex elevations. Exposed cliff faces
-close the columns, with tunnel openings subtracted. Covered cells have a separate
-floor, ceiling and sidewalls; the upper road remains independently navigable.
-Procedural materials distinguish terrain, forests, ice, rocks, resources and water.
-All geometry is original code; the reference game images are not bundled assets.
+Terrain is a continuous mesh of shaped tiles. A shared corner-height field is
+resolved by WFC, then each tile samples a six-by-six set of quads. The cliff
+cross-section has flat shelves and a beveled transition within each height band.
+Road sockets retain their linear grades; a shared support weight joins adjacent
+terrain to those grades. Ordinary tiles share the **entire** boundary profile,
+not only the endpoint heights. Normals sample the same world surface on both
+sides, and vertex colors blend neighboring materials to avoid painted checkerboards.
+
+The renderer, scout-height query and camera collision evaluate the exact same
+triangulated surface. Tunnel-mouth adapters sample both neighboring profiles,
+close the height difference, and subtract the passage aperture. The covered
+cells have a separate floor, ceiling and sidewalls. A continuous water plane
+and shoreline mask replace the rectangular water-tile border.
+
+**Tile boundaries** reveals the actual shared surface edges for inspection.
+It changes only rendering. Rocks and trees sit on the shaped terrain; all
+geometry is original code and no reference game assets are bundled.
 
 Auto cutaway tests the orthographic camera ray toward the scout against terrain
 solids, excluding the tunnel void. When blocked, the terrain shader cuts a narrow
@@ -110,9 +132,11 @@ rendering only, never navigation, terrain hashes or collision.
 including the complete symmetry × ten floors × five palettes × tunnel toggle
 matrix. Checks cover rotational corner/material/structure equality, all road
 lanes, dual spans, portal-only transitions, symmetric graph edges, path cost and
-continuity, a weighted-path fixture, invalid IDs/endpoints, disconnected tunnels,
-contradictory material/elevation sockets, and actual camera occlusion through a
-roof versus through the tunnel void. All twelve terrain types occur in the suite.
+continuity, complete edge profiles sampled across configurations, a weighted-path fixture,
+invalid IDs/endpoints, disconnected tunnels,
+contradictory shape/material/elevation sockets, and actual camera occlusion through a
+roof versus through the tunnel void. A deliberately mismatched ordinary tile edge must fail validation even when
+strategic access still exists. All twelve terrain types occur in the suite.
 
 ```sh
 ./build.sh alienwars build/maplab --cpu --debug

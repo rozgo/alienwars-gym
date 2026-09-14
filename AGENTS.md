@@ -142,3 +142,12 @@ disconnected maps. Keep cosmetic props separate from authoritative collision.
 The assembly view replays recorded cell resolution; do not call it a live solver
 or claim it visualizes retries. New global-layout, combat or RL behavior needs
 an explicit environment contract and appropriate validation.
+
+Natural terrain must retain connected 3D tile geometry: shared corner/edge
+profiles, shaped cliff transitions, slopes and continuous shorelines. Do not
+replace it with independent flat-topped columns or use material-only WFC as a
+substitute for geometric tile constraints. Compare real browser renders with the
+accepted Map Lab v1 contour quality (source/artifacts at `03b52577`) when changing
+terrain topology. Test complete boundary profiles and terrain/road/tunnel joins;
+passing pathfinding tests alone is not sufficient visual acceptance. Use the
+Tile boundaries inspection mode to check actual mesh continuation.

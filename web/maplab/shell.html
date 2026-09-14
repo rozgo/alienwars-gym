@@ -102,13 +102,13 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 002</span></a>
+    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 003</span></a>
     <nav aria-label="Project"><a href="../">Breakout experiment</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 02</p><h1>Strata Frontier</h1><p>Layered worlds · 64 × 64 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 03</p><h1>Strata Frontier</h1><p>Connected terrain · 64 × 64 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
@@ -145,6 +145,7 @@
       </section>
       <section class="panel-section">
         <h2 class="section-title">Inspect terrain <small>03 / EXPLORE</small></h2>
+        <label class="toggle" for="tile-boundaries">Tile boundaries<input type="checkbox" id="tile-boundaries"></label>
         <label class="toggle" for="walkability">Walkability overlay<input type="checkbox" id="walkability"></label>
         <label class="toggle" for="path">Scout route<input type="checkbox" id="path" checked></label>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
@@ -168,13 +169,13 @@
         <dl>
           <div><dt>Walkable spans</dt><dd id="walk-count">—</dd></div>
           <div><dt>Base-to-base path</dt><dd id="path-length">—</dd></div>
-          <div><dt>WFC decisions</dt><dd id="decisions">—</dd></div>
+          <div><dt>Shape WFC decisions</dt><dd id="shape-decisions">—</dd></div><div><dt>Material WFC decisions</dt><dd id="decisions">—</dd></div>
           <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Tunnel spans</dt><dd id="tunnel-count">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
         </dl>
       </section>
       <section class="panel-section">
-        <details><summary>How this world is built</summary><p>A route plan connects the bases and crossing. WFC assembles flat road and ramp modules with matching elevations, matches straight, widening, chamber and narrowing tunnel modules, then resolves terrain materials using neighbor rules. The tunnel is a second navigable span beneath the crossing.</p><p>The assembly view replays the solver’s recorded resolution order, including fixed layout tiles and propagated choices. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v2 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <details><summary>How this world is built</summary><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. A route plan and separate road/tunnel WFC connect the bases and crossing; terrain colors blend at tile seams. The tunnel is a second navigable span beneath the crossing.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
+        <p class="provenance">Generator v3 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>
@@ -186,6 +187,7 @@
     let ready = false, playbackPaused = false, lastReport = null;
     $('seed').value = String(currentSeed);
     $('walkability').checked = params.get('grid') === '1';
+    $('tile-boundaries').checked=params.get('tiles')==='1';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
@@ -212,6 +214,7 @@
       if ($('walkability').checked) url.searchParams.set('grid','1'); else url.searchParams.delete('grid');
       if (!$('path').checked) url.searchParams.set('path','0'); else url.searchParams.delete('path');
       for(const [key,value] of Object.entries({sym:$('symmetry').value,a:$('floor-a').value,b:$('floor-b').value,biome:$('biome').value,tunnels:Number($('tunnels').checked),cut:$('cutaway').value}))url.searchParams.set(key,String(value));
+      if($('tile-boundaries').checked)url.searchParams.set('tiles','1');else url.searchParams.delete('tiles');
       history.replaceState(null, '', url);
     }
     function resizeCanvas() {
@@ -241,6 +244,7 @@
           Module._aw_option(1,Number($('path').checked));
           Module._aw_option(2,Number($('scout-pause').checked));
           Module._aw_option(4,Number($('cutaway').value));
+          Module._aw_option(6,Number($('tile-boundaries').checked));
         });
         syncSettings();syncUrl();
       }
@@ -248,7 +252,7 @@
       if(changed) {
         $('walk-count').textContent=report.walk.toLocaleString();
         $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
-        $('decisions').textContent=report.decisions;
+        $('decisions').textContent=report.decisions;$('shape-decisions').textContent=report.shapes;
         $('generation-ms').innerHTML=`${Math.round(report.milliseconds)} <small>ms</small>`;
         $('nav-status').textContent='Bases, all roads & crossing connected';
         $('structural').textContent=report.structural; $('tunnel-count').textContent=report.tunnels;
@@ -297,6 +301,7 @@
     $('watch').addEventListener('click',()=>Module._aw_watch());
     $('pause').addEventListener('click',()=>Module._aw_option(3,Number(!playbackPaused)));
     $('step').addEventListener('click',()=>Module._aw_step());
+    $('tile-boundaries').addEventListener('change',()=>{Module._aw_option(6,Number($('tile-boundaries').checked));syncUrl();});
     $('walkability').addEventListener('change',()=>{Module._aw_option(0,Number($('walkability').checked));$('overlay-key').hidden=!$('walkability').checked;syncUrl();});
     $('path').addEventListener('change',()=>{Module._aw_option(1,Number($('path').checked));syncUrl();});
     $('scout-pause').addEventListener('change',()=>Module._aw_option(2,Number($('scout-pause').checked)));
