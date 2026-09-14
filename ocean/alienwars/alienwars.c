@@ -93,6 +93,7 @@ AW_EXPORT void aw_resize(int width,int height) {
 }
 
 static void aw_draw_markers(void) {
+    if(cut_mode==2)return; /* Surface beacons are outside the underground section. */
     for(int s=0;s<2;s++){
         Vector3 p=aw_center(&world,world.spawns[s]);
         Color accent=s?(Color){249,161,88,255}:(Color){101,225,222,255};
