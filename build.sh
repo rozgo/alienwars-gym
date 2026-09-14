@@ -91,7 +91,7 @@ else
     OMP_PREFIX="$(brew --prefix libomp)"
     OMP_FLAGS=(-Xclang -fopenmp -I"$OMP_PREFIX/include" -L"$OMP_PREFIX/lib" -lomp)
     OMP_LIB=-lomp
-    SANITIZE_FLAGS=()
+    SANITIZE_FLAGS=(-fsanitize=address,undefined -fno-omit-frame-pointer)
     STANDALONE_LDFLAGS=(-framework Cocoa -framework IOKit -framework CoreVideo -framework OpenGL)
 fi
 
@@ -205,7 +205,9 @@ else
 fi
 
 # src/ocean.cu compiles only this env's custom net (PUFFER_NETHACK, PUFFER_NMMO3, …).
-EXTRA_CFLAGS+=(-DPUFFER_${ENV^^})
+# macOS ships Bash 3.2, which does not implement ${var^^}.
+ENV_DEFINE=$(printf '%s' "$ENV" | LC_ALL=C tr '[:lower:]' '[:upper:]')
+EXTRA_CFLAGS+=(-DPUFFER_$ENV_DEFINE)
 
 case "$ENV" in
     osrs_*)

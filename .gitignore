@@ -197,3 +197,15 @@ resources/trailer/shots/*.mp4
 .refactor-snapshots/
 
 vendor/fast-nle/
+
+# AlienWars local tooling, artifacts, and native executables
+/.local/
+/outputs/
+/puffer
+/breakout
+/minimal
+/seethestars
+/cache_data
+*.dSYM/
+.env.*
+!.env.example
