@@ -27,7 +27,8 @@
     nav { display:flex; gap:24px; font-size:14px; color:var(--muted); }
     nav a { text-decoration:none; }
     .workspace { display:grid; grid-template-columns:minmax(0,1fr) 310px; min-height:680px; height:calc(100svh - 70px); }
-    .viewport { position:relative; min-width:0; overflow:hidden; background:#070d12; }
+    .viewport { position:relative; min-width:0; overflow:hidden; background:#070d12; isolation:isolate; }
+    .map-heading,.view-controls,.viewport-footer { z-index:2; transform:translateZ(0); }
     canvas { display:block; width:100%!important; height:100%!important; outline-offset:-4px!important; touch-action:none; }
     .map-heading { position:absolute; top:24px; left:28px; pointer-events:none; }
     .eyebrow { margin:0 0 5px; color:var(--accent); font:12px/1.5 ui-monospace,monospace; letter-spacing:.13em; text-transform:uppercase; }
