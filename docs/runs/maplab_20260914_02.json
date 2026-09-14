@@ -1,0 +1,109 @@
+{
+  "milestone": "Layered terrain and structural WFC",
+  "date": "2026-09-14",
+  "generator_version": 2,
+  "source_commit": "b2e478efe6ee6cb7a3d27b2a8859535d834ec6b1",
+  "source_dirty": false,
+  "toolchain": {
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+    "raylib": "5.5"
+  },
+  "validation": {
+    "generator_version": 2,
+    "native": "MAP_TEST version=2 seeds=256 digest=c5bdafdb terrains=12 max_structure=84 PASS",
+    "wasm": "MAP_TEST version=2 seeds=256 digest=c5bdafdb terrains=12 max_structure=84 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "2",
+        "hash": "e9048534",
+        "walk": "2949",
+        "reached": "807",
+        "path": "162",
+        "decisions": "2217",
+        "attempts": "1",
+        "structure": "36",
+        "tunnels": "16",
+        "cost": "1792"
+      },
+      {
+        "seed": "1",
+        "version": "2",
+        "hash": "8b422923",
+        "walk": "3055",
+        "reached": "1333",
+        "path": "156",
+        "decisions": "2360",
+        "attempts": "1",
+        "structure": "38",
+        "tunnels": "16",
+        "cost": "1720"
+      },
+      {
+        "seed": "73",
+        "version": "2",
+        "hash": "a12e9497",
+        "walk": "2966",
+        "reached": "951",
+        "path": "186",
+        "decisions": "2242",
+        "attempts": "1",
+        "structure": "34",
+        "tunnels": "12",
+        "cost": "2008"
+      },
+      {
+        "seed": "4294967295",
+        "version": "2",
+        "hash": "b440f483",
+        "walk": "3070",
+        "reached": "1688",
+        "path": "170",
+        "decisions": "2347",
+        "attempts": "1",
+        "structure": "41",
+        "tunnels": "16",
+        "cost": "1874"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "browser_checks": {
+    "browser": "Chrome, WebGL 2",
+    "symmetric_floor_10": "passed",
+    "asymmetric_floors_10_and_3": "passed",
+    "five_palettes": "passed",
+    "tunnels_disabled": "zero spans; inspector disabled",
+    "auto_cutaway": "underground scout visible; solid mode occludes it",
+    "assembly_single_step": {
+      "before": 144,
+      "after": 145
+    },
+    "shader_or_runtime_errors": false,
+    "known_raylib_extension_warnings": [
+      "VAO extension unavailable",
+      "NPOT extension unavailable"
+    ]
+  },
+  "limits": [
+    "Strategic route templates remain bounded; WFC selects road elevation and tunnel width modules, not an arbitrary connection graph.",
+    "Surface plus one tunnel span per cell; no unrestricted multistory voxel construction.",
+    "The scout is scripted; combat and the AlienWars RL contract remain future work."
+  ],
+  "breakout_artifacts_unchanged": true,
+  "artifacts": {
+    "index.html": {
+      "bytes": 22375,
+      "sha256": "a646c9f0181bc32ba8da2e8be6c71fe153379c177a93e8342169f1930bdd526d"
+    },
+    "maplab.js": {
+      "bytes": 230077,
+      "sha256": "85be3432525b5f22b1f03cdbbf3f0e96753c1a159ebfd543cc4ef2dbfcda9a23"
+    },
+    "maplab.wasm": {
+      "bytes": 193746,
+      "sha256": "22fa8dd940a4fba12c1b23a433023fb231cddac1719049801a3fb9c451436b5a"
+    }
+  }
+}
