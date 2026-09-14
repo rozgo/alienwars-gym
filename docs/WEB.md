@@ -49,8 +49,9 @@ PUFFER_WEB_SHELL=web/shell.html ./build.sh breakout --web
 ```
 
 `PUFFER_WEB_SHELL` is a small project addition; the default remains upstream's
-shell. Published builds omit source maps. The simulation, policy architecture,
-gameplay, action handling and rendering implementation are unchanged.
+shell. Published builds omit source maps. Breakout's web renderer leaves Escape
+and Tab to the browser; desktop shortcuts are preserved. The simulation, policy
+architecture and gameplay are unchanged.
 
 The policy is 64,768 bytes, with SHA-256
 `868fb8b97a85946141bdc4a50b2e6bd20b0d9be3c4df114aaa1fb2aed95f08d4`.

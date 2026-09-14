@@ -587,12 +587,15 @@ void puf_render(Breakout* env) {
 
     Client* client = env->client;
 
+#ifndef PLATFORM_WEB
+    // In a browser Escape exits fullscreen and Tab navigates page controls.
     if (IsKeyDown(KEY_ESCAPE)) {
         exit(0);
     }
     if (IsKeyPressed(KEY_TAB)) {
         ToggleFullscreen();
     }
+#endif
     breakout_human_controls(env);
 
     BeginDrawing();

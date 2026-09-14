@@ -156,7 +156,7 @@
     document.getElementById('restart').addEventListener('click', () => location.reload());
     fullscreenButton.addEventListener('click', async () => {
       try { await document.getElementById('screen').requestFullscreen(); Module.canvas.focus(); }
-      catch (error) { statusText.textContent = 'Fullscreen unavailable; the policy keeps running'; }
+      catch (error) { console.warn('Fullscreen request failed:', error); statusText.textContent = 'Fullscreen unavailable; the policy keeps running'; }
     });
     window.addEventListener('error', (event) => { if (!initialized) fail(event.message || 'Runtime failed to load'); });
     window.addEventListener('unhandledrejection', (event) => fail(event.reason));
