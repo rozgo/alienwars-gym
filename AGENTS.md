@@ -134,10 +134,10 @@ compiled Pages artifacts are an explicit exception to the general rule keeping
 generated binaries out of Git; credentials, SDKs, raw logs and other build
 products remain ignored. Do not publish an untrained fallback as a trained demo.
 
-For Map Lab changes, follow `docs/MAPLAB.md`. Keep the fixed strategic anchors,
-WFC constraints, height surfaces, navigation and renderer coherent. Record a
-generator-version change when seed outputs change. Validate cardinal edge
-connections, all ramp lanes, resources and paths; test contradictions and
+For Map Lab changes, follow `docs/MAPLAB.md`. Keep the strategic route plan,
+road/tunnel/material WFC constraints, height surfaces, navigation and renderer coherent. Record a
+generator-version change when seed outputs change. Validate rotational symmetry, cardinal edge
+connections, all road lanes through floor 10, tunnel clearance and portals, resources and paths; test contradictions and
 disconnected maps. Keep cosmetic props separate from authoritative collision.
 The assembly view replays recorded cell resolution; do not call it a live solver
 or claim it visualizes retries. New global-layout, combat or RL behavior needs

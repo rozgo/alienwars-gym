@@ -31,7 +31,7 @@ run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined',
      '-fno-omit-frame-pointer','-Wall','-Wextra','-I.',source,'-o','build/map-test'])
 native = run(['build/map-test','256'])
 print(native)
-run([emcc,'-std=c11','-O3','-I.',source,'-o','build/map-test.js',
+run([emcc,'-std=c11','-O3','-I.',source,'-lm','-o','build/map-test.js',
      '-sSTACK_SIZE=1MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
 wasm = run(['node','build/map-test.js','256'])
 print(wasm)
@@ -77,11 +77,11 @@ run(['node','--check','build/maplab-inline.js'])
 run(['node','--check','docs/maplab/maplab.js'])
 matches = []
 for seed in [0, 1, 73, 4294967295]:
-    native_line = run(['build/maplab','--headless',f'--seed={seed}'])
-    web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}'])
+    native_line = run(['build/maplab','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
+    web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
-report = {'generator_version':1,'native':native,'wasm':wasm,
+report = {'generator_version':2,'native':native,'wasm':wasm,
           'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
           'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')

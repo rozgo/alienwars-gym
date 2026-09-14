@@ -3,8 +3,10 @@
 A native C/CUDA reinforcement-learning workspace based on **PufferLib 5.0**.
 The first baseline is upstream **Breakout**: train on an NVIDIA GPU, then watch
 the learned policy run in your browser through Raylib and WebAssembly.
-The AlienWars **Map Lab** now generates seeded 3D terrain with WFC tiles,
-validates navigation and runs a scripted scout. Combat and AlienWars policy
+The AlienWars **Map Lab** generates symmetric or asymmetric 3D worlds with
+WFC road ramps, tunnel modules and terrain tiles. Bases can stand ten floors
+high, with connected roads, weighted navigation and automatic tunnel cutaways.
+A scripted scout tests the routes. Combat and AlienWars policy
 training are the next implementation stage.
 
 **[Explore the 3D Map Lab](https://rozgo.github.io/alienwars-gym/maplab/?seed=73)**

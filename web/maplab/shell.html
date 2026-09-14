@@ -11,9 +11,9 @@
     :root { color-scheme: dark; --bg:#0b1219; --panel:#101b24; --line:#293943; --ink:#e4eceb; --muted:#a1b4bb; --accent:#8ae6ce; --gold:#e8bc70; }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); background:var(--bg); font:16px/1.5 system-ui,-apple-system,sans-serif; }
-    button,input { font:inherit; }
-    button,a,input,summary { -webkit-tap-highlight-color:transparent; }
-    button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible,canvas:focus-visible { outline:2px solid var(--accent); outline-offset:4px; }
+    button,input,select { font:inherit; }
+    button,a,input,select,summary { -webkit-tap-highlight-color:transparent; }
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,canvas:focus-visible { outline:2px solid var(--accent); outline-offset:4px; }
     a { color:inherit; text-underline-offset:4px; }
     a:hover { color:var(--accent); }
     button { color:var(--ink); background:#172630; border:1px solid #40525e; border-radius:5px; cursor:pointer; min-height:42px; padding:8px 12px; font-size:14px; }
@@ -52,6 +52,10 @@
     label { font-size:14px; }
     .seed-row { display:flex; gap:7px; margin:7px 0 10px; }
     input[type=text] { width:100%; min-width:0; color:var(--ink); background:#0a151d; border:1px solid #40525e; border-radius:5px; padding:10px; font:16px ui-monospace,monospace; }
+    select,input[type=number] { width:100%; min-height:40px; margin:6px 0 10px; padding:7px; background:#0a151d; color:var(--ink); border:1px solid #40525e; border-radius:5px; }
+    .floor-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .terrain-key { display:grid; grid-template-columns:1fr 1fr; gap:5px; font-size:12px; margin-top:12px; }
+    .terrain-key i { display:inline-block; width:9px; height:9px; margin-right:6px; background:var(--terrain); }
     .seed-row button { flex-shrink:0; }
     .wide { width:100%; }
     .seed-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -104,7 +108,7 @@
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 01</p><h1>Basalt Reach</h1><p>Rocky plateaus · 48 × 48 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 02</p><h1>Strata Frontier</h1><p>Layered worlds · 64 × 64 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
@@ -112,7 +116,7 @@
       </div>
       <div class="viewport-footer">
         <div><div class="legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch gold"></i>Scout route</span></div><p class="gesture-help">Drag to orbit · Shift-drag to pan · Scroll to zoom</p></div>
-        <div class="scout">NAVIGATION SCOUT / A ↔ B<span>Scripted path · Terrain validation</span></div>
+        <div class="scout">NAVIGATION SCOUT / A ↔ B<span><span id="scout-status">Scripted path · Terrain validation</span></span></div>
       </div>
       <div class="loading" id="loading" role="status"><p id="loading-text">Preparing the map…</p><progress aria-label="Loading map runtime"></progress><small>Generated and rendered on your device.</small></div>
     </section>
@@ -122,16 +126,21 @@
         <form id="seed-form">
           <label for="seed">Seed number</label>
           <div class="seed-row"><input id="seed" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="10" required value="73" autocomplete="off" spellcheck="false"><button type="submit" id="apply">Load</button></div>
+          <label for="symmetry">Layout</label>
+          <select id="symmetry"><option value="1">Symmetric · 180° rotation</option><option value="0">Asymmetric · independent bases</option></select>
+          <div class="floor-row"><label for="floor-a">Base A floor<input id="floor-a" type="number" min="1" max="10" value="6" required></label><label for="floor-b">Base B floor<input id="floor-b" type="number" min="1" max="10" value="6" required></label></div>
+          <label for="biome">Terrain palette</label><select id="biome"><option value="0">Mixed biomes</option><option value="1">Temperate</option><option value="2">Desert</option><option value="3">Frozen</option><option value="4">Volcanic</option></select>
+          <label class="toggle" for="tunnels">Tunnel crossing<input type="checkbox" id="tunnels" checked></label>
         </form>
         <div class="seed-actions"><button id="new-seed">New world</button><button id="share">Copy seed link</button></div>
         <p id="seed-error" class="error" role="alert" hidden></p>
-        <p class="seed-note">The same seed rebuilds the same terrain.</p>
+        <p class="seed-note">Seed + settings rebuild the same world. Roads climb to any base floor from 1 to 10.</p>
       </section>
       <section class="panel-section">
         <h2 class="section-title">Tile assembly <small>02 / OBSERVE</small></h2>
         <button class="primary wide" id="watch">Watch generation</button>
-        <div class="assembly"><span id="assembly-status">Preparing</span><strong id="resolved">0 / 2,304</strong></div>
-        <progress id="assembly-progress" value="0" max="2304" aria-label="Resolved tiles"></progress>
+        <div class="assembly"><span id="assembly-status">Preparing</span><strong id="resolved">0 / 4,096</strong></div>
+        <progress id="assembly-progress" value="0" max="4096" aria-label="Resolved tiles"></progress>
         <div class="playback" id="playback" hidden><button id="pause">Pause</button><button id="step">Step one tile</button></div>
       </section>
       <section class="panel-section">
@@ -139,21 +148,33 @@
         <label class="toggle" for="walkability">Walkability overlay<input type="checkbox" id="walkability"></label>
         <label class="toggle" for="path">Scout route<input type="checkbox" id="path" checked></label>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
-        <p class="seed-note" id="overlay-key" hidden>Mint: connected ground · Amber: ramps · Red: isolated ground</p>
+        <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
+        <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Open tunnel roofs</option><option value="0">Off · solid terrain</option></select>
+        <button id="inspect-tunnel" class="wide">Inspect tunnel</button>
+        <p id="cut-status" class="seed-note" role="status">Cutaway ready</p>
+        <p class="seed-note" id="overlay-key" hidden>Mint: connected surface · Coral: isolated surface</p>
+        <details><summary>Terrain &amp; movement</summary><div class="terrain-key">
+          <span style="--terrain:#678e53"><i></i>Grass · 12</span><span style="--terrain:#3a6d4b"><i></i>Forest · 19</span>
+          <span style="--terrain:#8c7050"><i></i>Soil · 13</span><span style="--terrain:#cbab6b"><i></i>Sand · 18</span>
+          <span style="--terrain:#777f83"><i></i>Rock · 16</span><span style="--terrain:#d1e1e6"><i></i>Snow · 20</span>
+          <span style="--terrain:#78bed1"><i></i>Ice · 23</span><span style="--terrain:#5f5241"><i></i>Mud · 28</span>
+          <span style="--terrain:#43858f"><i></i>Shallows · 34</span><span style="--terrain:#5b6766"><i></i>Road · 10</span>
+          <span style="--terrain:#204452"><i></i>Deep water · blocked</span><span style="--terrain:#f25b1c"><i></i>Lava · blocked</span>
+        </div><p>Lower cost is easier travel. Climbing adds cost. Trees and rocks are decorative.</p></details>
       </section>
       <section class="panel-section">
         <h2 class="section-title">Map checks <small>04 / VALIDATE</small></h2>
         <p class="nav-status" id="nav-status" role="status">Checking routes…</p>
         <dl>
-          <div><dt>Walkable tiles</dt><dd id="walk-count">—</dd></div>
+          <div><dt>Walkable spans</dt><dd id="walk-count">—</dd></div>
           <div><dt>Base-to-base path</dt><dd id="path-length">—</dd></div>
           <div><dt>WFC decisions</dt><dd id="decisions">—</dd></div>
-          <div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
+          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Tunnel spans</dt><dd id="tunnel-count">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
         </dl>
       </section>
       <section class="panel-section">
-        <details><summary>How this world is built</summary><p>A layout reserves two starting plateaus, a central area, expansion sites, and ramps. Wave function collapse resolves 31 tile patterns with matching corner heights.</p><p>The assembly view replays the solver’s recorded resolution order, including fixed layout tiles and propagated choices. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v1 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <details><summary>How this world is built</summary><p>A route plan connects the bases and crossing. WFC assembles flat road and ramp modules with matching elevations, matches straight, widening, chamber and narrowing tunnel modules, then resolves terrain materials using neighbor rules. The tunnel is a second navigable span beneath the crossing.</p><p>The assembly view replays the solver’s recorded resolution order, including fixed layout tiles and propagated choices. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
+        <p class="provenance">Generator v2 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>
@@ -167,7 +188,18 @@
     $('walkability').checked = params.get('grid') === '1';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelectorAll('button,input').forEach(el => el.disabled = true);
+    document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
+    const bounded = (name,fallback,min,max) => {const raw=params.get(name);const n=Number(raw);return raw!==null && Number.isInteger(n) && n>=min && n<=max?n:fallback;};
+    $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
+    $('biome').value=bounded('biome',0,0,4);$('tunnels').checked=bounded('tunnels',1,0,1)===1;
+    $('cutaway').value=bounded('cut',1,0,2);
+    function syncSettings(){
+      const symmetric=$('symmetry').value==='1';
+      if(symmetric)$('floor-b').value=$('floor-a').value;
+      $('floor-b').disabled=symmetric||!ready;$('inspect-tunnel').disabled=!$('tunnels').checked||!ready;
+    }
+    function settingsArgs(){return [Number($('symmetry').value),Number($('floor-a').value),Number($('floor-b').value),Number($('biome').value),Number($('tunnels').checked)];}
+    syncSettings();
     function fail(message) {
       $('loading').hidden = false;
       $('loading-text').textContent = 'The map could not start. Reload to try again in a browser with WebGL 2.';
@@ -179,6 +211,7 @@
       url.searchParams.set('seed', String(currentSeed));
       if ($('walkability').checked) url.searchParams.set('grid','1'); else url.searchParams.delete('grid');
       if (!$('path').checked) url.searchParams.set('path','0'); else url.searchParams.delete('path');
+      for(const [key,value] of Object.entries({sym:$('symmetry').value,a:$('floor-a').value,b:$('floor-b').value,biome:$('biome').value,tunnels:Number($('tunnels').checked),cut:$('cutaway').value}))url.searchParams.set(key,String(value));
       history.replaceState(null, '', url);
     }
     function resizeCanvas() {
@@ -190,9 +223,9 @@
     window.maplabReport = report => {
       if (!report.valid) {
         ready=true; $('loading').hidden=true;
-        document.querySelectorAll('button,input').forEach(el => el.disabled=false);
+        document.querySelectorAll('button,input,select').forEach(el => el.disabled=false);
         $('watch').disabled=true;
-        $('seed-error').textContent='This seed could not satisfy the map constraints after eight attempts. Choose a new seed.';
+        $('seed-error').textContent='This seed could not satisfy the map constraints with these settings. Choose a new seed.';
         $('seed-error').hidden=false; $('nav-status').textContent='No valid map for this seed';
         return;
       }
@@ -201,14 +234,15 @@
       lastReport=report; playbackPaused=report.paused;
       if (!ready) {
         ready=true; $('loading').hidden=true;
-        document.querySelectorAll('button,input').forEach(el => el.disabled=false);
+        document.querySelectorAll('button,input,select').forEach(el => el.disabled=false);
         requestAnimationFrame(() => {
           resizeCanvas();
           Module._aw_option(0,Number($('walkability').checked));
           Module._aw_option(1,Number($('path').checked));
           Module._aw_option(2,Number($('scout-pause').checked));
+          Module._aw_option(4,Number($('cutaway').value));
         });
-        syncUrl();
+        syncSettings();syncUrl();
       }
       $('watch').disabled=false;
       if(changed) {
@@ -216,19 +250,22 @@
         $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
         $('decisions').textContent=report.decisions;
         $('generation-ms').innerHTML=`${Math.round(report.milliseconds)} <small>ms</small>`;
-        $('nav-status').textContent='Bases, ramps & resources connected';
+        $('nav-status').textContent='Bases, all roads & crossing connected';
+        $('structural').textContent=report.structural; $('tunnel-count').textContent=report.tunnels;
         $('map-hash').textContent=report.hash;
       }
+      $('cut-status').textContent=$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
+      $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${report.floor} · Scripted scout`;
       if(!progressChanged) return;
-      $('resolved').textContent=`${report.resolved.toLocaleString()} / 2,304`;
+      $('resolved').textContent=`${report.resolved.toLocaleString()} / 4,096`;
       $('assembly-progress').value=report.resolved;
-      const complete=report.resolved>=2304;
+      const complete=report.resolved>=4096;
       $('assembly-status').textContent=complete?'Assembly complete':report.paused?'Assembly paused':'Resolving tiles';
       $('playback').hidden=complete;
       $('pause').textContent=report.paused?'Resume':'Pause';
     };
     var Module = {
-      canvas:$('canvas'), arguments:[`--seed=${currentSeed}`],
+      canvas:$('canvas'), arguments:[`--seed=${currentSeed}`,`--symmetry=${$('symmetry').value}`,`--floor-a=${$('floor-a').value}`,`--floor-b=${$('floor-b').value}`,`--biome=${$('biome').value}`,`--tunnels=${Number($('tunnels').checked)}`],
       print:(...args)=>console.log(...args), printErr:(...args)=>console.error(...args),
       onAbort:fail,
       onExit:code=>{if(code!==0)fail(`Runtime exited with code ${code}`);},
@@ -237,13 +274,20 @@
     function loadSeed(seed) {
       if(!ready) return;
       currentSeed=seed; $('seed').value=String(seed); $('seed-error').hidden=true;
-      Module._aw_new(seed,0); syncUrl();
+      syncSettings();Module._aw_config(seed,0,...settingsArgs()); syncUrl();
     }
     $('seed-form').addEventListener('submit',event=>{
       event.preventDefault(); const value=$('seed').value.trim();
       if(!validSeed(value)){ $('seed-error').textContent='Enter a whole number from 0 to 4,294,967,295.'; $('seed-error').hidden=false; return; }
       loadSeed(Number(value));
     });
+    for(const id of ['symmetry','floor-a','floor-b','biome','tunnels'])$(id).addEventListener('change',()=>{
+      if(!$('floor-a').checkValidity()||!$('floor-b').checkValidity()){$('seed-form').reportValidity();return;}
+      loadSeed(currentSeed);
+    });
+    $('cutaway').addEventListener('change',()=>{Module._aw_option(4,Number($('cutaway').value));syncUrl();});
+    $('follow').addEventListener('change',()=>Module._aw_option(5,Number($('follow').checked)));
+    $('inspect-tunnel').addEventListener('click',()=>{Module._aw_inspect_tunnel();$('scout-pause').checked=true;$('follow').checked=false;});
     $('new-seed').addEventListener('click',()=>loadSeed(crypto.getRandomValues(new Uint32Array(1))[0]));
     $('share').addEventListener('click',async()=>{
       syncUrl();
@@ -257,7 +301,7 @@
     $('path').addEventListener('change',()=>{Module._aw_option(1,Number($('path').checked));syncUrl();});
     $('scout-pause').addEventListener('change',()=>Module._aw_option(2,Number($('scout-pause').checked)));
     $('overlay-key').hidden=!$('walkability').checked;
-    document.querySelectorAll('[data-camera]').forEach(button=>button.addEventListener('click',()=>Module._aw_camera_control(Number(button.dataset.camera))));
+    document.querySelectorAll('[data-camera]').forEach(button=>button.addEventListener('click',()=>{Module._aw_camera_control(Number(button.dataset.camera));if(button.dataset.camera==='0')$('follow').checked=false;}));
     Module.canvas.addEventListener('contextmenu',event=>event.preventDefault());
     Module.canvas.addEventListener('pointerdown',()=>Module.canvas.focus({preventScroll:true}));
     Module.canvas.addEventListener('wheel',event=>event.preventDefault(),{passive:false});

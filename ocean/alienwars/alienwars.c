@@ -4,37 +4,37 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,int floor,int cost),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
-        walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds
+        walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
+        tunnels,structural,cut:!!cut,layer,floor,cost
     });
 });
 #else
 #define AW_EXPORT
-static void aw_report(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double ms) {
-    (void)seed;(void)hash;(void)valid;(void)walk;(void)reached;(void)length;(void)decisions;
-    (void)reductions;(void)attempts;(void)resolved;(void)paused;(void)ms;
-}
+#define aw_report(...) ((void)0)
 #endif
 
 static AwMap world;
 static AwScene scene;
+static AwOptions settings={1,6,6,0,1};
+static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,scout_floor=1;
 static Camera3D camera;
-static float yaw=0.75f,pitch=0.9f,zoom=107.0f;
-static Vector3 focus={48,1.8f,48};
+static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
+static Vector3 focus={64,10,64};
 static float revealed=AW_CELLS,animation_time=0,unit_progress=0;
 static int show_overlay=0,show_path=1,paused=0,unit_paused=0;
 static double generation_ms=0;
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions,cut_active,scout_layer,scout_floor,world.path_cost);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
     double start=GetTime();
-    if(!aw_generate(&world,seed)){
+    if(!aw_generate_options(&world,seed,settings)){
         generation_ms=(GetTime()-start)*1000;
         aw_publish();
         return;
@@ -46,11 +46,17 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
     aw_publish();
 }
 
+AW_EXPORT void aw_config(uint32_t seed,int watch,int symmetry,int a,int b,int biome,int tunnels){
+    settings=(AwOptions){symmetry,a,b,biome,tunnels};aw_new(seed,watch);
+}
+
 AW_EXPORT void aw_option(int option,int value) {
     if(option==0)show_overlay=!!value;
     if(option==1)show_path=!!value;
     if(option==2)unit_paused=!!value;
     if(option==3)paused=!!value;
+    if(option==4)cut_mode=aw_clamp(value,0,2);
+    if(option==5)follow_scout=!!value;
     aw_publish();
 }
 
@@ -65,9 +71,9 @@ AW_EXPORT void aw_step(void) {
 }
 
 AW_EXPORT void aw_camera_control(int action) {
-    if(action==0){yaw=0.75f;pitch=0.9f;zoom=107;focus=(Vector3){48,1.8f,48};}
-    if(action==1)zoom=fmaxf(35,zoom*0.84f);
-    if(action==2)zoom=fminf(150,zoom/0.84f);
+    if(action==0){yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};follow_scout=0;}
+    if(action==1)zoom=fmaxf(16,zoom*0.84f);
+    if(action==2)zoom=fminf(210,zoom/0.84f);
     if(action==3)yaw-=0.22f;
     if(action==4)yaw+=0.22f;
     if(action>=5&&action<=8){
@@ -75,7 +81,7 @@ AW_EXPORT void aw_camera_control(int action) {
         Vector3 shift=action<7?right:forward;
         float amount=(action==5||action==7)?-3.0f:3.0f;
         focus=Vector3Add(focus,Vector3Scale(shift,amount));
-        focus.x=Clamp(focus.x,12,84);focus.z=Clamp(focus.z,12,84);
+        focus.x=Clamp(focus.x,0,128);focus.z=Clamp(focus.z,0,128);
     }
 }
 
@@ -97,6 +103,7 @@ static void aw_draw_markers(void) {
             column.y+=0.56f;DrawCube(column,0.3f,0.13f,0.3f,accent);
         }
     }
+    if(cut_active)return;
     Vector3 p=aw_center(&world,world.center);
     DrawCylinderWires((Vector3){p.x,p.y+0.07f,p.z},1.65f,1.65f,0.02f,6,(Color){164,147,106,255});
     for(int i=0;i<3;i++){
@@ -112,7 +119,20 @@ static Vector3 aw_unit_position(void) {
     float p=cycle>length-1?(length-1)*2-cycle:cycle;
     int segment=(int)p;
     if(segment>=length-1)segment=length-2;
-    return Vector3Lerp(aw_center(&world,world.path[segment]),aw_center(&world,world.path[segment+1]),p-segment);
+    scout_layer=world.path[segment]>=AW_CELLS;
+    scout_floor=(int)roundf(aw_corner_q(&world,world.path[segment],0)/4.0f);
+    Vector3 position=Vector3Lerp(aw_center(&world,world.path[segment]),aw_center(&world,world.path[segment+1]),p-segment);
+    float gx=position.x/AW_UNIT,gz=position.z/AW_UNIT;
+    int node=(int)gz*AW_SIZE+(int)gx+(scout_layer?AW_CELLS:0);
+    position.y=aw_ground_y(&world,node,gx-(int)gx,gz-(int)gz);
+    return position;
+}
+
+AW_EXPORT void aw_inspect_tunnel(void){
+    if(!world.options.tunnels)return;
+    for(int i=0;i<world.path_length;i++)if(world.path[i]>=AW_CELLS&&world.path[i]%AW_SIZE==31){unit_progress=(float)i;break;}
+    unit_paused=1;revealed=AW_CELLS;follow_scout=0;
+    focus=aw_unit_position();zoom=24;yaw=0.9f;pitch=0.95f;aw_publish();
 }
 
 static void aw_draw_unit(void) {
@@ -131,17 +151,23 @@ static void aw_update(void) {
     float dt=fminf(GetFrameTime(),0.05f);
     animation_time+=dt;
     if(!paused&&revealed<AW_CELLS)revealed=fminf(AW_CELLS,revealed+dt*320);
-    if(revealed>=AW_CELLS&&!unit_paused)unit_progress+=dt*2.3f;
+    if(revealed>=AW_CELLS&&!unit_paused&&world.path_length>1){
+        float cycle=fmodf(unit_progress,(float)(world.path_length-1)*2);
+        float p=cycle>world.path_length-1?(world.path_length-1)*2-cycle:cycle;
+        int i=aw_clamp((int)p,0,world.path_length-2);
+        int cost=aw_move_cost(&world,world.path[i],world.path[i+1]);
+        unit_progress+=dt*2.3f*10.0f/fmaxf(10,(float)cost);
+    }
     Vector2 mouse=GetMouseDelta();
     if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&IsKeyDown(KEY_LEFT_SHIFT))){
         Vector3 right={cosf(yaw),0,-sinf(yaw)},forward={sinf(yaw),0,cosf(yaw)};
         focus=Vector3Add(focus,Vector3Scale(right,-mouse.x*zoom/GetScreenHeight()));
         focus=Vector3Add(focus,Vector3Scale(forward,-mouse.y*zoom/GetScreenHeight()));
-        focus.x=Clamp(focus.x,12,84);focus.z=Clamp(focus.z,12,84);
+        focus.x=Clamp(focus.x,0,128);focus.z=Clamp(focus.z,0,128);
     }else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
         yaw-=mouse.x*0.005f;pitch=Clamp(pitch+mouse.y*0.004f,0.42f,1.35f);
     }
-    zoom=Clamp(zoom*(1-GetMouseWheelMove()*0.09f),35,150);
+    zoom=Clamp(zoom*(1-GetMouseWheelMove()*0.09f),16,210);
     if(IsKeyDown(KEY_Q))yaw-=dt;
     if(IsKeyDown(KEY_E))yaw+=dt;
     if(IsKeyPressed(KEY_HOME))aw_camera_control(0);
@@ -151,6 +177,8 @@ static void aw_update(void) {
     if(IsKeyPressed(KEY_P))aw_option(1,!show_path);
     if(IsKeyPressed(KEY_SPACE))aw_watch();
 #endif
+    Vector3 scout=aw_unit_position();
+    if(follow_scout)focus=scout;
     camera.target=focus;
     camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*100,focus.y+sinf(pitch)*100,focus.z+cosf(yaw)*cosf(pitch)*100};
     float aspect=(float)GetScreenWidth()/(float)GetScreenHeight();
@@ -159,7 +187,11 @@ static void aw_update(void) {
     ClearBackground((Color){7,13,18,255});
     BeginMode3D(camera);
     if(world.valid){
-        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay);
+        Vector3 target=scout;target.y+=0.55f;
+        Vector3 eye=Vector3Add(target,Vector3Scale(Vector3Normalize(Vector3Subtract(camera.position,camera.target)),190));
+        int blocked=aw_occluded(&world,eye.x/AW_UNIT,(eye.y+1.2f)/0.75f,eye.z/AW_UNIT,target.x/AW_UNIT,(target.y+1.2f)/0.75f,target.z/AW_UNIT);
+        cut_active=cut_mode==2||(cut_mode==1&&blocked);
+        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,eye,target,cut_active?cut_mode:0);
         if(revealed>=AW_CELLS){
             aw_draw_markers();
             if(show_path){
@@ -173,8 +205,8 @@ static void aw_update(void) {
             aw_draw_unit();
         }else{
             /* The wire footprint makes the incomplete terrain readable. */
-            for(int z=0;z<=AW_SIZE;z+=4)DrawLine3D((Vector3){0,0.02f,z*AW_UNIT},(Vector3){96,0.02f,z*AW_UNIT},(Color){56,100,108,90});
-            for(int x=0;x<=AW_SIZE;x+=4)DrawLine3D((Vector3){x*AW_UNIT,0.02f,0},(Vector3){x*AW_UNIT,0.02f,96},(Color){56,100,108,90});
+            for(int z=0;z<=AW_SIZE;z+=4)DrawLine3D((Vector3){0,0.02f,z*AW_UNIT},(Vector3){128,0.02f,z*AW_UNIT},(Color){56,100,108,90});
+            for(int x=0;x<=AW_SIZE;x+=4)DrawLine3D((Vector3){x*AW_UNIT,0.02f,0},(Vector3){x*AW_UNIT,0.02f,128},(Color){56,100,108,90});
         }
     }
     EndMode3D();
@@ -194,11 +226,16 @@ int main(int argc,char **argv) {
         if(strncmp(argv[i],"--seed=",7)==0)seed=(uint32_t)strtoul(argv[i]+7,NULL,10);
         if(strcmp(argv[i],"--headless")==0)headless=1;
         if(strcmp(argv[i],"--watch")==0)watch=1;
+        if(strncmp(argv[i],"--symmetry=",11)==0)settings.symmetry=atoi(argv[i]+11);
+        if(strncmp(argv[i],"--floor-a=",10)==0)settings.floors_a=atoi(argv[i]+10);
+        if(strncmp(argv[i],"--floor-b=",10)==0)settings.floors_b=atoi(argv[i]+10);
+        if(strncmp(argv[i],"--biome=",8)==0)settings.biome=atoi(argv[i]+8);
+        if(strncmp(argv[i],"--tunnels=",10)==0)settings.tunnels=atoi(argv[i]+10);
     }
     if(headless){
-        if(!aw_generate(&world,seed))return 1;
-        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d\n",
-            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts);
+        if(!aw_generate_options(&world,seed,settings))return 1;
+        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d\n",
+            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost);
         return 0;
     }
     SetTraceLogLevel(LOG_WARNING);
