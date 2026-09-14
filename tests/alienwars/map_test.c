@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include "ocean/alienwars/map.h"
 static AwMap map,repeat;
-static int connected(int a,int b){for(int d=0;d<5;d++)if(aw_open(&map,a,d)==b)return 1;return 0;}
+static int connected(int a,int b){for(int d=0;d<AW_LINKS;d++)if(aw_open(&map,a,d)==b)return 1;return 0;}
 int main(int argc,char**argv){
     int seeds=argc>1?atoi(argv[1]):256;uint32_t digest=2166136261u;int terrain_seen=0,max_structure=0,geometry_choices=0;
     for(int i=0;i<seeds;i++){
@@ -19,7 +19,7 @@ int main(int argc,char**argv){
             AwCell*a=&map.cells[c];terrain_seen|=1<<a->material;
             if(o.symmetry){AwCell*b=&map.cells[AW_CELLS-1-c];assert(a->material==b->material&&a->road==b->road&&a->tunnel==b->tunnel&&a->portal==b->portal);for(int k=0;k<4;k++)assert(a->q[k]==b->q[(k+2)%4]);}
             for(int d=0;d<4;d++){
-                int next=aw_neighbor(c,d);if(next<0||aw_roof(&map,c)||aw_roof(&map,next))continue;
+                int next=aw_neighbor(c,d);if(next<0)continue;
                 assert(aw_edge_matches(&map,c,next,d));
                 if(i%16==0){
                     for(int sample=0;sample<=AW_SUBDIV;sample++){
@@ -30,10 +30,15 @@ int main(int argc,char**argv){
                     }
                 }
             }
-            if(a->road){assert(map.reachable[c]);for(int k=0;k<4;k++)assert(aw_abs(a->q[k]-a->q[(k+1)%4])<=1);}
-            if(a->tunnel){assert(o.tunnels);assert(map.reachable[c+AW_CELLS]);if(!a->portal){assert(map.walkable[c+AW_CELLS]);for(int k=0;k<4;k++)assert(a->q[k]>=12);assert(aw_open(&map,c+AW_CELLS,4)<0);}}
+            if(a->road){assert(map.reachable[c]);if(map.cave_bin_count[c]){float q=aw_surface_q(&map,c,.5f,.5f);assert(fabsf(q-aw_support_q(&map,c%64+.5f,c/64+.5f,q))<.05f);}for(int k=0;k<4;k++)assert(aw_abs(a->q[k]-a->q[(k+1)%4])<=1);}
+            if(a->tunnel)assert(o.tunnels);
+
         }
-        for(int n=0;n<AW_NODES;n++)for(int d=0;d<5;d++){int next=aw_open(&map,n,d);if(next>=0){assert(aw_open(&map,next,d==4?4:(d+2)%4)==n);assert(aw_move_cost(&map,n,next)>0);}}
+        for(int n=0;n<map.cave_count;n++){
+            AwCaveNode*a=&map.cave[n];assert(map.reachable[AW_CELLS+n]);
+            if(o.symmetry){int partner=-1;for(int j=0;j<map.cave_count;j++){AwCaveNode*b=&map.cave[j];if(a->x+b->x==63&&a->z+b->z==63&&a->q==b->q)partner=j;}assert(partner>=0&&a->profile==map.cave[partner].profile);}
+        }
+        for(int n=0;n<AW_NODES;n++)for(int d=0;d<AW_LINKS;d++){int next=aw_open(&map,n,d);if(next>=0){assert(connected(next,n));assert(aw_move_cost(&map,n,next)>0);}}
         assert(map.path[0]==map.spawns[0]&&map.path[map.path_length-1]==map.spawns[1]);
         int cost=0;for(int p=1;p<map.path_length;p++){assert(connected(map.path[p-1],map.path[p]));cost+=aw_move_cost(&map,map.path[p-1],map.path[p]);}assert(cost==map.path_cost);
         assert(!aw_find_path(&map,-1,0));assert(!aw_find_path(&map,0,AW_NODES));assert(!aw_find_path(&map,0,map.spawns[0]));
@@ -43,15 +48,25 @@ int main(int argc,char**argv){
     }
     assert(terrain_seen==AW_ALL);assert(max_structure>0&&geometry_choices>0);
     assert(aw_generate(&map,73));
-    /* A real occupied roof blocks the camera; the tunnel's void does not. */
-    assert(aw_solid(&map,31.5f,12,31.5f));assert(!aw_solid(&map,31.5f,7,31.5f));assert(aw_solid(&map,31.5f,3,31.5f));
-    assert(aw_occluded(&map,31.5f,60,31.5f,31.5f,5,31.5f));
-    assert(!aw_occluded(&map,29.5f,7,31.5f,33.5f,7,31.5f));
-    assert(!aw_occluded(&map,31.5f,60,31.5f,31.5f,18,31.5f));
+    /* Signed depths and independent spans, with field-derived clearance. */
+    assert(map.cave_count>20&&map.cave_decisions>0&&map.cave_expanded>0);
+    int deep=-1,ramps=0;
+    for(int i=0;i<map.cave_count;i++)if(map.cave[i].q<0){deep=i;break;}
+    assert(deep>=0);AwCaveNode*d=&map.cave[deep];float x=d->x+0.5f,z=d->z+0.5f,q=d->q;
+    assert(!aw_solid(&map,x,q+1,z));assert(aw_solid(&map,x,q-1,z));
+    assert(aw_occluded(&map,x,60,z,x,q+1,z));
+    for(int i=0;i<map.cave_edge_count;i++)ramps+=map.cave[map.cave_edges[i].a].q!=map.cave[map.cave_edges[i].b].q;
+    assert(ramps>=20);
     /* No malformed ID may reach a palette or movement-cost lookup. */
     map.cells[0].material=255;assert(!aw_validate(&map));assert(aw_generate(&map,73));
-    /* Remove both portals: upper road remains, but isolated tunnel must fail. */
-    for(int c=0;c<AW_CELLS;c++)if(map.cells[c].portal){map.cells[c].portal=0;map.cells[c].tunnel=0;}assert(!aw_validate(&map));
+    /* Missing entrance references and disconnected graph edges fail. */
+    for(int i=0;i<map.cave_count;i++)if(map.cave[i].portal>=0)map.cells[map.cave[i].portal].portal=0;
+    assert(!aw_validate(&map));assert(aw_generate(&map,73));
+    map.cave[map.cave_edges[0].a].links[5]=-1;assert(!aw_validate(&map));
+    assert(aw_generate(&map,73));map.cave[0].links[0]=AW_CAVE_NODES;assert(!aw_validate(&map));
+    /* Contradictory passage profiles cannot bypass socket propagation. */
+    assert(aw_generate(&map,73));uint8_t profiles[AW_CAVE_NODES];memset(profiles,15,sizeof(profiles));
+    profiles[map.cave_edges[0].a]=1;profiles[map.cave_edges[0].b]=8;assert(!aw_cave_propagate(&map,profiles));
     /* Incompatible road elevation sockets and terrain sockets reject explicitly. */
     uint64_t wave[2]={1ull<<40,1ull<<4};int ramp[2]={0,1},reductions=0;
     assert(!aw_road_propagate(wave,ramp,2,&reductions));

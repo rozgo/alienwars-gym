@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,int floor,int cost,int shapes),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost,shapes
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour
     });
 });
 #else
@@ -19,7 +19,8 @@ EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached
 static AwMap world;
 static AwScene scene;
 static AwOptions settings={1,6,6,0,1};
-static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,scout_floor=1,show_tiles=0;
+static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,show_tiles=0,scout_tour=0;
+static float scout_floor=1;
 static Camera3D camera;
 static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
 static Vector3 focus={64,10,64};
@@ -29,7 +30,7 @@ static double generation_ms=0;
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -42,7 +43,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
     generation_ms=(GetTime()-start)*1000;
     aw_build_scene(&scene,&world);
     revealed=watch?0:AW_CELLS;
-    unit_progress=0;paused=0;
+    unit_progress=0;paused=0;scout_tour=0;
     aw_publish();
 }
 
@@ -104,13 +105,7 @@ static void aw_draw_markers(void) {
             column.y+=0.56f;DrawCube(column,0.3f,0.13f,0.3f,accent);
         }
     }
-    if(cut_active)return;
-    Vector3 p=aw_center(&world,world.center);
-    DrawCylinderWires((Vector3){p.x,p.y+0.07f,p.z},1.65f,1.65f,0.02f,6,(Color){164,147,106,255});
-    for(int i=0;i<3;i++){
-        Vector3 q={p.x+4.0f+i*0.8f,p.y+0.35f,p.z-3.2f};
-        DrawCube(q,0.45f,0.7f+i*0.6f,0.65f,(Color){91,93,78,255});
-    }
+
 }
 
 static Vector3 aw_unit_position(void) {
@@ -121,20 +116,36 @@ static Vector3 aw_unit_position(void) {
     int segment=(int)p;
     if(segment>=length-1)segment=length-2;
     scout_layer=world.path[segment]>=AW_CELLS;
-    scout_floor=(int)roundf(aw_corner_q(&world,world.path[segment],0)/4.0f);
+    scout_floor=aw_corner_q(&world,world.path[segment],0)/4.0f;
     Vector3 position=Vector3Lerp(aw_center(&world,world.path[segment]),aw_center(&world,world.path[segment+1]),p-segment);
     float gx=position.x/AW_UNIT,gz=position.z/AW_UNIT;
-    int node=(int)gz*AW_SIZE+(int)gx+(scout_layer?AW_CELLS:0);
-    position.y=aw_ground_y(&world,node,gx-(int)gx,gz-(int)gz);
+    if(world.path[segment]>=AW_CELLS||world.path[segment+1]>=AW_CELLS){
+        float q=aw_lerp(aw_corner_q(&world,world.path[segment],0),aw_corner_q(&world,world.path[segment+1],0),p-segment);
+        position.y=aw_y(aw_support_q(&world,gx,gz,q)/4);
+    }else{
+        int node=(int)gz*AW_SIZE+(int)gx;position.y=aw_ground_y(&world,node,gx-(int)gx,gz-(int)gz);
+    }
     return position;
 }
 
-AW_EXPORT void aw_inspect_tunnel(void){
+static void aw_tour(int entrance){
     if(!world.options.tunnels)return;
-    for(int i=0;i<world.path_length;i++)if(world.path[i]>=AW_CELLS&&world.path[i]%AW_SIZE==31){unit_progress=(float)i;break;}
+    int a=-1,b=-1;for(int i=0;i<world.cave_count;i++)if(world.cave[i].portal>=0){if(a<0)a=i;else b=i;}
+    if(a<0||b<0)return;
+    uint8_t surface[AW_CELLS];memcpy(surface,world.walkable,AW_CELLS);memset(world.walkable,0,AW_CELLS);
+    int valid=aw_find_path(&world,AW_CELLS+a,AW_CELLS+b);memcpy(world.walkable,surface,AW_CELLS);if(!valid)return;
+    unit_progress=0;scout_tour=1;
+    if(!entrance){int deepest=0;for(int i=0;i<world.path_length;i++){
+        int a=world.path[i],b=world.path[deepest],ca=aw_node_cell(&world,a),cb=aw_node_cell(&world,b);
+        int qa=aw_corner_q(&world,a,0),qb=aw_corner_q(&world,b,0);
+        int da=aw_abs(ca%64-32)+aw_abs(ca/64-32),db=aw_abs(cb%64-32)+aw_abs(cb/64-32);
+        if(qa<qb||(qa==qb&&da<db))deepest=i;
+    }unit_progress=(float)deepest;}
     unit_paused=1;revealed=AW_CELLS;follow_scout=0;
-    focus=aw_unit_position();zoom=24;yaw=0.9f;pitch=0.95f;aw_publish();
+    focus=aw_unit_position();zoom=entrance?30:38;yaw=entrance?-1.4f:0.9f;pitch=0.85f;aw_publish();
 }
+AW_EXPORT void aw_inspect_tunnel(void){aw_tour(0);}
+AW_EXPORT void aw_inspect_entrance(void){aw_tour(1);}
 
 static void aw_draw_unit(void) {
     Vector3 p=aw_unit_position();
@@ -200,7 +211,8 @@ static void aw_update(void) {
                     float ax=d?1:a,az=d?a:1,bx=d?1:b,bz=d?b:1;
                     Vector3 p={(c%AW_SIZE+ax)*AW_UNIT,aw_ground_y(&world,c,ax,az)+0.045f,(c/AW_SIZE+az)*AW_UNIT};
                     Vector3 q={(c%AW_SIZE+bx)*AW_UNIT,aw_ground_y(&world,c,bx,bz)+0.045f,(c/AW_SIZE+bz)*AW_UNIT};
-                    DrawLine3D(p,q,(Color){123,209,196,140});
+                    Vector3 mid=Vector3Lerp(p,q,0.5f);
+                    if(aw_solid(&world,mid.x/AW_UNIT,(mid.y+1.2f)/0.75f-0.12f,mid.z/AW_UNIT))DrawLine3D(p,q,(Color){123,209,196,140});
                 }
             }
             aw_draw_markers();
@@ -208,6 +220,11 @@ static void aw_update(void) {
                 for(int i=1;i<world.path_length;i++){
                     Vector3 a=aw_center(&world,world.path[i-1]),b=aw_center(&world,world.path[i]);
                     a.y+=0.12f;b.y+=0.12f;
+                    if(cut_mode==2){float level=target.y+1.5f;
+                        if(a.y>level&&b.y>level)continue;
+                        if(a.y>level)a=Vector3Lerp(a,b,(a.y-level)/(a.y-b.y));
+                        if(b.y>level)b=Vector3Lerp(b,a,(b.y-level)/(b.y-a.y));
+                    }
                     Vector3 end=Vector3Lerp(a,b,0.72f);
                     DrawCylinderEx(a,end,0.055f,0.055f,4,(Color){245,201,100,220});
                 }

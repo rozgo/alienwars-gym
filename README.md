@@ -4,7 +4,9 @@ A native C/CUDA reinforcement-learning workspace based on **PufferLib 5.0**.
 The first baseline is upstream **Breakout**: train on an NVIDIA GPU, then watch
 the learned policy run in your browser through Raylib and WebAssembly.
 The AlienWars **Map Lab** generates symmetric or asymmetric 3D worlds with
-WFC corner-height terrain shapes, road ramps and tunnel modules. Shaped cliffs,
+WFC corner-height terrain shapes, road ramps and volumetric cave networks.
+A 3D route planner connects ramp entrances below ground; passage WFC matches
+arch profiles, and marching tetrahedra extracts one shared terrain solid. Shaped cliffs,
 slopes and shorelines share continuous boundaries between tiles. Bases can stand ten floors
 high, with connected roads, weighted navigation and automatic tunnel cutaways.
 A scripted scout tests the routes. Combat and AlienWars policy

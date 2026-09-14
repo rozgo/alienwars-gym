@@ -151,3 +151,11 @@ accepted Map Lab v1 contour quality (source/artifacts at `03b52577`) when changi
 terrain topology. Test complete boundary profiles and terrain/road/tunnel joins;
 passing pathfinding tests alone is not sufficient visual acceptance. Use the
 Tile boundaries inspection mode to check actual mesh continuation.
+
+Caves use the shared implicit solid and fixed tetrahedral lattice in `caves.h`
+and `volume.h`. Do not reintroduce a roof cap, a fixed tunnel floor, or exceptions
+to shared surface-edge matching. A* owns global passage connectivity; passage
+WFC owns compatible arch sockets. Collision and support queries must sample the
+same tetrahedra as rendering. Preserve ramp entrances and allow intentional
+surface breaches. Validate stacked passages, body clearance, support, portal
+references and internal mesh-edge pairing in both native and WASM builds.

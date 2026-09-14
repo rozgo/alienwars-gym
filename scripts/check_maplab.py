@@ -15,7 +15,7 @@ PAGES = ROOT / 'docs/maplab'
 BUILD.mkdir(exist_ok=True)
 
 def run(args, **kwargs):
-    return subprocess.check_output(args, cwd=ROOT, text=True, timeout=90, **kwargs).strip()
+    return subprocess.check_output(args, cwd=ROOT, text=True, timeout=180, **kwargs).strip()
 
 emcc = shutil.which('emcc') or str(ROOT / '.local/emsdk/upstream/emscripten/emcc')
 env = os.environ.copy()
@@ -32,10 +32,19 @@ run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined',
 native = run(['build/map-test','256'])
 print(native)
 run([emcc,'-std=c11','-O3','-I.',source,'-lm','-o','build/map-test.js',
-     '-sSTACK_SIZE=1MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
 wasm = run(['node','build/map-test.js','256'])
 print(wasm)
 assert native == wasm, 'Native and WASM seeded generation disagree'
+
+volume_source = 'tests/alienwars/volume_test.c'
+run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',volume_source,'-lm','-o','build/volume-test'])
+volume_native = run(['build/volume-test'])
+run([emcc,'-std=c11','-O3','-I.',volume_source,'-lm','-o','build/volume-test.js',
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+volume_wasm = run(['node','build/volume-test.js'])
+assert volume_native == volume_wasm, 'Native/WASM volumetric meshing disagree'
+print(volume_native)
 
 manifest = json.loads((PAGES / 'build.json').read_text())
 for name, expected in manifest['artifacts'].items():
@@ -81,8 +90,8 @@ for seed in [0, 1, 73, 4294967295]:
     web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
-report = {'generator_version':3,'native':native,'wasm':wasm,
+report = {'generator_version':4,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
           'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
           'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS: 256 native/WASM seeds, navigation invariants, deliberate failure cases, viewer parity, artifacts and JavaScript')
+print('PASS: 256 native/WASM seeds, cave clearance, manifold meshing, deliberate failure cases, viewer parity, artifacts and JavaScript')

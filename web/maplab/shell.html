@@ -102,13 +102,13 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 003</span></a>
+    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 004</span></a>
     <nav aria-label="Project"><a href="../">Breakout experiment</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 03</p><h1>Strata Frontier</h1><p>Connected terrain · 64 × 64 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 04</p><h1>Strata Frontier</h1><p>Volumetric terrain · 64 × 64 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
@@ -130,7 +130,7 @@
           <select id="symmetry"><option value="1">Symmetric · 180° rotation</option><option value="0">Asymmetric · independent bases</option></select>
           <div class="floor-row"><label for="floor-a">Base A floor<input id="floor-a" type="number" min="1" max="10" value="6" required></label><label for="floor-b">Base B floor<input id="floor-b" type="number" min="1" max="10" value="6" required></label></div>
           <label for="biome">Terrain palette</label><select id="biome"><option value="0">Mixed biomes</option><option value="1">Temperate</option><option value="2">Desert</option><option value="3">Frozen</option><option value="4">Volcanic</option></select>
-          <label class="toggle" for="tunnels">Tunnel crossing<input type="checkbox" id="tunnels" checked></label>
+          <label class="toggle" for="tunnels">Underground network<input type="checkbox" id="tunnels" checked></label>
         </form>
         <div class="seed-actions"><button id="new-seed">New world</button><button id="share">Copy seed link</button></div>
         <p id="seed-error" class="error" role="alert" hidden></p>
@@ -150,8 +150,8 @@
         <label class="toggle" for="path">Scout route<input type="checkbox" id="path" checked></label>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
         <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
-        <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Open tunnel roofs</option><option value="0">Off · solid terrain</option></select>
-        <button id="inspect-tunnel" class="wide">Inspect tunnel</button>
+        <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Horizontal section</option><option value="0">Off · solid terrain</option></select>
+        <div class="floor-row"><button id="inspect-entrance">Inspect entrance</button><button id="inspect-tunnel">Inspect tunnel</button></div>
         <p id="cut-status" class="seed-note" role="status">Cutaway ready</p>
         <p class="seed-note" id="overlay-key" hidden>Mint: connected surface · Coral: isolated surface</p>
         <details><summary>Terrain &amp; movement</summary><div class="terrain-key">
@@ -168,14 +168,14 @@
         <p class="nav-status" id="nav-status" role="status">Checking routes…</p>
         <dl>
           <div><dt>Walkable spans</dt><dd id="walk-count">—</dd></div>
-          <div><dt>Base-to-base path</dt><dd id="path-length">—</dd></div>
+          <div><dt id="route-label">Base-to-base path</dt><dd id="path-length">—</dd></div>
           <div><dt>Shape WFC decisions</dt><dd id="shape-decisions">—</dd></div><div><dt>Material WFC decisions</dt><dd id="decisions">—</dd></div>
-          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Tunnel spans</dt><dd id="tunnel-count">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
+          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Cave waypoints</dt><dd id="tunnel-count">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
         </dl>
       </section>
       <section class="panel-section">
-        <details><summary>How this world is built</summary><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. A route plan and separate road/tunnel WFC connect the bases and crossing; terrain colors blend at tile seams. The tunnel is a second navigable span beneath the crossing.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v3 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <details><summary>How this world is built</summary><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. A 3D route search plans descending entrances and an underground network. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
+        <p class="provenance">Generator v4 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>
@@ -198,7 +198,7 @@
     function syncSettings(){
       const symmetric=$('symmetry').value==='1';
       if(symmetric)$('floor-b').value=$('floor-a').value;
-      $('floor-b').disabled=symmetric||!ready;$('inspect-tunnel').disabled=!$('tunnels').checked||!ready;
+      $('floor-b').disabled=symmetric||!ready;$('inspect-tunnel').disabled=$('inspect-entrance').disabled=!$('tunnels').checked||!ready;
     }
     function settingsArgs(){return [Number($('symmetry').value),Number($('floor-a').value),Number($('floor-b').value),Number($('biome').value),Number($('tunnels').checked)];}
     syncSettings();
@@ -251,13 +251,15 @@
       $('watch').disabled=false;
       if(changed) {
         $('walk-count').textContent=report.walk.toLocaleString();
-        $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
+
         $('decisions').textContent=report.decisions;$('shape-decisions').textContent=report.shapes;
         $('generation-ms').innerHTML=`${Math.round(report.milliseconds)} <small>ms</small>`;
-        $('nav-status').textContent='Bases, all roads & crossing connected';
+        $('nav-status').textContent='Bases, roads & cave network connected';
         $('structural').textContent=report.structural; $('tunnel-count').textContent=report.tunnels;
         $('map-hash').textContent=report.hash;
       }
+      $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
+      $('route-label').textContent=report.tour?'Cave inspection route':'Base-to-base path';
       $('cut-status').textContent=$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
       $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${report.floor} · Scripted scout`;
       if(!progressChanged) return;
@@ -291,6 +293,7 @@
     });
     $('cutaway').addEventListener('change',()=>{Module._aw_option(4,Number($('cutaway').value));syncUrl();});
     $('follow').addEventListener('change',()=>Module._aw_option(5,Number($('follow').checked)));
+    $('inspect-entrance').addEventListener('click',()=>{Module._aw_inspect_entrance();$('scout-pause').checked=true;$('follow').checked=false;});
     $('inspect-tunnel').addEventListener('click',()=>{Module._aw_inspect_tunnel();$('scout-pause').checked=true;$('follow').checked=false;});
     $('new-seed').addEventListener('click',()=>loadSeed(crypto.getRandomValues(new Uint32Array(1))[0]));
     $('share').addEventListener('click',async()=>{

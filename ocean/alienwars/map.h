@@ -1,6 +1,6 @@
 #ifndef ALIENWARS_MAP_H
 #define ALIENWARS_MAP_H
-/* Deterministic terrain grammar, material WFC and two-span navigation. No renderer dependencies. */
+/* Deterministic terrain grammar, volumetric caves and navigation. No renderer dependencies. */
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,8 +10,12 @@
 #define AW_SIZE 64
 #define AW_VERT (AW_SIZE+1)
 #define AW_CELLS (AW_SIZE*AW_SIZE)
-#define AW_NODES (2*AW_CELLS)
-#define AW_VERSION 3
+#define AW_CAVE_NODES 512
+#define AW_CAVE_EDGES 768
+#define AW_BIN_SIZE 48
+#define AW_LINKS 7
+#define AW_NODES (AW_CELLS+AW_CAVE_NODES)
+#define AW_VERSION 4
 #define AW_SUBDIV 6
 #define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
@@ -22,7 +26,12 @@ static const char *aw_terrain_names[AW_TILES]={"Grass","Forest","Soil","Sand","R
 static const int aw_cost[AW_TILES]={12,19,13,18,16,20,23,28,34,0,0,10};
 typedef struct {int symmetry,floors_a,floors_b,biome,tunnels;} AwOptions;
 typedef struct {uint8_t q[4],material,road,tunnel,portal;} AwCell;
+typedef struct {int16_t x,z,q,portal; uint8_t profile,junction; int16_t links[6];} AwCaveNode;
+typedef struct {int16_t a,b;} AwCaveEdge;
 typedef struct {
+    AwCaveNode cave[AW_CAVE_NODES]; AwCaveEdge cave_edges[AW_CAVE_EDGES];
+    uint16_t cave_bins[AW_CELLS][AW_BIN_SIZE]; uint8_t cave_bin_count[AW_CELLS];
+    int cave_count,cave_edge_count,cave_decisions,cave_expanded,cave_backtracks;
     uint32_t seed,rng,hash,wave[AW_CELLS],compatible[AW_TILES];
     uint16_t shape_wave[AW_CELLS],shape_compatible[AW_CELLS][4][AW_SHAPES];
     uint8_t shape_lo[AW_CELLS][4],shape_hi[AW_CELLS][4],shape_preferred[AW_CELLS][4];
@@ -49,7 +58,7 @@ static int aw_noise(uint32_t seed,int x,int z,int scale){
     return ((a*(scale-fx)+b*fx)*(scale-fz)+(c*(scale-fx)+d*fx)*fz)/(scale*scale);
 }
 static int aw_neighbor(int c,int d){int x=c%AW_SIZE,z=c/AW_SIZE; if(d==0)return z?c-AW_SIZE:-1;if(d==1)return x<AW_SIZE-1?c+1:-1;if(d==2)return z<AW_SIZE-1?c+AW_SIZE:-1;return x?c-1:-1;}
-static int aw_corner_q(const AwMap*m,int node,int k){return node>=AW_CELLS?4:m->cells[node].q[k];}
+static int aw_corner_q(const AwMap*m,int node,int k){return node>=AW_CELLS?m->cave[node-AW_CELLS].q:m->cells[node].q[k];}
 static void aw_flat(AwCell*c,int q){for(int k=0;k<4;k++)c->q[k]=(uint8_t)q;}
 static int aw_edge_matches(const AwMap*m,int a,int b,int d){
     static const int edge[4][2]={{0,1},{1,2},{3,2},{0,3}};
@@ -139,40 +148,6 @@ static int aw_road(AwMap*m,int side){
     if(side&&!m->options.symmetry)m->resources[3]=AW_CELLS-1-(26*AW_SIZE+15);
     return 1;
 }
-/* Tunnel modules expose two- or four-cell-wide passage sockets. WFC chooses
- * straight, expanding, chamber, and contracting pieces; endpoints stay narrow.
- * Mirrored modules reverse their entry/exit sockets for rotational layouts. */
-static int aw_tunnel_wfc(AwMap*m){
-    uint32_t wave[4]={3,15,15,5}; /* bit0:2->2, bit1:2->4, bit2:4->2, bit3:4->4 */
-    int reverse[4]={0,2,1,3};
-    for(;;){
-        int changed=1;
-        while(changed){
-            changed=0;
-            for(int i=0;i<4;i++){
-                uint32_t allowed=0;
-                for(int t=0;t<4;t++)if(wave[i]&(1u<<t))allowed|=1u<<reverse[t];
-                if(m->options.symmetry){uint32_t mask=wave[3-i]&allowed;if(!mask)return 0;if(mask!=wave[3-i]){wave[3-i]=mask;changed=1;m->reductions++;}}
-                for(int d=-1;d<=1;d+=2){
-                    int n=i+d;if(n<0||n>3)continue;uint32_t mask=0;
-                    for(int a=0;a<4;a++)for(int b=0;b<4;b++)if((wave[i]&(1u<<a))&&(wave[n]&(1u<<b))&&((d==1?(a&1):(a>>1))==(d==1?(b>>1):(b&1))))mask|=1u<<b;
-                    if(!mask)return 0;if(mask!=wave[n]){wave[n]=mask;changed=1;m->reductions++;}
-                }
-            }
-        }
-        int best=-1,entropy=99;
-        for(int i=0;i<4;i++){int n=__builtin_popcount(wave[i]);if(n>1&&n<entropy){best=i;entropy=n;}}
-        if(best<0)break;int pick=aw_random(m)%entropy;uint32_t bits=wave[best];while(pick--)bits&=bits-1;wave[best]=bits&(~bits+1);m->structure_decisions++;
-    }
-    for(int x=29;x<=34;x++){
-        int wide=x>29&&x<34&&__builtin_ctz(wave[x-30])!=0;
-        for(int z=wide?30:31;z<=(wide?33:32);z++){
-            AwCell*c=&m->cells[z*AW_SIZE+x];c->tunnel=1;c->portal=x==29||x==34;
-            if(c->portal){c->road=1;aw_flat(c,4);}
-        }
-    }
-    return 1;
-}
 static int aw_layout(AwMap*m){
     for(int c=0;c<AW_CELLS;c++){
         int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
@@ -185,10 +160,6 @@ static int aw_layout(AwMap*m){
         aw_flat(&m->cells[c],aw_clamp(floor,0,10)*4);
     }
     if(!aw_road(m,0)||!aw_road(m,1))return 0;
-    /* A central ridge with a separate east/west void below its north/south road. */
-    for(int z=25;z<=38;z++)for(int x=30;x<=33;x++){
-        AwCell*c=&m->cells[z*AW_SIZE+x];aw_flat(c,16);c->road=0;
-    }
     for(int z=18;z<=45;z++)for(int x=31;x<=32;x++){
         AwCell*c=&m->cells[z*AW_SIZE+x];c->road=1;
         for(int k=0;k<4;k++){int vz=z+(k>=2);c->q[k]=4+aw_clamp(vz-18<46-vz?vz-18:46-vz,0,12);}
@@ -199,7 +170,7 @@ static int aw_layout(AwMap*m){
         if(z==18&&x>=31)continue;
         m->cells[i].road=1;aw_flat(&m->cells[i],4);
     }
-    if(m->options.tunnels&&!aw_tunnel_wfc(m))return 0;
+
     m->center=31*AW_SIZE+31;
     return 1;
 }
@@ -210,7 +181,6 @@ static int aw_corner_vertex(int c,int k){
     static const int offset[4]={0,1,AW_VERT+1,AW_VERT};
     return (c/AW_SIZE)*AW_VERT+c%AW_SIZE+offset[k];
 }
-static int aw_roof(const AwMap*m,int c){return m->cells[c].tunnel&&!m->cells[c].portal;}
 static int aw_shape_q(const AwMap*m,int c,int pattern,int corner){
     return (pattern&(1<<corner))?m->shape_hi[c][corner]:m->shape_lo[c][corner];
 }
@@ -222,11 +192,6 @@ static int aw_shape_domains(AwMap*m){
         int v=aw_corner_vertex(c,k),q=m->cells[c].q[k];
         if(pin[v]>=0&&pin[v]!=q)return 0;
         pin[v]=q;m->blend[v]=255;
-    }
-    /* A tunnel mouth has both a floor socket and an elevated roof socket. Its
-     * cliff/arch adapter closes that intentional vertical difference. */
-    for(int c=0;c<AW_CELLS;c++)if(aw_roof(m,c))for(int k=0;k<4;k++){
-        int v=aw_corner_vertex(c,k);if(pin[v]<0)pin[v]=16;
     }
     const int islands[7][3]={{13,13,15},{51,51,15},{32,32,15},{14,44,12},{50,20,12},{28,13,10},{36,51,10}};
     for(int v=0;v<AW_VERT*AW_VERT;v++){
@@ -269,7 +234,7 @@ static int aw_shape_domains(AwMap*m){
         for(int k=0;k<4;k++){
             int v=aw_corner_vertex(c,k);
             m->shape_lo[c][k]=lo[v];m->shape_hi[c][k]=hi[v];m->shape_preferred[c][k]=preferred[v];
-            if(aw_roof(m,c)){m->shape_lo[c][k]=m->shape_hi[c][k]=m->shape_preferred[c][k]=16;}
+
         }
         for(int t=0;t<AW_SHAPES;t++){
             int unique=1;
@@ -287,7 +252,7 @@ static void aw_shape_catalog(AwMap*m){
         for(int a=0;a<AW_SHAPES;a++){
             uint16_t mask=0;
             for(int b=0;b<AW_SHAPES;b++){
-                int match=n<0||aw_roof(m,c)||aw_roof(m,n);
+                int match=n<0;
                 if(!match)match=aw_shape_q(m,c,a,edges[d][0])==aw_shape_q(m,n,b,edges[e][0])&&aw_shape_q(m,c,a,edges[d][1])==aw_shape_q(m,n,b,edges[e][1]);
                 if(match)mask|=1u<<b;
             }
@@ -403,33 +368,71 @@ static int aw_wfc(AwMap*m){
     for(int c=0;c<AW_CELLS;c++){m->cells[c].material=__builtin_ctz(m->wave[c]);m->terrain_count[m->cells[c].material]++;}
     return 1;
 }
+/* Visibility uses the same triangular surface and tunnel void as navigation.
+ * Coordinates here are grid units horizontally and quarter-floors vertically. */
+static float aw_lerp(float a,float b,float t){return a+(b-a)*t;}
+static float aw_bilinear(float a,float b,float c,float d,float x,float z){return aw_lerp(aw_lerp(a,b,x),aw_lerp(d,c,x),z);}
+/* Beveled cliff cross-section: flat shelves with a shaped transition through
+ * each height band. Road sockets retain their linear grade. */
+static float aw_tile_sample_q(const AwMap*m,int c,float x,float z){
+    const uint8_t*q=m->cells[c].q;
+    float height=aw_bilinear(q[0],q[1],q[2],q[3],x,z);
+    float support=aw_bilinear(m->blend[aw_corner_vertex(c,0)],m->blend[aw_corner_vertex(c,1)],m->blend[aw_corner_vertex(c,2)],m->blend[aw_corner_vertex(c,3)],x,z)/255.0f;
+    if(m->cells[c].road)support=1;
+    float band=floorf(height/4),t=height/4-band;
+    t=fminf(1,fmaxf(0,(t-0.27f)/0.46f));t=t*t*(3-2*t);
+    float shaped=(band+t)*4;
+    return aw_lerp(shaped,height,support);
+}
+/* The same tessellated triangles are queried by collision, scout height and
+ * camera occlusion. Shared boundaries have exactly the same sample profile. */
+static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
+    float sx=fminf(1,fmaxf(0,fx))*AW_SUBDIV,sz=fminf(1,fmaxf(0,fz))*AW_SUBDIV;
+    int ix=aw_clamp((int)sx,0,AW_SUBDIV-1),iz=aw_clamp((int)sz,0,AW_SUBDIV-1);
+    float x=sx-ix,z=sz-iz,unit=1.0f/AW_SUBDIV;
+    float a=aw_tile_sample_q(m,c,ix*unit,iz*unit),b=aw_tile_sample_q(m,c,(ix+1)*unit,iz*unit);
+    float d=aw_tile_sample_q(m,c,ix*unit,(iz+1)*unit),e=aw_tile_sample_q(m,c,(ix+1)*unit,(iz+1)*unit);
+    return x>=z?a+(b-a)*x+(e-b)*z:a+(e-d)*x+(d-a)*z;
+}
+
+#include "caves.h"
 static int aw_open(const AwMap*m,int node,int d){
-    if(node<0||node>=AW_NODES||!m->walkable[node])return -1;
-    int c=node%AW_CELLS,layer=node/AW_CELLS;
-    if(d==4){int next=layer?c:c+AW_CELLS;return m->cells[c].portal&&m->walkable[next]?next:-1;}
-    if(d<0||d>3)return -1;
-    int next=aw_neighbor(c,d);if(next<0)return -1;next+=layer*AW_CELLS;
+    if(node<0||node>=AW_NODES||!m->walkable[node]||d<0||d>=AW_LINKS)return -1;
+    if(node>=AW_CELLS){
+        const AwCaveNode*n=&m->cave[node-AW_CELLS];
+        int next=d==6?n->portal:(n->links[d]<0?-1:AW_CELLS+n->links[d]);
+        return next>=0&&m->walkable[next]?next:-1;
+    }
+    if(d==4){for(int i=0;i<m->cave_count;i++)if(m->cave[i].portal==node)return AW_CELLS+i;return -1;}
+    if(d>3)return -1;
+    int next=aw_neighbor(node,d);if(next<0)return -1;
     return m->walkable[next]&&aw_edge_matches(m,node,next,d)?next:-1;
 }
 static void aw_navigation(AwMap*m){
     m->walk_count=m->reached_count=m->tunnel_count=0;
     memset(m->reachable,0,sizeof(m->reachable));
+    memset(m->walkable,0,sizeof(m->walkable));
     for(int c=0;c<AW_CELLS;c++){
         int lo=40,hi=0;for(int k=0;k<4;k++){int q=m->cells[c].q[k];if(q<lo)lo=q;if(q>hi)hi=q;}
         m->walkable[c]=aw_cost[m->cells[c].material]>0&&lo>=4&&hi-lo<=1;
-        m->walkable[c+AW_CELLS]=m->cells[c].tunnel;
-        m->walk_count+=m->walkable[c]+m->walkable[c+AW_CELLS];m->tunnel_count+=m->cells[c].tunnel;
+        if(m->walkable[c]&&m->cave_bin_count[c]){
+            float q=aw_surface_q(m,c,0.5f,0.5f);
+            if(fabsf(aw_support_q(m,c%64+0.5f,c/64+0.5f,q)-q)>0.1f)m->walkable[c]=0;
+        }
+        m->walk_count+=m->walkable[c];
     }
+    for(int i=0;i<m->cave_count;i++){m->walkable[AW_CELLS+i]=1;m->walk_count++;}
+    m->tunnel_count=m->cave_count;
     int queue[AW_NODES],head=0,tail=0,start=m->spawns[0];
     if(!m->walkable[start])return;
     queue[tail++]=start;m->reachable[start]=1;
-    while(head<tail){int c=queue[head++];for(int d=0;d<5;d++){int n=aw_open(m,c,d);if(n>=0&&!m->reachable[n]){m->reachable[n]=1;queue[tail++]=n;}}}
+    while(head<tail){int c=queue[head++];for(int d=0;d<AW_LINKS;d++){int n=aw_open(m,c,d);if(n>=0&&!m->reachable[n]){m->reachable[n]=1;queue[tail++]=n;}}}
     m->reached_count=tail;
 }
 static int aw_move_cost(const AwMap*m,int a,int b){
     int ca=a>=AW_CELLS?10:aw_cost[m->cells[a].material],cb=b>=AW_CELLS?10:aw_cost[m->cells[b].material];
     int qa=0,qb=0;for(int k=0;k<4;k++){qa+=aw_corner_q(m,a,k);qb+=aw_corner_q(m,b,k);}
-    return a%AW_CELLS==b%AW_CELLS?1:(ca+cb)/2+aw_abs(qa-qb);
+    return (a<AW_CELLS&&b>=AW_CELLS&&m->cave[b-AW_CELLS].portal==a)||(b<AW_CELLS&&a>=AW_CELLS&&m->cave[a-AW_CELLS].portal==b)?1:(ca+cb)/2+aw_abs(qa-qb);
 }
 /* Indexed binary heap: deterministic Dijkstra with terrain and grade costs. */
 static int aw_find_path(AwMap*m,int from,int to){
@@ -441,7 +444,7 @@ static int aw_find_path(AwMap*m,int from,int to){
         int c=heap[0];pos[c]=-2;size--;
         if(size){heap[0]=heap[size];pos[heap[0]]=0;int p=0;for(;;){int a=p*2+1;if(a>=size)break;if(a+1<size&&dist[heap[a+1]]<dist[heap[a]])a++;if(dist[heap[p]]<=dist[heap[a]])break;int v=heap[p];heap[p]=heap[a];heap[a]=v;pos[heap[p]]=p;pos[v]=a;p=a;}}
         if(c==to)break;
-        for(int d=0;d<5;d++){
+        for(int d=0;d<AW_LINKS;d++){
             int n=aw_open(m,c,d);if(n<0||pos[n]==-2)continue;
             int cost=dist[c]+aw_move_cost(m,c,n);if(cost>=dist[n])continue;dist[n]=cost;prev[n]=c;
             int p=pos[n];if(p<0){p=size;heap[size++]=n;pos[n]=p;}
@@ -458,66 +461,40 @@ static int aw_validate(AwMap*m){
         AwCell*t=&m->cells[c];if(t->material>=AW_TILES)return 0;
         for(int k=0;k<4;k++)if(t->q[k]>40)return 0;
         if(t->tunnel&&!m->options.tunnels)return 0;
-        if(t->tunnel&&!t->portal)for(int k=0;k<4;k++)if(t->q[k]<12)return 0;
-        if(t->portal)for(int k=0;k<4;k++)if(t->q[k]!=4)return 0;
+
     }
     for(int c=0;c<AW_CELLS;c++)for(int d=0;d<4;d++){
         int n=aw_neighbor(c,d);if(n<0)continue;
         if(!aw_material_ok(m->cells[c].material,m->cells[n].material))return 0;
-        if(!aw_roof(m,c)&&!aw_roof(m,n)&&!aw_edge_matches(m,c,n,d))return 0;
+        if(!aw_edge_matches(m,c,n,d))return 0;
     }
+    if(!aw_cave_validate(m))return 0;
     aw_navigation(m);
     for(int s=0;s<2;s++){int floor=s?m->options.floors_b:m->options.floors_a;for(int k=0;k<4;k++)if(m->cells[m->spawns[s]].q[k]!=floor*4)return 0;}
     if(!m->reachable[m->spawns[1]]||!m->reachable[m->center])return 0;
     for(int r=0;r<4;r++)if(!m->reachable[m->resources[r]])return 0;
-    for(int c=0;c<AW_CELLS;c++)if((m->cells[c].road&&!m->reachable[c])||(m->cells[c].tunnel&&!m->reachable[c+AW_CELLS]))return 0;
+    for(int c=0;c<AW_CELLS;c++)if(m->cells[c].road&&!m->reachable[c])return 0;
+    for(int i=0;i<m->cave_count;i++)if(!m->reachable[AW_CELLS+i])return 0;
     return aw_find_path(m,m->spawns[0],m->spawns[1]);
 }
 static uint32_t aw_fingerprint(const AwMap*m){
     uint32_t h=2166136261u;
     for(int c=0;c<AW_CELLS;c++){const AwCell*t=&m->cells[c];for(int k=0;k<4;k++)h=(h^t->q[k])*16777619u;h=(h^t->material)*16777619u;h=(h^t->road)*16777619u;h=(h^t->tunnel)*16777619u;h=(h^t->portal)*16777619u;}
+    for(int i=0;i<m->cave_count;i++){const AwCaveNode*n=&m->cave[i];h=(h^(uint16_t)n->x)*16777619u;h=(h^(uint16_t)n->z)*16777619u;h=(h^(uint16_t)n->q)*16777619u;h=(h^n->profile)*16777619u;}
+    for(int i=0;i<m->cave_edge_count;i++){h=(h^m->cave_edges[i].a)*16777619u;h=(h^m->cave_edges[i].b)*16777619u;}
     return h;
 }
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
     memset(m,0,sizeof(*m));m->seed=seed;m->rng=seed;m->options=options;m->attempts=1;
-    if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_wfc(m))return 0;
+    if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_wfc(m)||!aw_caves(m))return 0;
     m->valid=aw_validate(m);m->hash=aw_fingerprint(m);return m->valid;
 }
 static int aw_generate(AwMap*m,uint32_t seed){return aw_generate_options(m,seed,aw_defaults());}
-/* Visibility uses the same triangular surface and tunnel void as navigation.
- * Coordinates here are grid units horizontally and quarter-floors vertically. */
-static float aw_lerp(float a,float b,float t){return a+(b-a)*t;}
-static float aw_bilinear(float a,float b,float c,float d,float x,float z){return aw_lerp(aw_lerp(a,b,x),aw_lerp(d,c,x),z);}
-/* Beveled cliff cross-section: flat shelves with a shaped transition through
- * each height band. Road sockets retain their linear grade. */
-static float aw_tile_sample_q(const AwMap*m,int c,float x,float z){
-    const uint8_t*q=m->cells[c].q;
-    float height=aw_bilinear(q[0],q[1],q[2],q[3],x,z);
-    float support=aw_bilinear(m->blend[aw_corner_vertex(c,0)],m->blend[aw_corner_vertex(c,1)],m->blend[aw_corner_vertex(c,2)],m->blend[aw_corner_vertex(c,3)],x,z)/255.0f;
-    if(m->cells[c].road||aw_roof(m,c))support=1;
-    float band=floorf(height/4),t=height/4-band;
-    t=fminf(1,fmaxf(0,(t-0.27f)/0.46f));t=t*t*(3-2*t);
-    float shaped=(band+t)*4;
-    return aw_lerp(shaped,height,support);
-}
-/* The same tessellated triangles are queried by collision, scout height and
- * camera occlusion. Shared boundaries have exactly the same sample profile. */
-static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
-    float sx=fminf(1,fmaxf(0,fx))*AW_SUBDIV,sz=fminf(1,fmaxf(0,fz))*AW_SUBDIV;
-    int ix=aw_clamp((int)sx,0,AW_SUBDIV-1),iz=aw_clamp((int)sz,0,AW_SUBDIV-1);
-    float x=sx-ix,z=sz-iz,unit=1.0f/AW_SUBDIV;
-    float a=aw_tile_sample_q(m,c,ix*unit,iz*unit),b=aw_tile_sample_q(m,c,(ix+1)*unit,iz*unit);
-    float d=aw_tile_sample_q(m,c,ix*unit,(iz+1)*unit),e=aw_tile_sample_q(m,c,(ix+1)*unit,(iz+1)*unit);
-    return x>=z?a+(b-a)*x+(e-b)*z:a+(e-d)*x+(d-a)*z;
-}
 static int aw_solid(const AwMap*m,float x,float yq,float z){
-    if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE||yq<0)return 0;
-    int c=(int)z*AW_SIZE+(int)x;const AwCell*t=&m->cells[c];
-    if(yq>=aw_surface_q(m,c,x-(int)x,z-(int)z))return 0;
-    if(t->tunnel&&yq>4&&yq<10)return 0;
-    return 1;
+    if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE)return 0;
+    return aw_density(m,x,yq,z)>0;
 }
 static int aw_occluded(const AwMap*m,float ex,float eq,float ez,float tx,float tq,float tz){
     float dx=tx-ex,dy=tq-eq,dz=tz-ez;int steps=(int)(sqrtf(dx*dx+dy*dy+dz*dz)*8)+1;
