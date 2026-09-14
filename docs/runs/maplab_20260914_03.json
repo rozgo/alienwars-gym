@@ -1,0 +1,108 @@
+{
+  "date": "2026-09-14",
+  "milestone": "Restore connected 3D tile geometry",
+  "generator_version": 3,
+  "source_commit": "4500a700039534e7a684699ed9e79e147b301a63",
+  "source_dirty": false,
+  "validation": {
+    "generator_version": 3,
+    "native": "MAP_TEST version=3 seeds=256 digest=c43917df terrains=12 max_structure=84 geometry_choices=202879 PASS",
+    "wasm": "MAP_TEST version=3 seeds=256 digest=c43917df terrains=12 max_structure=84 geometry_choices=202879 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "3",
+        "hash": "85bb866d",
+        "walk": "1785",
+        "reached": "1535",
+        "path": "152",
+        "decisions": "2639",
+        "attempts": "1",
+        "structure": "36",
+        "tunnels": "16",
+        "cost": "1718",
+        "shapes": "1106"
+      },
+      {
+        "seed": "1",
+        "version": "3",
+        "hash": "d20bb687",
+        "walk": "1743",
+        "reached": "1337",
+        "path": "154",
+        "decisions": "2605",
+        "attempts": "1",
+        "structure": "38",
+        "tunnels": "16",
+        "cost": "1706",
+        "shapes": "1142"
+      },
+      {
+        "seed": "73",
+        "version": "3",
+        "hash": "93121dac",
+        "walk": "1704",
+        "reached": "1403",
+        "path": "152",
+        "decisions": "2567",
+        "attempts": "1",
+        "structure": "34",
+        "tunnels": "12",
+        "cost": "1688",
+        "shapes": "1120"
+      },
+      {
+        "seed": "4294967295",
+        "version": "3",
+        "hash": "312c92db",
+        "walk": "1780",
+        "reached": "1487",
+        "path": "148",
+        "decisions": "2601",
+        "attempts": "1",
+        "structure": "41",
+        "tunnels": "16",
+        "cost": "1650",
+        "shapes": "1087"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "geometry_contract": {
+    "corner_patterns": 16,
+    "quads_per_tile_axis": 6,
+    "ordinary_edges": "matching full sampled surface profiles",
+    "tunnel_mouths": "sampled floor/roof cliff adapters with passage apertures",
+    "materials": "shared vertex colors and blended lava weight",
+    "assembly": "shape WFC resolution order"
+  },
+  "browser_checks": {
+    "reference": "Map Lab v1 at 03b52577, loaded for visual comparison",
+    "connected_contours_and_coastlines": "verified",
+    "tile_boundaries_overlay": "verified across cliffs, shelves and roads",
+    "base_floors": "symmetric 6; asymmetric 10 and 3",
+    "palettes": "temperate, mixed and volcanic",
+    "tunnel_cutaway": "scout visible in Auto; solid mode restores occlusion",
+    "shape_replay_single_step": {
+      "before": 197,
+      "after": 198
+    },
+    "shader_or_runtime_errors": false
+  },
+  "breakout_artifacts_unchanged": true,
+  "artifacts": {
+    "index.html": {
+      "bytes": 22957,
+      "sha256": "5ecf91ad295521fd253b9d1d69a5eea27170b8e5401d81e521cbd7d2f4fa055e"
+    },
+    "maplab.js": {
+      "bytes": 230173,
+      "sha256": "b42430215a0100eb3f920bce188167231979b812aa4e542c95d22ca1e3aec674"
+    },
+    "maplab.wasm": {
+      "bytes": 209285,
+      "sha256": "fde9dda7d8243a91a2c4c39bbb19ff0d3f795340f83a8d92aa91c97a5158e677"
+    }
+  }
+}
