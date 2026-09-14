@@ -1,0 +1,96 @@
+{
+  "generator_version": 1,
+  "native": "MAP_TEST version=1 seeds=256 digest=6b6bda54 retries=0 min_walk=980 max_decisions=381 PASS",
+  "wasm": "MAP_TEST version=1 seeds=256 digest=6b6bda54 retries=0 min_walk=980 max_decisions=381 PASS",
+  "packaged_viewer_seed_checks": [
+    {
+      "seed": "0",
+      "version": "1",
+      "hash": "49914ff2",
+      "walk": "1043",
+      "reached": "1015",
+      "path": "53",
+      "decisions": "349",
+      "attempts": "1"
+    },
+    {
+      "seed": "1",
+      "version": "1",
+      "hash": "c0e08d62",
+      "walk": "1047",
+      "reached": "1041",
+      "path": "53",
+      "decisions": "353",
+      "attempts": "1"
+    },
+    {
+      "seed": "73",
+      "version": "1",
+      "hash": "f5bfecf6",
+      "walk": "1160",
+      "reached": "1157",
+      "path": "53",
+      "decisions": "323",
+      "attempts": "1"
+    },
+    {
+      "seed": "4294967295",
+      "version": "1",
+      "hash": "b1d2544a",
+      "walk": "1087",
+      "reached": "1021",
+      "path": "53",
+      "decisions": "352",
+      "attempts": "1"
+    }
+  ],
+  "artifact_hashes_match": true,
+  "javascript_syntax": "passed",
+  "verified_at_utc": "2026-09-14T20:45:12.736951+00:00",
+  "web_build": {
+    "generator_version": 1,
+    "source_commit": "ed2bacaf05878a4374cd7d88418411de8b2c0edb",
+    "source_dirty": false,
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+    "raylib": "5.5",
+    "artifacts": {
+      "index.html": {
+        "bytes": 17428,
+        "sha256": "3aed30e534446abf733ecfcb30c86f4f8f5e2485d1a16d6c6eb0ee03f05bab4c"
+      },
+      "maplab.js": {
+        "bytes": 229499,
+        "sha256": "fb79ad54965d3903fd81fc608c4a1521ec7755b2ad362dbb7f232a9a4c1bc898"
+      },
+      "maplab.wasm": {
+        "bytes": 192597,
+        "sha256": "e9c0ee6c32d6fd591b6be4efb151539cec6a72268c1e44322d3ac867aa4484e1"
+      }
+    }
+  },
+  "browser_checks": [
+    "Chrome rendered terrain, cliffs, ramps, water, resources and a moving scout",
+    "Seed link 73 loaded map hash f5bfecf6; seed 0 loaded hash 49914ff2",
+    "New world generated seed 4566679 with hash b51e8813 and valid navigation",
+    "Unsigned 32-bit overflow seed was rejected without changing the map",
+    "Copy seed link reported success and URL preserved seed and overlay state",
+    "Assembly paused at 96 resolved tiles; single step advanced to 97",
+    "Walkability overlay showed connected ground, ramps and isolated pockets",
+    "Scout route and scout pause toggles worked",
+    "Camera rotate, pan, zoom and reset worked",
+    "Overlay labels stayed visible after the canvas layer fix",
+    "Page width equaled scroll width at the checked 1728px desktop viewport"
+  ],
+  "pages": {
+    "branch": "main",
+    "path": "/docs",
+    "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73"
+  },
+  "limitations": [
+    "Fixed strategic anchors in this first map family; seeds vary terrain boundaries and scenery",
+    "Assembly replays successful solver resolution order; it does not visualize failed retries",
+    "The scout follows BFS and is not an RL policy; combat and training interface are future work",
+    "Cosmetic scenery is not collision geometry; isolated nonessential land pockets may exist",
+    "Visual browser checks covered desktop Chrome; native and WASM core checks covered 256 seeds"
+  ]
+}
