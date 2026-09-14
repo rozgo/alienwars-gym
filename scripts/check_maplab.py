@@ -28,7 +28,7 @@ if not shutil.which('emcc'):
 
 source = 'tests/alienwars/map_test.c'
 run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined',
-     '-fno-omit-frame-pointer','-Wall','-Wextra','-I.',source,'-o','build/map-test'])
+     '-fno-omit-frame-pointer','-Wall','-Wextra','-I.',source,'-lm','-o','build/map-test'])
 native = run(['build/map-test','256'])
 print(native)
 run([emcc,'-std=c11','-O3','-I.',source,'-lm','-o','build/map-test.js',
