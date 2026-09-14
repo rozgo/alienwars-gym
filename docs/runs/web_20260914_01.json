@@ -1,0 +1,62 @@
+{
+  "check": "Native WASM module evaluated headlessly in Node.js; browser rendering checked separately",
+  "node": "v23.11.0",
+  "evaluation": {
+    "env": "breakout",
+    "file_floats": "16192",
+    "need": "16192",
+    "match": "1",
+    "untrained": "0",
+    "n": "10",
+    "perf": "0.945949",
+    "score": "817.299988",
+    "steps": "158221",
+    "agents": "1"
+  },
+  "artifact_hashes_match": true,
+  "stderr": "",
+  "verified_at_utc": "2026-09-14T19:30:59.805500+00:00",
+  "web_build": {
+    "environment": "breakout",
+    "source_commit": "38412c3e019d35e9b0b6cb476ef8d2a09e2c7a93",
+    "source_dirty": false,
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+    "raylib": "5.5",
+    "checkpoint_sha256": "868fb8b97a85946141bdc4a50b2e6bd20b0d9be3c4df114aaa1fb2aed95f08d4",
+    "checkpoint_training_source": "d4e2602c33cfbe98da17b2d7ceebea8874dd38a5",
+    "artifacts": {
+      "index.html": {
+        "bytes": 9908,
+        "sha256": "b6d76641c9100999fc04a9106044337152f229827fd01931fd1427cba34e29fb"
+      },
+      "game.js": {
+        "bytes": 262294,
+        "sha256": "324013463d45060c8be20e411dcdc6a4a3776e0efee24dc971ffb8f98d568374"
+      },
+      "game.wasm": {
+        "bytes": 260539,
+        "sha256": "b906dc5f619e370612573b6de629d52cec98f95f5951a15840ee7a04871ea7ef"
+      },
+      "game.data": {
+        "bytes": 2679230,
+        "sha256": "a5f15aa0b03562a10e21dd9239a866ea693319b8dbde28a7b617c49af71c6707"
+      }
+    }
+  },
+  "browser_preview_checks": [
+    "Chrome loaded the Raylib/WebGL game",
+    "Observed automatic play and score progressing from 1 to 224",
+    "Expand and Escape return to page",
+    "Restart reloads the trained demo"
+  ],
+  "pages": {
+    "source_branch": "main",
+    "source_path": "/docs",
+    "url": "https://rozgo.github.io/alienwars-gym/"
+  },
+  "limits": [
+    "Headless WASM evaluation runs in Node.js; browser visuals were checked separately.",
+    "No new GPU training; uses the preserved September 14 checkpoint.",
+    "This is Breakout, not a new AlienWars environment."
+  ]
+}
