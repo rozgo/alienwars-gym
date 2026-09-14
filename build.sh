@@ -376,10 +376,10 @@ elif [ "$MODE" = "web" ]; then
         "${LINK_ARCHIVES[@]}" \
         -I. -Isrc -I$SRC_DIR -Ivendor "${INCLUDES[@]}" \
         -L. -L./$RAYLIB_NAME/lib \
-        -sASSERTIONS=2 -gsource-map \
+        -sASSERTIONS=2 \
         -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sASYNCIFY -sFILESYSTEM -sFORCE_FILESYSTEM=1 \
         --js-library vendor/puf_web_vsync.js \
-        --shell-file vendor/minshell.html \
+        --shell-file "${PUFFER_WEB_SHELL:-vendor/minshell.html}" \
         -sINITIAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=512KB \
         -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 \
         -DPUFFERCPU_EVAL_MAIN \

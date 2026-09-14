@@ -1,17 +1,20 @@
 # AlienWars Gym
 
 A native C/CUDA reinforcement-learning workspace based on **PufferLib 5.0**.
-The first baseline is upstream **Breakout**: train on an NVIDIA GPU, copy the
-small policy checkpoint to your Mac, and watch it with the CPU viewer.
+The first baseline is upstream **Breakout**: train on an NVIDIA GPU, then watch
+the learned policy run in your browser through Raylib and WebAssembly.
 AlienWars gameplay is the next implementation stage; it is not present yet.
+
+**[Watch the live browser demo](https://rozgo.github.io/alienwars-gym/)**
 
 - [Agent instructions](AGENTS.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
+- [Raylib web build and GitHub Pages workflow](docs/WEB.md)
 - [Upstream version and source references](docs/UPSTREAM.md)
 - [First GPU run: 54.9M steps in 1.98 seconds](docs/runs/breakout_20260914_01.md)
 - [PufferLib documentation](https://puffer.ai/docs.html)
 
-## Watch the trained baseline
+## Run the trained baseline locally
 
 The bring-up run trained Breakout on an RTX 4090 and opened its learned policy
 on the Mac. Download its 64 KB checkpoint (already present locally):

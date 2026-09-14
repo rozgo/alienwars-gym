@@ -8,6 +8,12 @@ preserve unrelated work. Follow explicit user instructions over this guide.
 The initial playable/training baseline is upstream Breakout; AlienWars gameplay
 has not been implemented. Do not describe the baseline as an AlienWars policy.
 
+User direction, September 14, 2026: the repository is public and the first
+browser release uses the existing **Raylib web path**, published through
+GitHub Pages from **`main:/docs`**. See `docs/WEB.md`. Preserve the working
+browser baseline; Three.js is not part of this release. Browser simulation and
+inference use WASM; CUDA training stays on the GPU machine.
+
 Use the native C/CUDA API in this checkout. Do not add a legacy PufferLib 2/3
 Python package, Gymnasium wrapper, PyTorch trainer, or global Python environment
 as the default training path. Python here is optional standard-library tooling.
@@ -29,6 +35,9 @@ current minimal template. Inspect headers before following an older tutorial.
 - `scripts/`: project checks, bounded training, playback.
 - `outputs/`, `build/`, `checkpoints/`, `logs/`: ignored generated artifacts.
 - `docs/runs/`: concise checked-in measurements and artifact hashes.
+- `web/shell.html`: authored browser presentation for the Raylib web build.
+- `docs/index.html`, `docs/game.*`, `docs/web-build.json`: deliberate compiled
+  Pages artifacts; regenerate with `scripts/build_web.sh`, never hand-edit.
 
 ## Environment implementation
 
@@ -63,6 +72,8 @@ Run from the repository root (configuration/resources use relative paths).
 ./build.sh breakout build/puffer-breakout --cu   # Linux NVIDIA CUDA toolkit
 ./scripts/train_breakout.sh                    # bounded 55M-step baseline
 ./scripts/play_breakout.sh PATH/TO/CHECKPOINT.bin
+./scripts/build_web.sh                         # Emscripten 6.0.9, Raylib web
+python3 scripts/check_web.py                   # artifact hashes + actual WASM inference
 ```
 
 Use `--cpu --debug` with ASan/UBSan for environment development on Linux and
@@ -108,3 +119,10 @@ binary artifacts should use release assets or an explicit LFS policy, not an
 accidental bulk `git add .`. Review `git diff --check` and staged changes.
 Handoff should include what ran, what was measured, remaining limitations and
 an exact command to watch the trained policy.
+
+For Pages releases, commit the authored source first, rebuild, run the WASM
+check and inspect the real browser demo before committing the generated files.
+Verify public deployment status and artifact hashes after pushing. The small
+compiled Pages artifacts are an explicit exception to the general rule keeping
+generated binaries out of Git; credentials, SDKs, raw logs and other build
+products remain ignored. Do not publish an untrained fallback as a trained demo.
