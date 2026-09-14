@@ -8,7 +8,20 @@ AlienWars gameplay is the next implementation stage; it is not present yet.
 - [Agent instructions](AGENTS.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Upstream version and source references](docs/UPSTREAM.md)
+- [First GPU run: 54.9M steps in 1.98 seconds](docs/runs/breakout_20260914_01.md)
 - [PufferLib documentation](https://puffer.ai/docs.html)
+
+## Watch the trained baseline
+
+The bring-up run trained Breakout on an RTX 4090 and opened its learned policy
+on the Mac. Download its 64 KB checkpoint (already present locally):
+
+```sh
+mkdir -p outputs
+gh release download breakout-baseline-20260914 --repo rozgo/alienwars-gym \
+  --pattern breakout-demo.bin --dir outputs
+./scripts/play_breakout.sh outputs/breakout-demo.bin
+```
 
 ## Try it
 

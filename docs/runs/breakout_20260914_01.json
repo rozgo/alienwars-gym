@@ -1,0 +1,111 @@
+{
+  "run_id": "breakout_20260914_01",
+  "date_utc": "2026-09-14T18:54:28.860013+00:00",
+  "source_commit": "d4e2602c33cfbe98da17b2d7ceebea8874dd38a5",
+  "source_dirty": false,
+  "upstream_commit": "6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2",
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_memory_mib": 24564,
+  "driver": "580.173.02",
+  "nvcc": "13.0.88",
+  "host_compiler": "Ubuntu Clang 18.1.3",
+  "gpu_was_shared": true,
+  "backend": "CUDA environment + CUDA learner",
+  "precision": "bf16",
+  "training_seed": 73,
+  "agents": 4096,
+  "horizon": 32,
+  "policy_hidden_size": 32,
+  "policy_layers": 4,
+  "parameters": 16192,
+  "requested_steps": 55000000,
+  "actual_steps": 54919168,
+  "training_seconds": 1.97989106,
+  "process_seconds_including_initialization_and_evaluation": 3.3041561553254724,
+  "training_command": [
+    "./build/puffer-breakout",
+    "train",
+    "--base.run_id=breakout_20260914_01",
+    "--base.seed=73",
+    "--train.gpus=1",
+    "--train.total_timesteps=55000000",
+    "--base.eval_episodes=256",
+    "--base.checkpoint_dir=outputs/breakout_20260914_01/checkpoints",
+    "--base.log_dir=outputs/breakout_20260914_01/logs"
+  ],
+  "metrics_finite": true,
+  "checkpoints": [
+    {
+      "path": "outputs/breakout_20260914_01/checkpoints/breakout/breakout_20260914_01/0000000054919168.bin",
+      "bytes": 64768,
+      "sha256": "868fb8b97a85946141bdc4a50b2e6bd20b0d9be3c4df114aaa1fb2aed95f08d4",
+      "weights_finite": true
+    }
+  ],
+  "cuda_evaluation": {
+    "seed": 1073,
+    "requested_episodes": 256,
+    "completed_episodes": 265,
+    "mean_score": 391.92453,
+    "perf": 0.453616
+  },
+  "cpu_evaluation": {
+    "device": "Apple M3 Max CPU",
+    "episodes": 10,
+    "mean_score": 706.599976,
+    "perf": 0.817824,
+    "steps": 147709,
+    "note": "Imported CPU evaluator does not apply base.seed; separate CPU environment implementation."
+  },
+  "cpu_noop_baseline": {
+    "episodes": 10,
+    "mean_score": 0.0,
+    "steps": 4620,
+    "note": "No weights loaded; default NOOP action, not random policy."
+  },
+  "checks": [
+    "macOS Breakout ASan/UBSan 1024 steps",
+    "macOS Minimal ASan/UBSan 1024 steps",
+    "Linux Breakout ASan/UBSan 1024 steps",
+    "Linux Minimal ASan/UBSan 1024 steps",
+    "finite logged metrics and checkpoint weights",
+    "checkpoint SHA-256 matches after transfer",
+    "Mac native viewer initialized and running"
+  ],
+  "metric_series": {
+    "sps": "27484490.391419929,27785679.020644587,27955699.20992614,27768662.5488277,27768662.5488277",
+    "agent_steps": "16777216,33685504,50462720,54919168,54919168",
+    "uptime": "0.61074519157409668,1.2192704677581787,1.819406270980835,1.9798910617828369,1.9798910617828369",
+    "epoch": "128,257,385,419,419",
+    "env/perf": "0.012561529874801636,0.21648803353309631,0.52076852321624756,0.81861311197280884,0.45617616176605225",
+    "env/score": "10.853161811828613,187.045654296875,449.94406127929688,707.28173828125,394.13619995117188",
+    "env/episode_return": "10.853161811828613,187.045654296875,449.94406127929688,707.28173828125,394.13619995117188",
+    "env/episode_length": "1306.85693359375,4759.54052734375,8965.958984375,13664.6845703125,7862.32275390625",
+    "env/n": "33513,9023,3628,898,257",
+    "loss/policy": "0.00041501750820316374,0.0013326081680133939,0.00039546453626826406,0.00071159977233037353,0.00071159977233037353",
+    "loss/value": "0.016610018908977509,0.02938196063041687,0.031322114169597626,0.030646391212940216,0.030646391212940216",
+    "loss/entropy": "0.75381803512573242,0.41644379496574402,0.44511529803276062,0.48644062876701355,0.48644062876701355",
+    "loss/total": "0.054306033998727798,0.10114956647157669,0.10679781436920166,0.1045691967010498,0.1045691967010498",
+    "loss/old_kl": "0.098658360540866852,0.15902005136013031,0.025098741054534912,0.00049796805251389742,0.00049796805251389742",
+    "loss/kl": "0.098490156233310699,0.15819956362247467,0.024831254035234451,0.00049034511903300881,0.00049034511903300881",
+    "loss/clipfrac": "0.042311180382966995,0.066322781145572662,0.010521015152335167,8.5120111180003732e-05,8.5120111180003732e-05",
+    "importance": "0.99983221292495728,0.9991798996925354,0.99973243474960327,0.99999231100082397,0.99999231100082397",
+    "util/gpu_percent": "93,100,100,100,100",
+    "util/vram_used_gb": "6.72509765625,6.72509765625,6.72509765625,6.72509765625,6.72509765625",
+    "util/vram_total_gb": "23.48358154296875,23.48358154296875,23.48358154296875,23.48358154296875,23.48358154296875",
+    "util/cpu_mem_gb": "0.53273391723632812,0.53273391723632812,0.53273391723632812,0.53279495239257812,0.53279495239257812",
+    "perf/rollout": "0.37355589866638184,0.38828063011169434,0.38458085060119629,0.097993701696395874,0.097993701696395874",
+    "perf/eval_model": "0,0,0,0,0",
+    "perf/eval_env": "0,0,0,0,0",
+    "perf/eval_copy": "0,0,0,0,0",
+    "perf/train_misc": "0.013466624543070793,0.013707263395190239,0.01361510343849659,0.0036136966664344072,0.0036136966664344072",
+    "perf/train_model": "0.44725245237350464,0.45456480979919434,0.45034614205360413,0.11747532337903976,0.11747532337903976",
+    "perf/train": "0.46071907877922058,0.46827206015586853,0.46396124362945557,0.12108901888132095,0.12108901888132095"
+  },
+  "limitations": [
+    "One training seed; not a robustness study.",
+    "Shared GPU; timing is not an isolated benchmark.",
+    "CPU and CUDA eval use different implementations and samples; scores are not directly comparable.",
+    "Breakout baseline only; AlienWars game not implemented."
+  ]
+}
