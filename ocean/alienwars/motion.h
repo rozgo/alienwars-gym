@@ -14,7 +14,10 @@ static float aw_motion_angle(float x){
 /* Layer IDs match patrols.h: ground 0, naval 1, air 2. */
 static AwMotionTuning aw_motion_tuning(int layer,int variant){
     float speed=layer==0?(variant==0?1.8f:variant==1?1.4f:1.05f):layer==1?(1.0f-.18f*variant):(variant==0?1.3f:variant==1?.95f:.75f);
-    return (AwMotionTuning){speed,speed*3,.65f,1.8f,4.5f};
+    /* Compress the easing to one third of its original duration. Rates and
+     * response scale with time; acceleration scales with time squared. */
+    const float tempo=3.0f;
+    return (AwMotionTuning){speed*tempo,speed*3*tempo*tempo,.65f*tempo,1.8f*tempo*tempo,4.5f*tempo};
 }
 static void aw_motion_axis(float*angle,float*rate,float target,float max_rate,float acceleration,float response,float dt){
     float error=aw_motion_angle(target-*angle);
