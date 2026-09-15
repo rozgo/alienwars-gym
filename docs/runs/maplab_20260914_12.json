@@ -1,0 +1,226 @@
+{
+  "milestone": "WFC mountain routes, graded volumetric passages and traversable bypasses",
+  "generator_version": 7,
+  "source_commit": "72d996a0db73c6701d5777a3ec5003ebbd114d64",
+  "source_dirty": false,
+  "engine_commit": "533ff07f401f4496162e5e54ae90ebfce8f73388",
+  "breakout_artifacts_unchanged": true,
+  "changes": {
+    "regional_topology": "5x5 directional socket WFC with connected-cycle propagation and bounded backtracking; two distinct arcs between shared approaches.",
+    "world_integration": "One seeded region in asymmetric worlds, a rotated pair in symmetric worlds; protects bases, elevated roads, lakes and primary tunnel entrances.",
+    "excavation": "Grade WFC, eight dimension-compatible arch profiles, rounded junctions, open cuttings and real surface breaches in the shared scalar field.",
+    "navigation": "Sampled walkable floor spans around excavations, off-center chamber area, separate stacked floors and explicit small/large clearance masks.",
+    "bypass_contract": "All bypass nodes and intermediate connections must fit radius 0.86 tile / height 2.5 quarter floors; narrow passage fixtures exclude this body.",
+    "interior_contract": "At least four covered route samples, including a consecutive run of at least three.",
+    "inspection": "Mountain passage and Mountain bypass scout tours, floor overlays and isolation guides.",
+    "mesher": "Retains the fixed marching-tetrahedra lattice and matching collision interpolation.",
+    "world_bounds": "64x64 land inside 96x96 ocean; map growth allowance recorded for future expansion."
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "worlds": [
+      {
+        "seed": 73,
+        "symmetry": 0,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "hash": "77d0665c",
+        "generation_ms_observed": 3652,
+        "interior_steps": 28,
+        "bypass_steps": 22
+      },
+      {
+        "seed": 1,
+        "symmetry": 0,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "hash": "898cb181",
+        "generation_ms_observed": 1394
+      },
+      {
+        "seed": 1,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "hash": "e4fc3739",
+        "generation_ms_observed": 626
+      }
+    ],
+    "verified": [
+      "Distinct terrain compositions across seeds",
+      "Mountain passage and bypass scout tours",
+      "Automatic terrain cutaway versus intact rock at the same camera",
+      "Horizontal section",
+      "Actual tunnel shells with ceilings on/off in isolation",
+      "Tile-boundary continuity around excavations",
+      "Walkability overlay includes passage floors",
+      "Symmetric world overview",
+      "No warn/error console entries"
+    ],
+    "settled_fps_observed": 60,
+    "performance_scope": "Development desktop observations, not a sustained or mobile benchmark. Generation time excludes scene construction and GPU upload."
+  },
+  "regression_repair": {
+    "seed": 2219776764,
+    "symmetry": 1,
+    "floor": 7,
+    "biome": 0,
+    "problem": "Crowded layout exhausted 12 complete plans; first passing candidate occurred on attempt 16.",
+    "change": "Expanded bounded layout search to 24 without removing geometry, route or clearance requirements."
+  },
+  "limitations": [
+    "The first regional grammar produces one cycle per mountain region, not arbitrary strategic graphs or a complete terrain-aware road/tunnel search.",
+    "Different seeds can have a single covered run or multiple tunnels; the interior route is not guaranteed shorter than the bypass.",
+    "Compact regions remain possible in crowded worlds; increasing map dimensions and chunked rendering are separate work.",
+    "Navigation samples two body profiles; it is not a continuous swept-volume guarantee, continuous navmesh or vehicle pathfinding API.",
+    "Hydrology, erosion, richer ridge/pass modules and a new noise library remain research directions.",
+    "The scout is scripted; this release adds no combat or trained AlienWars policy."
+  ],
+  "checks": {
+    "generator_version": 7,
+    "native": "MAP_TEST version=7 seeds=256 digest=e7cd0680 terrains=12 max_structure=164 geometry_choices=109066 entrance_sites=91 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=7 seeds=256 digest=e7cd0680 terrains=12 max_structure=164 geometry_choices=109066 entrance_sites=91 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=3 mountain_joins=PASS triangles=194386 edges=292047 boundary=936 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=3 mountain_joins=PASS triangles=194386 edges=292047 boundary=936 manifold=PASS",
+    "mountain_native": "MOUNTAIN_TEST version=7 worlds=32 digest=0e121bcb topologies=32 profiles=8 graded_edges=100 multiple_tunnels=18 full_regions=16 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+    "mountain_wasm": "MOUNTAIN_TEST version=7 worlds=32 digest=0e121bcb topologies=32 profiles=8 graded_edges=100 multiple_tunnels=18 full_regions=16 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+    "detail_native": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+    "detail_wasm": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+    "occlusion_native": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "occlusion_wasm": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "diversity_native": "DIVERSITY sym=0 worlds=24 bases=22 entrances=23 outline_bits_x100=1282 height_q_x100=350 road_change_permille=757 cave_change_permille=972 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=22 entrances=24 outline_bits_x100=1079 height_q_x100=336 road_change_permille=723 cave_change_permille=938 lake_change_permille=933 room_types=2 lake_counts=2 form_counts=7 PASS\nDIVERSITY_TEST version=7 digest=86b7c79b PASS",
+    "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=22 entrances=23 outline_bits_x100=1282 height_q_x100=350 road_change_permille=757 cave_change_permille=972 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=22 entrances=24 outline_bits_x100=1079 height_q_x100=336 road_change_permille=723 cave_change_permille=938 lake_change_permille=933 room_types=2 lake_counts=2 form_counts=7 PASS\nDIVERSITY_TEST version=7 digest=86b7c79b PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "7",
+        "hash": "5bf2041f",
+        "walk": "2294",
+        "reached": "2100",
+        "path": "191",
+        "decisions": "2187",
+        "attempts": "8",
+        "structure": "141",
+        "tunnels": "103",
+        "cost": "2132",
+        "shapes": "802",
+        "entrance_ne": "1842",
+        "entrance_sw": "2385",
+        "depth_ne": "-10",
+        "depth_sw": "-4",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "468",
+        "base_b": "2802",
+        "landforms": "12",
+        "plans": "3",
+        "ocean": "6056"
+      },
+      {
+        "seed": "1",
+        "version": "7",
+        "hash": "2800f063",
+        "walk": "2150",
+        "reached": "2040",
+        "path": "174",
+        "decisions": "2065",
+        "attempts": "4",
+        "structure": "101",
+        "tunnels": "96",
+        "cost": "1906",
+        "shapes": "687",
+        "entrance_ne": "684",
+        "entrance_sw": "2574",
+        "depth_ne": "-7",
+        "depth_sw": "-7",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6156"
+      },
+      {
+        "seed": "73",
+        "version": "7",
+        "hash": "4e98f07f",
+        "walk": "2230",
+        "reached": "2148",
+        "path": "179",
+        "decisions": "2113",
+        "attempts": "9",
+        "structure": "49",
+        "tunnels": "101",
+        "cost": "2042",
+        "shapes": "564",
+        "entrance_ne": "1192",
+        "entrance_sw": "3346",
+        "depth_ne": "-9",
+        "depth_sw": "-9",
+        "lakes": "3",
+        "rooms": "4",
+        "base_a": "459",
+        "base_b": "2866",
+        "landforms": "14",
+        "plans": "9",
+        "ocean": "6043"
+      },
+      {
+        "seed": "4294967295",
+        "version": "7",
+        "hash": "d50fafb7",
+        "walk": "1962",
+        "reached": "1825",
+        "path": "124",
+        "decisions": "1917",
+        "attempts": "4",
+        "structure": "83",
+        "tunnels": "114",
+        "cost": "1422",
+        "shapes": "615",
+        "entrance_ne": "761",
+        "entrance_sw": "3593",
+        "depth_ne": "-10",
+        "depth_sw": "-9",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "402",
+        "base_b": "2873",
+        "landforms": "8",
+        "plans": "5",
+        "ocean": "6490"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 30056,
+      "sha256": "6b94c3191d8adf94fc73adc0d65cd2a836e127e0d4f1a2bcabd6363568a87ec7"
+    },
+    "maplab.js": {
+      "bytes": 232269,
+      "sha256": "45ade8a6d6114197f943a9a44ebad3f51c7e5343cac7af812942e3a650cf9fb0"
+    },
+    "maplab.wasm": {
+      "bytes": 330912,
+      "sha256": "7a558ddea15d065bae782f06aa0e4b5c596f96b7c8667ef564b2469e2f6fe713"
+    }
+  },
+  "validation_commands": [
+    "./build.sh alienwars build/maplab --cpu --debug",
+    "./scripts/build_maplab.sh",
+    "python3 -u scripts/check_maplab.py"
+  ]
+}
