@@ -1,0 +1,211 @@
+{
+  "milestone": "First realism rendering pass: detailed vegetation, material response, shadows and reflected water",
+  "generator_version": 5,
+  "source_commit": "fe72cfc3f9c7ebd2c816d2ff4f8060fd0aa95f49",
+  "source_dirty": false,
+  "checks": {
+    "generator_version": 5,
+    "native": "MAP_TEST version=5 seeds=256 digest=1d382a24 terrains=12 max_structure=84 geometry_choices=202810 entrance_sites=54 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=5 seeds=256 digest=1d382a24 terrains=12 max_structure=84 geometry_choices=202810 entrance_sites=54 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "5",
+        "hash": "7d3bf5cf",
+        "walk": "1813",
+        "reached": "1476",
+        "path": "168",
+        "decisions": "2592",
+        "attempts": "2",
+        "structure": "33",
+        "tunnels": "48",
+        "cost": "1935",
+        "shapes": "1106",
+        "entrance_ne": "1383",
+        "entrance_sw": "2902",
+        "depth_ne": "-6",
+        "depth_sw": "-9"
+      },
+      {
+        "seed": "1",
+        "version": "5",
+        "hash": "b51b598c",
+        "walk": "1754",
+        "reached": "1332",
+        "path": "164",
+        "decisions": "2583",
+        "attempts": "5",
+        "structure": "35",
+        "tunnels": "54",
+        "cost": "1926",
+        "shapes": "1142",
+        "entrance_ne": "1841",
+        "entrance_sw": "2519",
+        "depth_ne": "-9",
+        "depth_sw": "-10"
+      },
+      {
+        "seed": "73",
+        "version": "5",
+        "hash": "af577cfd",
+        "walk": "1724",
+        "reached": "1466",
+        "path": "164",
+        "decisions": "2496",
+        "attempts": "4",
+        "structure": "31",
+        "tunnels": "49",
+        "cost": "1910",
+        "shapes": "1120",
+        "entrance_ne": "1384",
+        "entrance_sw": "2520",
+        "depth_ne": "-6",
+        "depth_sw": "-10"
+      },
+      {
+        "seed": "4294967295",
+        "version": "5",
+        "hash": "d2501b5d",
+        "walk": "1844",
+        "reached": "1585",
+        "path": "160",
+        "decisions": "2554",
+        "attempts": "6",
+        "structure": "38",
+        "tunnels": "82",
+        "cost": "1892",
+        "shapes": "1087",
+        "entrance_ne": "1017",
+        "entrance_sw": "3284",
+        "depth_ne": "-6",
+        "depth_sw": "-10"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "generator_digest_unchanged": true,
+  "baseline_breakout_unchanged": true,
+  "rendering": {
+    "assets": "Authored procedural C meshes and embedded GLSL; no external models, textures or CDN dependencies",
+    "props": [
+      "Branching broadleaf trees and conifers with roots, twigs and two-sided leaves",
+      "Irregular smooth boulders, pebbles and grass tufts",
+      "Mineral clusters and industrial outposts"
+    ],
+    "materials": [
+      "GGX specular and roughness with filmic tone mapping",
+      "World-space stone grain and weathering",
+      "Wet shoreline tint and terrain-derived ambient occlusion",
+      "Cooled volcanic crust with emissive fissures"
+    ],
+    "shadow_map": {
+      "resolution": [
+        2048,
+        2048
+      ],
+      "storage": "16-bit depth encoded in RG",
+      "filter": "9 comparisons",
+      "update": "World creation",
+      "inspection": "Disabled during assembly and active cutaway/isolation"
+    },
+    "water": {
+      "effects": [
+        "Animated wave normals",
+        "Planar terrain and static-prop reflection",
+        "Fresnel response",
+        "Shallow/deep color",
+        "Caustics",
+        "Shoreline foam",
+        "Sun highlights"
+      ],
+      "reflection_width": 1024,
+      "reflection_height_bounds": [
+        256,
+        1536
+      ],
+      "cache": "Refresh on camera, viewport aspect or assembly changes",
+      "shore_texture": [
+        256,
+        256
+      ]
+    },
+    "webgl_compatibility": "Retain rank texcoord input in every mesh shader and initialize the default batch normal attribute slot for Raylib 5.5 non-VAO fallback",
+    "regeneration": "Paint busy state and disable controls before running synchronous generation/meshing outside the input event"
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2 on development desktop",
+    "observed_steady_view_fps": 60,
+    "performance_scope": "UI GetFPS samples in settled views; not a sustained benchmark. Brief frame-rate drops occur during rebuilds and camera/reflection updates. Mobile performance was not measured.",
+    "symmetric_temperate": {
+      "seed": 73,
+      "floors": [
+        6,
+        6
+      ],
+      "hash": "9003845d",
+      "walkable_spans": 1754,
+      "base_path_steps": 142,
+      "cave_tour_steps": 38,
+      "cave_waypoints": 46
+    },
+    "asymmetric_volcanic": {
+      "seed": 1,
+      "floors": [
+        10,
+        3
+      ],
+      "hash": "8596afe7",
+      "walkable_spans": 1461,
+      "base_path_steps": 169,
+      "cave_waypoints": 50
+    },
+    "asymmetric_frozen": {
+      "seed": 1,
+      "floors": [
+        10,
+        3
+      ],
+      "hash": "cfec4460",
+      "walkable_spans": 1742,
+      "base_path_steps": 165,
+      "cave_waypoints": 44
+    },
+    "verified": [
+      "Overview and close-up trees, rocks, terrain and shoreline",
+      "Frozen and volcanic palettes at floor 10",
+      "Repeated in-page volcanic-to-frozen-to-temperate regeneration",
+      "Tile assembly replay",
+      "Camera rotation and cached reflection refresh",
+      "Entrance and interior inspection",
+      "Auto cutaway, horizontal section and opaque terrain",
+      "Tunnel isolation with and without ceilings",
+      "Retained tile boundaries and unchanged map hashes"
+    ],
+    "console": "Final packaged page had no error/warn console entries. Existing Raylib VAO/NPOT capability notices remain at log level. Temporary GL diagnostics were clean after the attribute fixes."
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 26421,
+      "sha256": "9c83af3253ed12a17e0f2b81b4b6a74ab3e777757df5ef3a7dedb05680e7029d"
+    },
+    "maplab.js": {
+      "bytes": 231762,
+      "sha256": "7c5c000ff1fc6a2973a3748ab0096ac859ceac4765bf12eac8e589739eda0c2b"
+    },
+    "maplab.wasm": {
+      "bytes": 260190,
+      "sha256": "bc0969f9a8484aec1e80737bcf21eda5b991a54afb0d38afbdd13bd458bb8bd6"
+    }
+  },
+  "limitations": [
+    "First realism pass, not a finished AAA asset pipeline.",
+    "Vegetation is static and cosmetic; it does not participate in collision.",
+    "The moving scout is not included in planar reflections.",
+    "The single shadow map loses detail at extreme zoom.",
+    "Ocean is a visual surface, not fluid simulation.",
+    "World meshing and GPU preparation still run synchronously and add several seconds beyond the reported core generation time."
+  ]
+}
