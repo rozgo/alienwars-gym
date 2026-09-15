@@ -176,7 +176,7 @@
           <div><dt>Walkable spans</dt><dd id="walk-count">—</dd></div>
           <div><dt id="route-label">Base-to-base path</dt><dd id="path-length">—</dd></div>
           <div><dt>Shape WFC decisions</dt><dd id="shape-decisions">—</dd></div><div><dt>Material WFC decisions</dt><dd id="decisions">—</dd></div>
-          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Cave waypoints</dt><dd id="tunnel-count">—</dd></div><div><dt>Tunnel floors NE / SW</dt><dd id="tunnel-depths">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
+          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Cave waypoints</dt><dd id="tunnel-count">—</dd></div><div><dt>Tunnel floors NE / SW</dt><dd id="tunnel-depths">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div><div><dt>Frame rate</dt><dd id="fps">—</dd></div>
         </dl>
       </section>
       <section class="panel-section">
@@ -245,7 +245,9 @@
       const ratio = Math.min(devicePixelRatio || 1, 1.5);
       Module._aw_resize(Math.min(3840, Math.round(rect.width*ratio)), Math.min(2400, Math.round(rect.height*ratio)));
     }
+    let rebuilding=false;
     window.maplabReport = report => {
+      if(rebuilding) return;
       if (!report.valid) {
         ready=true; $('loading').hidden=true;
         document.querySelectorAll('button,input,select').forEach(el => el.disabled=false);
@@ -286,6 +288,7 @@
       $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
       $('route-label').textContent=report.tour?'Cave inspection route':'Base-to-base path';
       $('cut-status').textContent=$('isolate-tunnels').checked?`Tunnels isolated · ceilings ${$('tunnel-ceilings').checked?'shown':'hidden'}`:$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
+      $('fps').textContent=`${report.fps} fps`;
       $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${report.floor} · Scripted scout`;
       if(!progressChanged) return;
       $('resolved').textContent=`${report.resolved.toLocaleString()} / 4,096`;
@@ -303,9 +306,21 @@
       setStatus:message=>{ if(!ready && message) $('loading-text').textContent=message.startsWith('Downloading')?'Loading the map runtime…':'Preparing the map…'; }
     };
     function loadSeed(seed) {
-      if(!ready) return;
+      if(!ready || rebuilding) return;
       currentSeed=seed; $('seed').value=String(seed); $('seed-error').hidden=true;
-      syncSettings();Module._aw_config(seed,0,...settingsArgs()); syncUrl();
+      syncSettings(); const args=settingsArgs(); rebuilding=true;
+      document.querySelectorAll('button,input,select').forEach(el=>el.disabled=true);
+      $('loading-text').textContent='Building terrain and scenery…'; $('loading').hidden=false;
+      // Let the input event finish and the busy state paint before synchronous
+      // WASM generation, meshing, GPU uploads and shader compilation begin.
+      requestAnimationFrame(()=>setTimeout(()=>{
+        try {
+          Module._aw_config(seed,0,...args);
+          rebuilding=false; ready=false; lastReport=null;
+          Module._aw_option(2,Number($('scout-pause').checked));
+          syncUrl();
+        } catch(error) { rebuilding=false; ready=false; fail(error); }
+      },0));
     }
     $('seed-form').addEventListener('submit',event=>{
       event.preventDefault(); const value=$('seed').value.trim();

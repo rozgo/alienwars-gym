@@ -20,75 +20,19 @@ typedef struct {
     Material land_material, water_material;
     Shader land_shader, water_shader;
     Texture2D coast;
+    RenderTexture2D shadow, reflection;
+    Shader shadow_shader;
+    Material shadow_material;
+    Matrix light_vp, reflection_vp;
+    Camera3D reflected_camera;
+    float reflected_reveal;
+    int reflection_valid;
+    int land_view, water_view, render_pass, light_matrix, reflection_matrix;
     int land_reveal, water_time, cut_eye, cut_target, cut_mode, tunnel_view;
     int built;
 } AwScene;
 
-static const char *aw_vertex_shader =
-#ifdef PLATFORM_WEB
-    "#version 300 es\n"
-#else
-    "#version 330\n"
-#endif
-    "precision highp float;\n"
-    "in vec3 vertexPosition; in vec3 vertexNormal; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
-    "uniform mat4 mvp; out vec3 position; out vec3 normal; out vec4 color; out vec2 uv;\n"
-    "void main(){position=vertexPosition;normal=vertexNormal;color=vertexColor;uv=vertexTexCoord;"
-    "gl_Position=mvp*vec4(vertexPosition,1.0);}\n";
-
-static const char *aw_land_fragment =
-#ifdef PLATFORM_WEB
-    "#version 300 es\n"
-#else
-    "#version 330\n"
-#endif
-    "precision highp float;\n"
-    "in vec3 position; in vec3 normal; in vec4 color; in vec2 uv; out vec4 finalColor; uniform float reveal; uniform vec3 cutEye; uniform vec3 cutTarget; uniform int cutMode; uniform int tunnelView;\n"
-    "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n"
-    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);"
-    "return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.0),f.x),f.y);}\n"
-    "void main(){if(uv.x>reveal)discard;"
-    "if(tunnelView==1 && normal.y< -0.1)discard;"
-    "if(cutMode==2 && position.y>cutTarget.y+1.5)discard;"
-    "if(cutMode>0 && position.y>cutTarget.y+0.15){vec3 ray=cutTarget-cutEye;float t=dot(position-cutEye,ray)/dot(ray,ray);"
-    "float r=length(position-(cutEye+clamp(t,0.0,1.0)*ray));"
-    "if(t>0.0 && t<1.0 && r<3.6){float screen=fract(dot(floor(gl_FragCoord.xy),vec2(0.5,0.25)));"
-    "if(r<2.7 || screen>smoothstep(2.7,3.6,r))discard;}}vec3 n=normalize(normal);if(tunnelView>0 && !gl_FrontFacing)n=-n;"
-    "float light=max(dot(n,normalize(vec3(-0.55,0.85,-0.4))),0.0);"
-    "float grain=noise(position.xz*8.0)*0.12+noise(position.xz*1.8)*0.16+noise(position.xz*0.22)*0.2;"
-    "vec3 base=color.rgb;"
-    "float lava=clamp(uv.y-10.0,0.0,1.0);if(lava>0.0){float heat=noise(position.xz*1.5);vec3 magma=mix(vec3(0.14,0.12,0.10),vec3(1.0,0.30,0.035),smoothstep(0.47,0.68,heat));base=mix(base,magma,lava);}"
-    "if(uv.y<0.5||uv.y>9.5){base*=0.75+grain; float mottling=smoothstep(0.45,0.74,noise(position.xz*0.15));"
-    "base=mix(base,base*vec3(0.77,0.79,0.7),mottling*0.45);"
-    "if(n.y<0.65){base=mix(base,vec3(0.34,0.33,0.29),0.68);float strata=0.88+0.12*smoothstep(0.1,0.6,fract(position.y*0.8+noise(position.xz*0.65)*2.0));"
-    "base*=strata*(0.65+0.35*smoothstep(-0.7,4.2,position.y));}}"
-    "vec3 lit=base*(vec3(0.36,0.43,0.49)+light*vec3(0.75,0.67,0.50));"
-    "if(uv.y>1.5 && uv.y<2.5)lit=mix(lit,base,0.76);lit=mix(lit,base,lava*0.76);"
-    "float fog=smoothstep(75.0,160.0,length(position.xz-vec2(64.0)));"
-    "finalColor=vec4(mix(lit,vec3(0.055,0.10,0.13),fog*0.7),color.a);}\n";
-
-static const char *aw_water_fragment =
-#ifdef PLATFORM_WEB
-    "#version 300 es\n"
-#else
-    "#version 330\n"
-#endif
-    "precision highp float;\n"
-    "in vec3 position;in vec3 normal;in vec4 color;in vec2 uv;out vec4 finalColor;"
-    "uniform float time;uniform sampler2D texture0;\n"
-    "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n"
-    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);"
-    "return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.0),f.x),f.y);}\n"
-    "void main(){vec2 p=position.xz;vec2 t=p/128.0;vec4 shore=texture(texture0,t);if(shore.a<0.5)discard;float coast=shore.r;"
-    "float n=noise(p*0.58+vec2(time*0.055,-time*0.025));"
-    "float ripple=sin(p.x*2.5+p.y*1.3+n*5.0+time*0.7)*0.5+0.5;"
-    "vec3 deep=vec3(0.035,0.092,0.12),shallow=vec3(0.105,0.235,0.26);"
-    "vec3 base=mix(deep,shallow,clamp(coast*0.85+n*0.14,0.0,1.0));"
-    "float foam=pow(ripple,18.0)*smoothstep(0.28,0.8,coast);"
-    "base+=vec3(0.3,0.43,0.43)*foam*0.085;"
-    "base+=pow(ripple,30.0)*0.007;"
-    "float edge=smoothstep(48.0,85.0,length(p-vec2(64.0)));"
-    "finalColor=vec4(mix(base,vec3(0.028,0.049,0.069),edge),1.0);}\n";
+#include "shaders.h"
 
 static float aw_y(float height) {
     return 1.8f+(height-1.0f)*3.0f;
@@ -162,10 +106,12 @@ static void aw_rock(AwBuilder *b,Vector3 p,float radius,float height,uint32_t se
     }
 }
 
+#include "props.h"
+
 static const Color aw_palette[AW_TILES]={
-    {103,142,83,255},{58,109,75,255},{140,112,80,255},{203,171,107,255},
-    {119,127,131,255},{209,225,230,255},{120,190,209,255},{95,82,65,255},
-    {67,133,143,255},{32,68,82,255},{242,91,28,255},{91,103,102,255}
+    {96,121,72,255},{64,87,45,255},{130,117,95,255},{182,167,131,255},
+    {122,124,116,255},{214,222,222,255},{129,167,179,255},{99,91,74,255},
+    {82,119,115,255},{32,68,82,255},{142,86,53,255},{103,107,102,255}
 };
 static float aw_world_q(const AwMap*m,float x,float z){
     x=fminf(AW_SIZE-0.0001f,fmaxf(0,x));z=fminf(AW_SIZE-0.0001f,fmaxf(0,z));
@@ -242,7 +188,8 @@ static void aw_destroy_scene(AwScene*s){
     if(s->tunnels.vertexCount)UnloadMesh(s->tunnels);
     if(s->tunnel_lights.vertexCount)UnloadMesh(s->tunnel_lights);
     UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->water);
-    MemFree(s->land_material.maps);MemFree(s->water_material.maps);
+    MemFree(s->land_material.maps);MemFree(s->water_material.maps);MemFree(s->shadow_material.maps);
+    UnloadRenderTexture(s->shadow);if(s->reflection.id)UnloadRenderTexture(s->reflection);UnloadShader(s->shadow_shader);
     UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);
     memset(s,0,sizeof(*s));
 }
@@ -255,24 +202,23 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         for(int k=0;k<4;k++)v[k].y=aw_y(t->q[k]/4.0f);
         AwVolumeRender render={&terrain,&tunnels,m,rank};aw_volume_cell(m,c,aw_render_volume_triangle,&render);
 
-        if(mat==AW_SHALLOW||mat==AW_ICE){
-            Vector3 p=aw_center(m,c);p.y+=0.025f;
-            for(int k=0;k<3;k++){
-                Vector3 a={p.x-0.6f,p.y,p.z-0.6f+k*0.5f},b={p.x+0.5f,p.y,p.z-0.63f+k*0.5f},d=b,e=a;d.z+=0.04f;e.z+=0.04f;
-                Vector3 strip[4]={a,b,d,e};aw_top(&scenery,strip,4,(Color){144,202,210,255},rank,1);
-            }
-        }
         int canonical=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c;
         uint32_t h=aw_hash(m->seed^(uint32_t)canonical*8191u);Vector3 p=aw_center(m,c);
-        if(!t->road&&!t->tunnel&&m->walkable[c]){
-            float jitter=((h&255)/255.0f-0.5f)*0.75f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;p.x+=jitter;p.z-=jitter;
-            if(mat==AW_FOREST){
-                aw_rock(&scenery,p,0.15f,0.9f,h,(Color){79,67,51,255},rank,1);p.y+=0.5f;
-                aw_rock(&scenery,p,0.77f,1.8f+(h%7)*0.12f,h,(Color){49,94,67,255},rank,1);p.y+=0.6f;
-                aw_rock(&scenery,p,0.54f,1.5f,h,(Color){67,121,78,255},rank,1);
-            }else if((mat==AW_ROCK||mat==AW_SNOW||mat==AW_DIRT)&&h%4==0){
-                aw_rock(&scenery,p,0.28f+(h%13)*0.035f,0.3f+(h%9)*0.1f,h,ground,rank,0);
-            }else if(mat==AW_GRASS&&h%3==0){aw_rock(&scenery,p,0.34f,0.26f,h,(Color){97,151,70,255},rank,0);}
+        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&m->walkable[c]){
+            float jitter=(aw_prop_random(h)-.5f)*.65f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;
+            p.x+=jitter;p.z-=jitter;
+            p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);
+            if(mat==AW_FOREST)aw_tree(&scenery,p,h,rank,h%4==0,0);
+            else if(mat==AW_SNOW&&h%19==0)aw_tree(&scenery,p,h,rank,1,1);
+            else if(mat==AW_GRASS&&h%31==0)aw_tree(&scenery,p,h,rank,0,0);
+            else if((mat==AW_ROCK||mat==AW_SNOW||mat==AW_DIRT||mat==AW_SAND)&&h%5==0){
+                aw_boulder(&scenery,p,.3f+aw_prop_random(h+1)*.38f,.35f+aw_prop_random(h+2)*.45f,h,ground,rank);
+                for(int i=0;i<3;i++){
+                    Vector3 q=p;q.x+=cosf(i*2.1f)*.42f;q.z+=sinf(i*2.1f)*.42f;
+                    q.y=aw_ground_y(m,c,(q.x/AW_UNIT-c%64),(q.z/AW_UNIT-c/64));
+                    aw_boulder(&scenery,q,.09f,.1f,h+i,ground,rank);
+                }
+            }else if((mat==AW_GRASS||mat==AW_DIRT||mat==AW_SAND)&&h%4==0)aw_grass(&scenery,p,h,rank,mat!=AW_GRASS);
         }
         if(m->walkable[c]){
             for(int k=0;k<4;k++){v[k].y=aw_y(t->q[k]/4.0f)+0.04f;}
@@ -281,13 +227,18 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     }
     for(int i=0;i<m->cave_count;i++)if(i%3==0){
         Vector3 p=aw_center(m,AW_CELLS+i);p.y+=0.06f;
-        aw_rock(&scenery,p,0.10f,0.14f,i,(Color){94,244,216,255},0,2);
-        aw_rock(&tunnel_lights,p,0.10f,0.14f,i,(Color){94,244,216,255},0,2);
+        aw_branch(&scenery,p,Vector3Add(p,(Vector3){0,.11f,0}),.07f,.05f,(Color){108,177,151,255},0,2,8);
+        aw_branch(&tunnel_lights,p,Vector3Add(p,(Vector3){0,.11f,0}),.07f,.05f,(Color){108,177,151,255},0,2,8);
     }
     for(int r=0;r<4;r++){
         Vector3 p=aw_center(m,m->resources[r]);
-        for(int i=0;i<5;i++){Vector3 q=p;q.x+=cosf(i*1.4f)*0.65f;q.z+=sinf(i*1.4f)*0.65f;aw_rock(&scenery,q,0.22f,0.55f+(i%3)*0.2f,i,(Color){64,205,236,255},0,2);}
+        aw_boulder(&scenery,p,.72f,.62f,m->seed+r,(Color){95,109,107,255},0);
+        for(int i=0;i<7;i++){
+            Vector3 q=p;q.x+=cosf(i*2.399f)*.58f;q.z+=sinf(i*2.399f)*.58f;
+            aw_rock(&scenery,q,.12f,.32f+(i%3)*.12f,i,(Color){83,143,155,255},0,6);
+        }
     }
+    for(int side=0;side<2;side++)aw_outpost(&scenery,aw_center(m,m->spawns[side]),side);
     Vector3 sea[4]={{-60,-0.12f,-60},{188,-0.12f,-60},{188,-0.12f,188},{-60,-0.12f,188}};
     aw_top(&water,sea,4,WHITE,0,0);
     if(tunnels.count)s->tunnels=aw_upload(&tunnels);
@@ -298,22 +249,91 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->land_reveal=GetShaderLocation(s->land_shader,"reveal");s->water_time=GetShaderLocation(s->water_shader,"time");
     s->cut_eye=GetShaderLocation(s->land_shader,"cutEye");s->cut_target=GetShaderLocation(s->land_shader,"cutTarget");s->cut_mode=GetShaderLocation(s->land_shader,"cutMode");
     s->tunnel_view=GetShaderLocation(s->land_shader,"tunnelView");
-    if(s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
+    s->land_view=GetShaderLocation(s->land_shader,"viewDirection");s->water_view=GetShaderLocation(s->water_shader,"viewDirection");
+    s->render_pass=GetShaderLocation(s->land_shader,"renderPass");s->light_matrix=GetShaderLocation(s->land_shader,"lightVP");
+    s->reflection_matrix=GetShaderLocation(s->water_shader,"reflectionVP");
+    s->land_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->land_shader,"texture0");
+    s->land_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->land_shader,"texture1");
+    s->water_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->water_shader,"texture0");
+    s->water_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->water_shader,"texture1");
+    s->shadow_shader=LoadShaderFromMemory(aw_vertex_shader,aw_shadow_fragment);
+    if(s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0||s->light_matrix<0||s->reflection_matrix<0||s->land_view<0||s->water_view<0||s->render_pass<0||s->water_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||s->shadow_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||!IsShaderValid(s->shadow_shader)){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
     s->land_material=LoadMaterialDefault();s->land_material.shader=s->land_shader;
     s->water_material=LoadMaterialDefault();s->water_material.shader=s->water_shader;
-    Image coast=GenImageColor(AW_SIZE,AW_SIZE,BLACK);Color*pixels=coast.data;
-    for(int z=0;z<AW_SIZE;z++)for(int x=0;x<AW_SIZE;x++){
-        int near=0;for(int dz=-3;dz<=3;dz++)for(int dx=-3;dx<=3;dx++){
-            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=AW_SIZE||nz>=AW_SIZE)continue;
-            if(aw_world_q(m,nx+0.5f,nz+0.5f)>1.5f){int value=255-45*(abs(dx)+abs(dz));if(value>near)near=value;}
-        }
-        pixels[z*AW_SIZE+x]=(Color){near,near,near,aw_world_q(m,x+0.5f,z+0.5f)>2?0:255};
+    s->shadow_material=LoadMaterialDefault();s->shadow_material.shader=s->shadow_shader;
+    /* A high-resolution shoreline distance field also carries local terrain
+     * occlusion. Its alpha keeps the water plane out of cave inspection views. */
+    enum {RES=256};float *height=malloc(RES*RES*sizeof(float)),*distance=malloc(RES*RES*sizeof(float));
+    if(!height||!distance){fprintf(stderr,"Shore map allocation failed\n");exit(2);}
+    for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
+        int i=z*RES+x;height[i]=aw_world_q(m,(x+.5f)*AW_SIZE/RES,(z+.5f)*AW_SIZE/RES);
+        distance[i]=height[i]>1.44f?0:1000;
     }
+    for(int pass=0;pass<2;pass++)for(int j=0;j<RES*RES;j++){
+        int i=pass?RES*RES-1-j:j,x=i%RES,z=i/RES,step=pass?1:-1;
+        for(int k=-1;k<=1;k++){
+            int nx=x+k,nz=z+step;if(nx>=0&&nx<RES&&nz>=0&&nz<RES)distance[i]=fminf(distance[i],distance[nz*RES+nx]+(k?1.414214f:1));
+        }
+        if(x+step>=0&&x+step<RES)distance[i]=fminf(distance[i],distance[i+step]+1);
+    }
+    Image coast=GenImageColor(RES,RES,WHITE);Color*pixels=coast.data;
+    for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
+        int i=z*RES+x;float obstruction=0;
+        for(int ring=0;ring<3;ring++)for(int d=0;d<8;d++){
+            int radius=(int[]){3,7,14}[ring],nx=aw_clamp(x+(int)(cosf(d*PI/4)*radius),0,RES-1),nz=aw_clamp(z+(int)(sinf(d*PI/4)*radius),0,RES-1);
+            obstruction+=Clamp((height[nz*RES+nx]-height[i])*.75f/(radius*.5f),0,1);
+        }
+        float ao=1.0f-obstruction/24*.8f;
+        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),(unsigned char)Clamp(height[i]/40*255,0,255),(unsigned char)(ao*255),height[i]>1.44f?0:255};
+    }
+    free(height);free(distance);
     s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);
-    s->water_material.maps[MATERIAL_MAP_DIFFUSE].texture=s->coast;s->built=1;
+    s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->coast;
+    s->water_material.maps[MATERIAL_MAP_ALBEDO].texture=s->coast;
+    s->shadow=LoadRenderTexture(2048,2048);
+    if(!IsRenderTextureValid(s->shadow)){fprintf(stderr,"Shadow framebuffer unavailable\n");exit(2);}
+    SetTextureFilter(s->shadow.texture,TEXTURE_FILTER_POINT);SetTextureWrap(s->shadow.texture,TEXTURE_WRAP_CLAMP);
+    s->land_material.maps[MATERIAL_MAP_METALNESS].texture=s->shadow.texture;
+    Vector3 sun=Vector3Normalize((Vector3){-.55f,.85f,-.40f});
+    Camera3D light={.position=Vector3Add((Vector3){64,7,64},Vector3Scale(sun,170)),.target={64,7,64},.up={0,1,0},.fovy=210,.projection=CAMERA_ORTHOGRAPHIC};
+    BeginTextureMode(s->shadow);ClearBackground(WHITE);BeginMode3D(light);
+    s->light_vp=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
+    DrawMesh(s->terrain,s->shadow_material,MatrixIdentity());DrawMesh(s->scenery,s->shadow_material,MatrixIdentity());
+    EndMode3D();EndTextureMode();
+    SetShaderValueMatrix(s->land_shader,s->light_matrix,s->light_vp);
+    s->built=1;
 }
+/* Planar reflections are cached until the orthographic camera or assembly
+ * changes. Water normals animate independently; a still view costs one pass. */
+static void aw_prepare_reflection(AwScene*s,Camera3D camera,float reveal){
+    int width=1024,height=(int)(1024.0f*GetScreenHeight()/GetScreenWidth());height=aw_clamp(height,256,1536);
+    if(s->reflection.texture.width!=width||s->reflection.texture.height!=height){
+        if(s->reflection.id)UnloadRenderTexture(s->reflection);
+        s->reflection=LoadRenderTexture(width,height);s->reflection_valid=0;
+        if(!IsRenderTextureValid(s->reflection)){fprintf(stderr,"Reflection framebuffer unavailable\n");exit(2);}
+        SetTextureFilter(s->reflection.texture,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->reflection.texture,TEXTURE_WRAP_CLAMP);
+        s->water_material.maps[MATERIAL_MAP_METALNESS].texture=s->reflection.texture;
+    }
+    if(s->reflection_valid&&Vector3Distance(camera.position,s->reflected_camera.position)<.0001f&&Vector3Distance(camera.target,s->reflected_camera.target)<.0001f&&fabsf(camera.fovy-s->reflected_camera.fovy)<.0001f&&fabsf(reveal-s->reflected_reveal)<.1f)return;
+    s->reflected_camera=camera;s->reflected_reveal=reveal;s->reflection_valid=1;
+    camera.position.y=-.24f-camera.position.y;camera.target.y=-.24f-camera.target.y;
+    Vector3 view=Vector3Normalize(Vector3Subtract(camera.position,camera.target));
+    int pass=1,off=0;
+    SetShaderValue(s->land_shader,s->render_pass,&pass,SHADER_UNIFORM_INT);
+    SetShaderValue(s->land_shader,s->cut_mode,&off,SHADER_UNIFORM_INT);SetShaderValue(s->land_shader,s->tunnel_view,&off,SHADER_UNIFORM_INT);
+    SetShaderValue(s->land_shader,s->land_view,&view,SHADER_UNIFORM_VEC3);SetShaderValue(s->land_shader,s->land_reveal,&reveal,SHADER_UNIFORM_FLOAT);
+    BeginTextureMode(s->reflection);ClearBackground((Color){99,122,136,255});BeginMode3D(camera);
+    s->reflection_vp=MatrixMultiply(rlGetMatrixModelview(),rlGetMatrixProjection());
+    DrawMesh(s->terrain,s->land_material,MatrixIdentity());DrawMesh(s->scenery,s->land_material,MatrixIdentity());
+    EndMode3D();EndTextureMode();
+    SetShaderValue(s->land_shader,s->render_pass,&off,SHADER_UNIFORM_INT);
+    SetShaderValueMatrix(s->water_shader,s->reflection_matrix,s->reflection_vp);
+}
+
 static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,Vector3 eye,Vector3 target,int cut,int tunnel_view){
     if(tunnel_view){reveal=AW_CELLS;cut=0;}
+    Vector3 view=Vector3Normalize(Vector3Subtract(eye,target));
+    SetShaderValue(s->land_shader,s->land_view,&view,SHADER_UNIFORM_VEC3);SetShaderValue(s->water_shader,s->water_view,&view,SHADER_UNIFORM_VEC3);
     SetShaderValue(s->land_shader,s->tunnel_view,&tunnel_view,SHADER_UNIFORM_INT);
     SetShaderValue(s->land_shader,s->land_reveal,&reveal,SHADER_UNIFORM_FLOAT);
     SetShaderValue(s->land_shader,s->cut_eye,&eye,SHADER_UNIFORM_VEC3);

@@ -157,6 +157,44 @@ A land mask prevents the decorative ocean from covering underground interiors.
 **Tile boundaries** shows retained shared surface profiles; excavated portions
 are omitted.
 
+## Rendering
+
+The renderer uses a neutral daylight treatment with physically based material
+response (GGX specular, roughness, Fresnel and filmic tone mapping). World-space
+stone grain, weathering, soil variation and wet shore tint continue across tile
+boundaries. Volcanic regions use cooled crust with narrow emissive fissures.
+A terrain-derived ambient occlusion texture adds contact depth.
+A static 2,048-square shadow map captures the terrain and decorative props;
+nine filtered depth comparisons soften the edges. Shadows are suppressed during
+assembly and cutaway/isolated inspection so removed surfaces do not obscure the
+view.
+
+`props.h` builds seeded cosmetic meshes: tapered trunks, roots, branches,
+twigs and two-sided leaves, broadleaf trees and conifers, irregular smooth
+boulders, pebbles, grass tufts, mineral clusters and industrial outposts. These
+use a separate hash stream and do not change WFC, navigation or collision.
+All geometry and materials are authored in C/GLSL; there are no external model,
+texture, CDN or asset-license dependencies.
+
+The ocean has animated wave normals, Fresnel reflection, deep/shallow color,
+subtle caustics, restrained sun highlights and moving shoreline foam. It samples
+a planar reflection of the actual terrain and static props. The reflection is
+1,024 pixels wide, follows the viewport aspect ratio (height bounded to
+256–1,536), and refreshes when the camera, viewport or assembly changes. A still
+view reuses the reflection while waves keep moving. Shore distance and ambient
+occlusion share a 256-square texture. Frame rate is visible under **Map checks**.
+Regeneration paints a busy state and disables controls before the synchronous
+WASM work runs outside the input event. Shader inputs retain the rank attribute
+required by Raylib 5.5's non-VAO path; the default batch's unused normal slot is
+also initialized to prevent invalid WebGL attribute calls.
+
+This is a first realism pass, not a finished AAA asset pipeline. Vegetation is
+static, there is no reflection of the moving scout, and the ocean is a visual
+surface rather than a fluid simulation. The single shadow map loses detail at
+extreme zoom. Mesh construction and GPU upload happen at world creation;
+**Generation** reports only the authoritative generator, not these rendering
+costs. Generator version 5 and its seed hashes are unchanged by this pass.
+
 ## Validation and release
 
 `tests/alienwars/map_test.c` runs 256 seed/configuration cases covering the full

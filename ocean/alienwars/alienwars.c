@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps
     });
 });
 #else
@@ -51,7 +51,7 @@ static void aw_set_isolation(int value){
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS());
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -121,14 +121,7 @@ static void aw_draw_markers(void) {
     for(int s=0;s<2;s++){
         Vector3 p=aw_center(&world,world.spawns[s]);
         Color accent=s?(Color){249,161,88,255}:(Color){101,225,222,255};
-        DrawCylinder((Vector3){p.x,p.y+0.04f,p.z},2.0f,2.0f,0.14f,8,(Color){43,55,57,255});
-        DrawCylinderWires((Vector3){p.x,p.y+0.2f,p.z},1.72f,1.72f,0.02f,8,accent);
-        for(int i=0;i<4;i++){
-            float a=PI*0.25f+i*PI*0.5f;
-            Vector3 column={p.x+cosf(a)*1.8f,p.y+0.5f,p.z+sinf(a)*1.8f};
-            DrawCube(column,0.28f,1.0f,0.28f,(Color){62,74,72,255});
-            column.y+=0.56f;DrawCube(column,0.3f,0.13f,0.3f,accent);
-        }
+        DrawCylinderWires((Vector3){p.x,p.y+0.24f,p.z},2.2f,2.2f,0.02f,32,accent);
     }
     for(int side=0;side<2;side++)if(world.cave_entrances[side]>=0){
         Vector3 p=aw_center(&world,AW_CELLS+world.cave_entrances[side]);p.y+=0.12f;
@@ -225,6 +218,7 @@ static void aw_update(void) {
     camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*100,focus.y+sinf(pitch)*100,focus.z+cosf(yaw)*cosf(pitch)*100};
     float aspect=(float)GetScreenWidth()/(float)GetScreenHeight();
     camera.up=(Vector3){0,1,0};camera.fovy=zoom*fmaxf(1.0f,1.35f/aspect);camera.projection=CAMERA_ORTHOGRAPHIC;
+    if(world.valid&&!isolate_tunnels)aw_prepare_reflection(&scene,camera,revealed-1);
     BeginDrawing();
     ClearBackground((Color){7,13,18,255});
     BeginMode3D(camera);
@@ -308,6 +302,13 @@ int main(int argc,char **argv) {
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_MSAA_4X_HINT|FLAG_WINDOW_RESIZABLE);
     InitWindow(1280,800,"AlienWars / Map Lab");
+#ifdef PLATFORM_WEB
+    /* Raylib 5.5's non-VAO batch path binds normals unconditionally even when
+     * its default shader omits them. Keep that unused attribute at slot 2,
+     * rather than submitting -1 to WebGL for every scout/guide draw. */
+    int *default_locs=rlGetShaderLocsDefault();
+    if(default_locs[SHADER_LOC_VERTEX_NORMAL]<0)default_locs[SHADER_LOC_VERTEX_NORMAL]=RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL;
+#endif
     SetTargetFPS(60);
     aw_new(seed,watch);
 #ifdef PLATFORM_WEB

@@ -38,7 +38,8 @@ current minimal template. Inspect headers before following an older tutorial.
 - `docs/runs/`: concise checked-in measurements and artifact hashes.
 - `web/shell.html`: authored browser presentation for the Raylib web build.
 - `ocean/alienwars/map.h`: deterministic, renderer-independent WFC and navigation.
-- `ocean/alienwars/render.h`, `alienwars.c`: Raylib Map Lab renderer and viewer.
+- `ocean/alienwars/render.h`, `props.h`, `shaders.h`, `alienwars.c`: Raylib
+  Map Lab rendering, cosmetic meshes, materials and viewer.
 - `web/maplab/shell.html`, `docs/maplab/`: Map Lab source and compiled Pages output.
 - `docs/index.html`, `docs/game.*`, `docs/web-build.json`: deliberate compiled
   Pages artifacts; regenerate with `scripts/build_web.sh`, never hand-edit.
