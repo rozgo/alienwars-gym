@@ -1,0 +1,151 @@
+{
+  "milestone": "Keep cast shadows stable during scout see-through",
+  "generator_version": 7,
+  "source_commit": "51b7da97b98501307c31c1b69ae8f68b9cc747ca",
+  "source_dirty": false,
+  "fix": "Camera cutaway no longer overrides sunlight visibility for the entire scene. Auto reveal and horizontal section sample the existing intact-world shadow map.",
+  "unchanged": "Shadow strength, ambient occlusion, terrain generation, collision, navigation, and isolated/assembly inspection behavior.",
+  "checks": {
+    "scope": "Rendering-only release; shader source is the only runtime change",
+    "reference_release": "d7c55601c22654be71abeff2d5e40d8406248c5a",
+    "generator_sources_unchanged": true,
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "7",
+        "hash": "5bf2041f",
+        "walk": "2294",
+        "reached": "2100",
+        "path": "191",
+        "decisions": "2187",
+        "attempts": "8",
+        "structure": "141",
+        "tunnels": "103",
+        "cost": "2132",
+        "shapes": "802",
+        "entrance_ne": "1842",
+        "entrance_sw": "2385",
+        "depth_ne": "-10",
+        "depth_sw": "-4",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "468",
+        "base_b": "2802",
+        "landforms": "12",
+        "plans": "3",
+        "ocean": "6056"
+      },
+      {
+        "seed": "1",
+        "version": "7",
+        "hash": "2800f063",
+        "walk": "2150",
+        "reached": "2040",
+        "path": "174",
+        "decisions": "2065",
+        "attempts": "4",
+        "structure": "101",
+        "tunnels": "96",
+        "cost": "1906",
+        "shapes": "687",
+        "entrance_ne": "684",
+        "entrance_sw": "2574",
+        "depth_ne": "-7",
+        "depth_sw": "-7",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6156"
+      },
+      {
+        "seed": "73",
+        "version": "7",
+        "hash": "4e98f07f",
+        "walk": "2230",
+        "reached": "2148",
+        "path": "179",
+        "decisions": "2113",
+        "attempts": "9",
+        "structure": "49",
+        "tunnels": "101",
+        "cost": "2042",
+        "shapes": "564",
+        "entrance_ne": "1192",
+        "entrance_sw": "3346",
+        "depth_ne": "-9",
+        "depth_sw": "-9",
+        "lakes": "3",
+        "rooms": "4",
+        "base_a": "459",
+        "base_b": "2866",
+        "landforms": "14",
+        "plans": "9",
+        "ocean": "6043"
+      },
+      {
+        "seed": "4294967295",
+        "version": "7",
+        "hash": "d50fafb7",
+        "walk": "1962",
+        "reached": "1825",
+        "path": "124",
+        "decisions": "1917",
+        "attempts": "4",
+        "structure": "83",
+        "tunnels": "114",
+        "cost": "1422",
+        "shapes": "615",
+        "entrance_ne": "761",
+        "entrance_sw": "3593",
+        "depth_ne": "-10",
+        "depth_sw": "-9",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "402",
+        "base_b": "2873",
+        "landforms": "8",
+        "plans": "5",
+        "ocean": "6490"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed",
+    "breakout_artifacts_unchanged": true
+  },
+  "validation_scope": "Native ASan/UBSan viewer build, WASM build, four packaged native/WASM comparisons to the prior release, artifact hashes and JavaScript syntax. Full generation suites were not repeated because generator/geometry/navigation sources are unchanged.",
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "seed": 1799299522,
+    "symmetry": 0,
+    "floors": [
+      6,
+      6
+    ],
+    "biome": 1,
+    "hash": "fda81b18",
+    "verified": [
+      "Paused underground scout at floor -2.5; same-camera Auto vs Off comparison",
+      "Surrounding terrain and prop shadows remain stable when the cutaway opens",
+      "Revealed tunnel floor retains world lighting and scout remains readable",
+      "Horizontal section retains tunnel shading",
+      "No warn/error console entries"
+    ]
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 30056,
+      "sha256": "6b94c3191d8adf94fc73adc0d65cd2a836e127e0d4f1a2bcabd6363568a87ec7"
+    },
+    "maplab.js": {
+      "bytes": 232268,
+      "sha256": "2e1ee54ce2a37966eab3854061ed83f25d5bdd896f15a23a8fcb7d21c3d8c83c"
+    },
+    "maplab.wasm": {
+      "bytes": 330900,
+      "sha256": "b33a3f78b48f8ffedf35255c5eb1ed0e8bcd3c4d52f69747772ac37b1ac442bd"
+    }
+  }
+}
