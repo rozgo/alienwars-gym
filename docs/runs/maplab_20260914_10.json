@@ -1,0 +1,200 @@
+{
+  "milestone": "Baked terrain/cave/prop ambient occlusion with clearer cast shadows",
+  "generator_version": 6,
+  "source_commit": "3d952661f26e1f9fc0d3a1eda23cc78c30beecb9",
+  "source_dirty": false,
+  "generator_results_unchanged": true,
+  "breakout_artifacts_unchanged": true,
+  "changes": {
+    "terrain": "Normal-aware multiscale horizon integration at actual receiver height",
+    "caves": "Cosine-weighted hemisphere sampling against cached shared tetrahedral solid, including signed/stacked floors and ceilings",
+    "contacts": "Soft elliptical footprints at tree roots, rocks, resources and outposts, with vertical falloff",
+    "trees": "Six directional probes at three heights interpolate ambient shading across dense leaf meshes",
+    "maximum_ambient_attenuation": 0.32,
+    "shadowed_key_retained": 0.4,
+    "comparison": "Baked occlusion checkbox, shareable ao=0, invalidates cached reflection",
+    "scope": "Opaque mesh alpha stores the bake. Direct/emissive/scout/overlay contributions retain their separate treatment."
+  },
+  "checks": {
+    "generator_version": 6,
+    "native": "MAP_TEST version=6 seeds=256 digest=5fcf7320 terrains=12 max_structure=106 geometry_choices=106496 entrance_sites=84 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=6 seeds=256 digest=5fcf7320 terrains=12 max_structure=106 geometry_choices=106496 entrance_sites=84 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "occlusion_native": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "occlusion_wasm": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "diversity_native": "DIVERSITY sym=0 worlds=24 bases=22 entrances=22 outline_bits_x100=1393 height_q_x100=358 road_change_permille=752 cave_change_permille=969 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=942 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=6 digest=6a26b7d0 PASS",
+    "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=22 entrances=22 outline_bits_x100=1393 height_q_x100=358 road_change_permille=752 cave_change_permille=969 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=942 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=6 digest=6a26b7d0 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "6",
+        "hash": "98a1c112",
+        "walk": "1812",
+        "reached": "1662",
+        "path": "175",
+        "decisions": "2188",
+        "attempts": "14",
+        "structure": "17",
+        "tunnels": "85",
+        "cost": "1941",
+        "shapes": "798",
+        "entrance_ne": "1201",
+        "entrance_sw": "3339",
+        "depth_ne": "-6",
+        "depth_sw": "-8",
+        "lakes": "2",
+        "rooms": "2",
+        "base_a": "774",
+        "base_b": "2990",
+        "landforms": "12",
+        "plans": "1",
+        "ocean": "6067"
+      },
+      {
+        "seed": "1",
+        "version": "6",
+        "hash": "bbf234ef",
+        "walk": "1731",
+        "reached": "1609",
+        "path": "174",
+        "decisions": "2078",
+        "attempts": "8",
+        "structure": "35",
+        "tunnels": "102",
+        "cost": "1906",
+        "shapes": "711",
+        "entrance_ne": "620",
+        "entrance_sw": "2629",
+        "depth_ne": "-10",
+        "depth_sw": "-9",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6301"
+      },
+      {
+        "seed": "73",
+        "version": "6",
+        "hash": "8c937a4a",
+        "walk": "1927",
+        "reached": "1803",
+        "path": "159",
+        "decisions": "2105",
+        "attempts": "6",
+        "structure": "24",
+        "tunnels": "82",
+        "cost": "1756",
+        "shapes": "539",
+        "entrance_ne": "1067",
+        "entrance_sw": "3472",
+        "depth_ne": "-4",
+        "depth_sw": "-7",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "775",
+        "base_b": "2745",
+        "landforms": "10",
+        "plans": "1",
+        "ocean": "6230"
+      },
+      {
+        "seed": "4294967295",
+        "version": "6",
+        "hash": "565a0f2d",
+        "walk": "1586",
+        "reached": "1566",
+        "path": "160",
+        "decisions": "1750",
+        "attempts": "4",
+        "structure": "48",
+        "tunnels": "45",
+        "cost": "1833",
+        "shapes": "531",
+        "entrance_ne": "1638",
+        "entrance_sw": "2323",
+        "depth_ne": "-7",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "782",
+        "base_b": "2995",
+        "landforms": "12",
+        "plans": "2",
+        "ocean": "6670"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "worlds": [
+      {
+        "seed": 143381177,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "tunnels": 1,
+        "hash": "71d38cff"
+      },
+      {
+        "seed": 1,
+        "symmetry": 0,
+        "floors": [
+          10,
+          3
+        ],
+        "biome": 4,
+        "tunnels": 1,
+        "hash": "46a0b976"
+      }
+    ],
+    "verified": [
+      "AO on/off at identical camera",
+      "Tree cast shadows and contact shading in entrance close-up",
+      "Cave cutaway and isolated shell with ceilings shown/hidden",
+      "Volcanic emission and extended ocean",
+      "Surface/ocean overlays remain readable",
+      "Seed hashes unchanged",
+      "No warn/error console entries"
+    ],
+    "baseline_console_messages": "Raylib logs its existing VAO/NPOT extension fallback notices at log level.",
+    "settled_fps_observed": 60,
+    "performance": {
+      "reference_world_bake_ms": 6226,
+      "unoptimized_bake_ms": 11317,
+      "samples": 774874,
+      "cave_samples": 196067,
+      "contacts": 218,
+      "tree_probes": 3132,
+      "scope": "Single development-desktop observation; bake only, excluding meshing/upload/generation. No mobile or sustained frame-rate benchmark."
+    }
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 28477,
+      "sha256": "f157ebf356f52c49692dd1edd8bd836d168c68b0cfb35b35705e3a71d152d408"
+    },
+    "maplab.js": {
+      "bytes": 231822,
+      "sha256": "a8a296f8cc1c8bb00978c7a6baa2ef53fb022e59fb67f89fe6c5dcc0f7610ac2"
+    },
+    "maplab.wasm": {
+      "bytes": 287337,
+      "sha256": "cf6510b69a26e0760c063948de7331b0f132a739514ef3b1bce008c3c43e92bf"
+    }
+  },
+  "limitations": [
+    "Finite angular/ray sampling and per-vertex interpolation; no full global illumination.",
+    "Prop contacts and foliage probes approximate cosmetic geometry; individual leaf triangles do not occlude each other.",
+    "Cutaway/isolation retain the complete cavity AO bake even when ceilings are hidden.",
+    "One-time bake adds work during synchronous world rebuilds; no AO rays run per frame."
+  ]
+}
