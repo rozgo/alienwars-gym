@@ -36,6 +36,7 @@
 
 // Project
 #include "ini.h"
+#include "live_log.h"
 
 #ifdef PRECISION_FLOAT
 typedef float precision_t;
@@ -3026,6 +3027,23 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         mkdir_p(log_dir);
     }
 
+    FILE* live_log = NULL;
+    if (ctx->artifact_owner) {
+        char path[4096];
+        snprintf(path, sizeof(path), "%s/%s.jsonl", log_dir, run_id);
+        live_log = fopen(path, "w");
+        assert(live_log && "failed to open live metrics");
+        fputs("{\"type\":\"start\",\"run_id\":", live_log);
+        puf_json_string(live_log, run_id);
+        fputs(",\"env\":", live_log);
+        puf_json_string(live_log, puf_ini_get_str(ini, "base", "env_name"));
+        fputs("}\n", live_log); fflush(live_log);
+        snprintf(path, sizeof(path), "%s/%s.config.ini", log_dir, run_id);
+        FILE* config_log = fopen(path, "w");
+        assert(config_log && "failed to write resolved configuration");
+        puf_ini_write(config_log, ini); fclose(config_log);
+    }
+
     PuffeRL* pufferl = create_pufferl(ini, ctx);
     Selfplay selfplay = {0};
     if (use_selfplay) {
@@ -3187,6 +3205,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         // n=0 logs omit env/*; keep last complete-episode snapshot.
         int episodes = dict_get(&new_log, "env/n") > 0;
         if (ctx->artifact_owner) {
+            puf_live_log(live_log, &new_log);
             puf_dashboard_print(ini, pufferl, &new_log, (int)pufferl->epoch);
         }
         result.cost = dict_get(&new_log, "uptime");
@@ -3205,6 +3224,10 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         dict_clear(&new_log);
     }
 
+    if (live_log) {
+        fprintf(live_log, "{\"type\":\"complete\",\"agent_steps\":%.0f}\n", result.steps);
+        fclose(live_log);
+    }
     // TrainResult curve: bin-mean over log_history (same as artifact metrics).
     DictItem* target = dict_find(&last_log, target_key);
     result.score = target ? (float)target->value : 0;

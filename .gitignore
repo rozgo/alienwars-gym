@@ -160,7 +160,7 @@ checkpoints/
 experiments/
 wandb/
 .neptune/
-raylib*/
+raylib*
 box2d*/
 
 # Temp Impulse Wars files

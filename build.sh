@@ -45,6 +45,7 @@ while [ $# -gt 0 ]; do
         --web)   MODE=web ;;
         --profile) MODE=profile ;;
         --cpu)   MODE=cpu ;;
+        --rl)    ALIENWARS_RL=1 ;;
         *) echo "Error: unknown argument '$1'" && exit 1 ;;
     esac
     shift
@@ -60,8 +61,8 @@ if [ "$ENV" = "robot_arm" ]; then
     esac
 fi
 
-if [ "$ENV" = "alienwars" ] && [ "${MODE:-native}" != "cpu" ] && [ "${MODE:-native}" != "web" ]; then
-    echo 'AlienWars currently provides the terrain Map Lab. Use --cpu or --web; the RL environment interface comes next.' >&2
+if [ "${ALIENWARS_RL:-0}" = "1" ] && [ "$ENV" != "alienwars" ]; then
+    echo '--rl selects the AlienWars policy viewer.' >&2
     exit 1
 fi
 
@@ -231,6 +232,10 @@ fi
 # Header-only envs compile src/puffercpu.c. SRC_FILE is the custom standalone
 # for osrs_* (visual sim) and nethack (TTY demo); see --cpu / web.sh.
 SRC_FILE=${SRC_FILE:-$SRC_DIR/$ENV.c}
+if [ "$ENV" = "alienwars" ] && [ "${ALIENWARS_RL:-0}" = "1" ]; then
+    SRC_FILE="ocean/alienwars/nav_viewer.c"
+    EXTRA_SRC="ocean/alienwars/nav_api.c"
+fi
 
 if [ "$(uname -m)" = "x86_64" ]; then
     SIMD_FLAGS=(-mavx2 -mfma)
@@ -319,6 +324,10 @@ if [ "$MODE" = "cpu" ]; then
     echo "Built: ./$OUTPUT_NAME"
     exit 0
 elif [ "$MODE" = "web" ]; then
+    if [ "$ENV" = "alienwars" ] && [ "${ALIENWARS_RL:-0}" = "1" ]; then
+        source ocean/alienwars/nav_web.sh
+        exit 0
+    fi
     if [ -f "$SRC_DIR/web.sh" ]; then
         source "$SRC_DIR/web.sh"
         exit 0
@@ -496,6 +505,13 @@ if [ "$MODE" = "native" ]; then
     fi
     OSRS_RENDER_OBJECT=""
     case "$ENV" in
+        alienwars)
+            OSRS_RENDER_OBJECT="build/alienwars_nav.o"
+            EXTRA_SRC=""
+            $CC $LINK_OPT "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}" -std=c11 \
+                -Wno-unused-function -I. "${INCLUDES[@]}" -DPLATFORM_DESKTOP \
+                -c ocean/alienwars/nav_api.c -o "$OSRS_RENDER_OBJECT"
+            ;;
         osrs_*)
             OSRS_RENDER_OBJECT="build/osrs_puffer_render.o"
             ENV_COMPILE_FLAGS+=(-DOSRS_PUFFER_RENDER)
