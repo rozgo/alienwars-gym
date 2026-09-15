@@ -101,9 +101,15 @@ strategic graphs, mine shafts, elevators, destructible terrain or simulated
 flooding. Navigation is a conservative surface/centerline graph; it is not a
 full free-roaming cave navmesh. Decorative props do not participate in collision.
 
-Lighting is deliberately subdued: terrain lighting uses 0.62 exposure before
-emission and tone mapping, and water is slightly darker. Emissive markers and
-inspection overlays retain contrast against the world. UI colors are unchanged.
+Lighting is deliberately subdued and has a narrow contrast range. Broad
+hemispheric fill carries the environment, with a weaker directional key and
+limited ambient occlusion. Cast shadows attenuate only 35% of the key light;
+cliffs and tree shadows retain readable detail. Terrain lighting uses 0.62
+exposure before emission and tone mapping. Fine material variation, wet-surface
+specular response, leaf backlighting and water highlights are restrained.
+Emissive effects retain their response; navigation overlays use stable unlit
+color so units, effects and inspection information stand out from the world.
+The scout and UI use separate, unchanged rendering passes.
 
 ## Why this algorithm
 
@@ -222,7 +228,8 @@ stone grain, weathering, soil variation and wet shore tint continue across tile
 boundaries. Volcanic regions use cooled crust with narrow emissive fissures.
 A terrain-derived ambient occlusion texture adds contact depth.
 A static 2,048-square shadow map captures the terrain and decorative props;
-nine filtered depth comparisons soften the edges. Shadows are suppressed during
+nine filtered depth comparisons soften the edges. The shaded key light retains
+65% of its intensity, and ambient occlusion reduces fill by at most 18%. Shadows are suppressed during
 assembly and cutaway/isolated inspection so removed surfaces do not obscure the
 view.
 
