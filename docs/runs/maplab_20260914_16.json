@@ -1,0 +1,46 @@
+{
+  "milestone": "Load the matching Map Lab runtime after deployments",
+  "generator_version": 8,
+  "source_commit": "6fdc15fc11632e30bb0b350baa5ad3a1bed02422",
+  "source_dirty": false,
+  "reason": "Chrome reused the pre-fix WASM after loading the updated HTML, retaining the old isolation camera behavior. Public cache-busted artifact bytes were already correct.",
+  "change": "The web build stamps JavaScript and Module.locateFile WASM URLs with a shared content digest. New page loads select matching compiled assets. Existing pages still need a reload.",
+  "checks": {
+    "asset_version": "f44ce393a89fd921",
+    "runtime_bytes_match_validated_camera_release": true,
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed",
+    "versioned_script_and_wasm_urls": "passed"
+  },
+  "validation_scope": "Compiled JavaScript and WASM bytes exactly match the validated camera fix in maplab_20260914_15.json. Checked the new HTML asset URLs, unresolved placeholders, hashes and JavaScript syntax. No generator or runtime changes in this loader follow-up.",
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "seed": 1,
+    "symmetry": 0,
+    "floors": [
+      6,
+      6
+    ],
+    "biome": 1,
+    "hash": "ea87aefb",
+    "verified": [
+      "The versioned loader starts successfully with an existing browser cache.",
+      "Isolating the entrance retains the close camera framing.",
+      "No warning/error console entries."
+    ]
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 30492,
+      "sha256": "2d3bdc1fe3a47ee380b2da2ea644e8c6cfb3e2203d24eecb63a3a0cc7c697a23"
+    },
+    "maplab.js": {
+      "bytes": 232268,
+      "sha256": "1955ed99f4906eefdfa6ee8d1a21e41c431de2f616d58c6c130aa3f04d19ac3c"
+    },
+    "maplab.wasm": {
+      "bytes": 331429,
+      "sha256": "55e7afcffd7f3d34bb967aebef63c202f9d1d105c7ba00c0848091a566f82b27"
+    }
+  }
+}
