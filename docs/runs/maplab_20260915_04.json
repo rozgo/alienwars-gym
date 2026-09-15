@@ -1,0 +1,122 @@
+{
+  "milestone": "Attachable unit sensors, ideal odometry and range overlays",
+  "generator_version": 10,
+  "source_commit": "44027f92d400e001239e9595bbf30ebed115c877",
+  "source_dirty": false,
+  "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+  "raylib": "5.5",
+  "artifacts": {
+    "index.html": {
+      "bytes": 39798,
+      "sha256": "bdf31bc8b9c6f3b26186a98c560cfc8b5e08c6c15570b61d973dff4b849f4ad0"
+    },
+    "maplab.js": {
+      "bytes": 233512,
+      "sha256": "4a504933b59fcfe3cbcc37de36904cec90b5e4666118097480484de301e1c3f1"
+    },
+    "maplab.wasm": {
+      "bytes": 395257,
+      "sha256": "38126ebfaf6e4034dcab807a58bc41b3f81899b3aefbbbec68e0b2b320a24234"
+    }
+  },
+  "sensor_version": 1,
+  "changes": [
+    "Fixed C sensor modules on all nine ground/naval/air unit types; exact pose separated from ideal local odometry.",
+    "32-beam LiDAR, 24-beam sonar, RF peer sensing, 8x6 depth camera; configurable local mounts and scheduled cached readings.",
+    "Shared tetrahedral terrain ray queries, ocean shelf intersections and unit sphere proxies. No step allocation or renderer dependency.",
+    "613 normalized observation floats per unit and 9 separate privileged pose floats.",
+    "Independent overlay toggles, selected/all-unit display, see-through underlay, equipment switches, pose/odometry readout and cached depth preview."
+  ],
+  "checks": {
+    "sensor_version": 1,
+    "generator_version": 10,
+    "platform": "Darwin arm64",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "node": "v23.11.0",
+    "native": "SENSOR_TEST version=1 mesh_rays=704 caves/roofs/bridges/slopes=PASS sea/sonar=PASS unit_hits=PASS mounts=PASS RF=PASS odometry/reset=PASS cadence/cache=PASS finite_fixed_obs=613 no_step_alloc=PASS deterministic=PASS map_unchanged=PASS",
+    "wasm": "SENSOR_TEST version=1 mesh_rays=704 caves/roofs/bridges/slopes=PASS sea/sonar=PASS unit_hits=PASS mounts=PASS RF=PASS odometry/reset=PASS cadence/cache=PASS finite_fixed_obs=613 no_step_alloc=PASS deterministic=PASS map_unchanged=PASS",
+    "native_benchmark": {
+      "worlds": "3",
+      "units": "9",
+      "steps": "1800",
+      "simulation_seconds": "30",
+      "cpu_ms": "207.572",
+      "ms_per_world_step": "0.1153",
+      "rays": "62714",
+      "samples": "2241",
+      "state_bytes": "158752",
+      "obs_floats": "613",
+      "no_step_alloc": "PASS",
+      "map_unchanged": "PASS"
+    },
+    "wasm_benchmark": {
+      "worlds": "3",
+      "units": "9",
+      "steps": "1800",
+      "simulation_seconds": "30",
+      "cpu_ms": "333.930",
+      "ms_per_world_step": "0.1855",
+      "rays": "62714",
+      "samples": "2241",
+      "state_bytes": "158752",
+      "obs_floats": "613",
+      "no_step_alloc": "PASS",
+      "map_unchanged": "PASS"
+    },
+    "scope": "Sensor sampling and observation packing only. 9 units, 3 generated worlds, 1800 steps at 60 Hz, including an underground scout. Generation, route/pose preparation, rendering and training are excluded. Finite-observation checks are included. Optimized native timing uses process CPU time; Node timing is Emscripten clock(). No CUDA throughput claim."
+  },
+  "packaged": {
+    "artifact_hashes": "PASS",
+    "javascript": "PASS",
+    "source_commit": "44027f92d400e001239e9595bbf30ebed115c877",
+    "packaged_parity": [
+      "MAP seed=73 version=10 hash=2ed014e9 walk=1886 reached=1770 path=157 decisions=1109 attempts=3 structure=42 tunnels=84 cost=1730 shapes=94 entrance_ne=1002 entrance_sw=3093 depth_ne=-8 depth_sw=-8 lakes=2 rooms=2 base_a=775 base_b=3320 landforms=14 plans=1 ocean=6176 bridges=0",
+      "MAP seed=72 version=10 hash=bbc2fd45 walk=2253 reached=2108 path=137 decisions=2160 attempts=4 structure=89 tunnels=48 cost=1559 shapes=292 entrance_ne=935 entrance_sw=2714 depth_ne=-5 depth_sw=-5 lakes=2 rooms=2 base_a=455 base_b=2744 landforms=12 plans=3 ocean=6149 bridges=1"
+    ]
+  },
+  "browser": {
+    "runtime": "Chrome WebGL 2",
+    "worlds": [
+      {
+        "seed": 73,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 2,
+        "hash": "2ed014e9"
+      },
+      {
+        "seed": 2438762858,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 2,
+        "hash": "817efaf8"
+      }
+    ],
+    "checks": [
+      "Ground LiDAR/camera overlays and depth preview inspected.",
+      "Naval sonar: 21 bathymetry/obstacle returns; underwater visibility reviewed.",
+      "LiDAR attached to patrol boat; RF detached. Switching units and New world retained the equipment choices. Restored defaults after test.",
+      "Sonar attached to dry ground scout correctly reported mount outside water.",
+      "All four overlays on all nine moving units: UI reported 60 fps during local observation (not a controlled graphics benchmark).",
+      "Air camera produced varying depth returns and a live 8x6 preview.",
+      "Underground scout: 29 LiDAR and 48 camera hits; odometry reset to zero after tour change. Tunnel isolation preserved measurements and camera framing.",
+      "Selected unit and overlay state retained after reload.",
+      "390x844 viewport: page width 390, sensor panel width 390, no horizontal overflow. Viewport override reset.",
+      "Console warning/error list empty."
+    ]
+  },
+  "validation_scope": "Sensor contracts and benchmark ran in native C and WASM; packaged ASan/UBSan native and WASM viewers matched for two seeds. The full v10 generator/navigation/meshing suite passed in the immediately preceding volcanic-removal release; generator and patrol navigation sources are unchanged by this sensor release.",
+  "limitations": [
+    "Scripted traffic, no AlienWars training task yet.",
+    "Ideal odometry has no noise/drift; RF and sonar are game abstractions.",
+    "Camera measures radial depth, not RGB; cosmetic props do not occlude sensors.",
+    "Unit detection uses spherical body proxies; no inter-unit collision avoidance.",
+    "CPU/Node sensor timings exclude generation, pose preparation, rendering and policy training."
+  ]
+}
