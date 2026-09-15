@@ -1,0 +1,155 @@
+{
+  "milestone": "Preserve the camera when toggling tunnel isolation",
+  "generator_version": 8,
+  "source_commit": "88ee2c419d6251dfc41d980e4b5f833acd6cd674",
+  "source_dirty": false,
+  "behavior": [
+    "Isolation only toggles visibility. Both directions retain camera focus, orbit and zoom, including adjustments made while isolated.",
+    "Follow scout remains enabled and continues in both views; no deferred camera snap when leaving isolation.",
+    "Reset view explicitly frames the entire network when isolated and disables scout following."
+  ],
+  "checks": {
+    "scope": "Viewer-only release; preserve camera across tunnel isolation toggles",
+    "reference_release": "6f0b48d3e764da3747e1ebbcd105584d5d8306e4",
+    "generator_sources_unchanged": true,
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "8",
+        "hash": "886e7992",
+        "walk": "2052",
+        "reached": "1905",
+        "path": "175",
+        "decisions": "2188",
+        "attempts": "14",
+        "structure": "80",
+        "tunnels": "85",
+        "cost": "1941",
+        "shapes": "798",
+        "entrance_ne": "1201",
+        "entrance_sw": "3339",
+        "depth_ne": "-6",
+        "depth_sw": "-8",
+        "lakes": "2",
+        "rooms": "2",
+        "base_a": "774",
+        "base_b": "2990",
+        "landforms": "12",
+        "plans": "1",
+        "ocean": "6067"
+      },
+      {
+        "seed": "1",
+        "version": "8",
+        "hash": "1356a195",
+        "walk": "1926",
+        "reached": "1803",
+        "path": "174",
+        "decisions": "2078",
+        "attempts": "11",
+        "structure": "86",
+        "tunnels": "80",
+        "cost": "1906",
+        "shapes": "711",
+        "entrance_ne": "814",
+        "entrance_sw": "2888",
+        "depth_ne": "-8",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6301"
+      },
+      {
+        "seed": "73",
+        "version": "8",
+        "hash": "8c937a4a",
+        "walk": "2047",
+        "reached": "1923",
+        "path": "159",
+        "decisions": "2105",
+        "attempts": "6",
+        "structure": "24",
+        "tunnels": "82",
+        "cost": "1756",
+        "shapes": "539",
+        "entrance_ne": "1067",
+        "entrance_sw": "3472",
+        "depth_ne": "-4",
+        "depth_sw": "-7",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "775",
+        "base_b": "2745",
+        "landforms": "10",
+        "plans": "1",
+        "ocean": "6230"
+      },
+      {
+        "seed": "4294967295",
+        "version": "8",
+        "hash": "60e02ba4",
+        "walk": "1797",
+        "reached": "1778",
+        "path": "160",
+        "decisions": "1750",
+        "attempts": "4",
+        "structure": "102",
+        "tunnels": "45",
+        "cost": "1833",
+        "shapes": "531",
+        "entrance_ne": "1638",
+        "entrance_sw": "2323",
+        "depth_ne": "-7",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "782",
+        "base_b": "2995",
+        "landforms": "12",
+        "plans": "2",
+        "ocean": "6670"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed",
+    "breakout_artifacts_unchanged": true
+  },
+  "validation_scope": "Native ASan/UBSan viewer build and WASM build; four packaged native/WASM worlds compared to the prior release; artifact hashes and JavaScript syntax. Generator, mesh, collision and shader sources are unchanged, so the full generation suites were not repeated.",
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "seed": 1,
+    "symmetry": 0,
+    "floors": [
+      6,
+      6
+    ],
+    "biome": 1,
+    "tunnels": 1,
+    "hash": "ea87aefb",
+    "verified": [
+      "Paused entrance: manually rotated and panned camera; entrance floor and scout retain their screen position and scale when isolation is enabled.",
+      "Rotated, panned and zoomed while isolated; returning to terrain retains the adjusted framing.",
+      "Moving underground scout remains centered with Follow scout enabled across both modes.",
+      "Reset view in isolation explicitly fits the whole network and turns Follow scout off.",
+      "World hash and route unchanged by visibility toggles; no warning/error console entries."
+    ]
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 30423,
+      "sha256": "acea629937962869330c43e826f8f0d18b3920fa647f33cd0781493946ff1349"
+    },
+    "maplab.js": {
+      "bytes": 232268,
+      "sha256": "1955ed99f4906eefdfa6ee8d1a21e41c431de2f616d58c6c130aa3f04d19ac3c"
+    },
+    "maplab.wasm": {
+      "bytes": 331429,
+      "sha256": "55e7afcffd7f3d34bb967aebef63c202f9d1d105c7ba00c0848091a566f82b27"
+    }
+  }
+}
