@@ -277,14 +277,17 @@ see it inside the terrain. **Walkability overlay** includes sampled chamber and
 passage floors. In tunnel isolation, passage guides include the mountain routes
 (gold interior, mint bypass) along with the deep cave network.
 
-**Isolate tunnels** hides the landscape, ocean and surface props, then frames
-the complete passage network at every depth. **Show tunnel ceilings** switches
+**Isolate tunnels** hides the landscape, ocean and surface props while preserving
+the current camera position, angle and zoom. Turning isolation off also keeps the
+current camera, including adjustments made while isolated. **Follow scout** works
+in both modes without interruption. Use **Reset view** while isolated to explicitly
+frame the complete network. **Show tunnel ceilings** switches
 between an open-top view of floors and ramps and the full arched shell. Both
 views use the actual excavated terrain triangles, rendered from either side;
 entrance floors are retained where they meet the surface. **Passage guides**
-shows the entire cave graph and marks entrances. Toggle isolation off to return
-to the previous landscape camera and cutaway settings. These controls only
-change rendering and camera state: they do not regenerate the map or replace
+shows the entire cave graph and marks entrances. Toggle isolation off to restore
+the landscape and cutaway settings in the same view. Isolation only changes
+visibility: it does not regenerate the map or replace
 the scout's route. Shared URLs retain `isolate=1` and optional `ceilings=1`.
 
 **Auto cutaway** tests the orthographic camera-to-scout ray against the meshed

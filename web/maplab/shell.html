@@ -149,7 +149,7 @@
         <label class="toggle" for="isolate-tunnels">Isolate tunnels<input type="checkbox" id="isolate-tunnels"></label>
         <div id="isolation-options" hidden>
           <label class="toggle" for="tunnel-ceilings">Show tunnel ceilings<input type="checkbox" id="tunnel-ceilings"></label>
-          <p class="seed-note">Landscape hidden. Drag to orbit around the full passage network.</p>
+          <p class="seed-note">Landscape hidden. Camera stays in place. Reset view frames the full network.</p>
         </div>
         <label class="toggle" for="surface-detail">Surface detail<input type="checkbox" id="surface-detail" checked></label>
         <label class="toggle" for="baked-occlusion">Baked occlusion<input type="checkbox" id="baked-occlusion" checked></label>
@@ -219,7 +219,7 @@
       $('path-toggle-label').textContent=isolated?'Passage guides':'Scout route';
       $('scout-heading').textContent=isolated?'TUNNEL STRUCTURE / ALL PASSAGES':'NAVIGATION SCOUT / A ↔ B';
       $('overlay-key').hidden=isolated||!$('walkability').checked;
-      for(const id of ['cutaway','tile-boundaries','walkability','ocean-access','ocean-view','follow'])$(id).disabled=isolated||!ready;
+      for(const id of ['cutaway','tile-boundaries','walkability','ocean-access','ocean-view'])$(id).disabled=isolated||!ready;
       $('isolate-tunnels').disabled=!$('tunnels').checked||!ready;
       $('tunnel-ceilings').disabled=!isolated||!ready;
     }

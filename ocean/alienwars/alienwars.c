@@ -23,7 +23,6 @@ static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,show_tiles=0,sco
 static float scout_floor=1;
 static int baked_occlusion=1,surface_detail=1;
 static int isolate_tunnels=0,show_tunnel_ceilings=0;
-static struct {Vector3 focus;float yaw,pitch,zoom;} landscape_camera;
 static Camera3D camera;
 static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
 static Vector3 focus={64,10,64};
@@ -49,10 +48,9 @@ static void aw_frame_tunnels(void){
     zoom=Clamp(Vector3Distance(lo,hi)*1.12f,16,210);
 }
 static void aw_set_isolation(int value){
-    value=!!value&&world.cave_count>0;
-    if(value&&!isolate_tunnels){landscape_camera.focus=focus;landscape_camera.yaw=yaw;landscape_camera.pitch=pitch;landscape_camera.zoom=zoom;}
-    if(!value&&isolate_tunnels){focus=landscape_camera.focus;yaw=landscape_camera.yaw;pitch=landscape_camera.pitch;zoom=landscape_camera.zoom;}
-    isolate_tunnels=value;if(value)aw_frame_tunnels();
+    /* Visibility only: both modes share the same camera, including any orbit,
+     * pan or zoom performed while isolated. Framing is an explicit action. */
+    isolate_tunnels=!!value&&world.cave_count>0;
 }
 
 static void aw_publish(void) {
@@ -106,7 +104,7 @@ AW_EXPORT void aw_step(void) {
 }
 
 AW_EXPORT void aw_camera_control(int action) {
-    if(action==0){if(isolate_tunnels)aw_frame_tunnels();else{yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};follow_scout=0;}}
+    if(action==0){follow_scout=0;if(isolate_tunnels)aw_frame_tunnels();else{yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};}}
     if(action==9){aw_set_isolation(0);yaw=.75f;pitch=.9f;zoom=235;focus=(Vector3){64,0,64};follow_scout=0;}
     if(action==1)zoom=fmaxf(16,zoom*0.84f);
     if(action==2)zoom=fminf(280,zoom/0.84f);
@@ -241,7 +239,7 @@ static void aw_update(void) {
     if(IsKeyPressed(KEY_SPACE))aw_watch();
 #endif
     Vector3 scout=aw_unit_position();
-    if(follow_scout&&!isolate_tunnels)focus=scout;
+    if(follow_scout)focus=scout;
     camera.target=focus;
     camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*400,focus.y+sinf(pitch)*400,focus.z+cosf(yaw)*cosf(pitch)*400};
     float aspect=(float)GetScreenWidth()/(float)GetScreenHeight();
