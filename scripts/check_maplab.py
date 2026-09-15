@@ -91,6 +91,15 @@ detail_wasm = run(['node','build/detail-test.js'])
 assert detail_native == detail_wasm, 'Native/WASM detail map fixtures disagree'
 print(detail_native)
 
+patrol_source = 'tests/alienwars/patrol_test.c'
+run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',patrol_source,'-lm','-o','build/patrol-test'])
+patrol_native = run(['build/patrol-test'])
+run([emcc,'-std=c11','-O3','-I.',patrol_source,'-lm','-o','build/patrol-test.js',
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+patrol_wasm = run(['node','build/patrol-test.js'])
+assert patrol_native == patrol_wasm, 'Native/WASM patrol navigation disagrees'
+print(patrol_native)
+
 manifest = json.loads((PAGES / 'build.json').read_text())
 for name, expected in manifest['artifacts'].items():
     blob = (PAGES / name).read_bytes()
@@ -140,6 +149,7 @@ for seed in [0, 1, 73, 4294967295]:
 report = {'generator_version':9,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
           'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
           'relief_native':relief_native,'relief_wasm':relief_wasm,
+          'patrol_native':patrol_native,'patrol_wasm':patrol_wasm,
           'detail_native':detail_native,'detail_wasm':detail_wasm,
           'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
           'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,

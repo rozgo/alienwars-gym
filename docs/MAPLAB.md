@@ -46,8 +46,8 @@ sea-connected component requires at least one quarter-floor of clearance across
 a tile footprint. `aw_ocean_path` checks a requested draft and output capacity.
 Naval node IDs are separate from surface/cave IDs. Inland lakes and tunnels do
 not provide phantom access to the sea. **Ocean access** displays that component;
-**View ocean extent** frames the enlarged area. Ships, unit footprints beyond a
-tile, currents and naval combat are not implemented yet.
+**View ocean extent** frames the enlarged area. Scripted naval patrols use this
+grid with draft and footprint filters; currents and naval combat are not implemented.
 
 Each world plans **one to three inland lakes**, mirrored to two to six in a
 symmetric world. These are closed basins with irregular shores and an intact dry
@@ -139,8 +139,8 @@ passes. A compact abutment weld removes sub-lattice pinches, capped at the
 planned deck top so approach grades stay exact. Walkable spans connect both
 ends through the deck; small and large bodies must pass the complete route.
 Ground below a low deck is blocked when headroom is insufficient. The original
-water bed and naval depth/connectivity stay unchanged. Bridge air draft for
-future ships is not yet part of the naval path API.
+water bed and naval depth/connectivity stay unchanged. Bridge air draft is not part of the general naval path API; scripted patrols
+apply their own mast-clearance filter.
 
 Steel edge trusses and expansion seams are decorative and lie outside the
 validated center walking strip. **Cross a bridge** frames a bridge and starts
@@ -153,6 +153,38 @@ large-body connectivity, clear space under decks, matching mirrored structures,
 and unchanged ocean data. The volume suite includes a bridge/abutment fixture
 that checks mesh-edge pairing and agreement with collision density. These
 checks run in native C and WASM alongside the existing terrain and cave suites.
+
+## Patrol traffic
+
+The inspection scout is joined by eight ambient patrols: a tracked rover and
+cargo hauler on land; a skiff, patrol boat and cutter at sea; and a quadrotor,
+gunship and transport in the air. These are nine procedural unit silhouettes,
+with different speeds and navigation constraints. **Patrol traffic** selects
+live, paused or hidden traffic. **Find next patrol** frames each background
+vehicle in turn without changing its route. **Pause scout** and the route inspection controls
+still operate the original scout independently. Reduced-motion preference starts
+both the scout and background patrols paused. Isolation hides background traffic.
+
+Heavy ground patrols use the large-body surface/span graph and validate the
+space between waypoints. A rover crosses the first accepted bridge when one
+exists; the hauler patrols from Base B. Naval routes require sea connectivity,
+drafts of 100/250/500 hundredths of a quarter floor, extra clearance around larger
+hulls and mast clearance below bridge decks. They do not enter enclosed lakes.
+Aircraft sample a terrain/bridge clearance envelope along closed routes, with
+separate flight heights and bounded climbs/descents. Their clearance is based on
+authoritative terrain, not decorative trees. Patrol generation preserves the
+world hash and the inspection route. `patrol_test.c` checks continuous ground
+support, boat depth/headroom and aircraft clearance in native C and WASM.
+
+These are scripted patrols, without combat, learned policies, mutual collision
+avoidance, flight dynamics or vessel buoyancy physics. Models use procedural
+geometry; dynamic units are not part of the baked terrain-shadow texture.
+
+The slope mesher now orients faces using the strongest positive and negative
+field samples in each tetrahedron. The former first-sample direction could be
+nearly tangent to a graded face, invert visible triangles through cancellation,
+and expose black triangular holes through backface culling. The regression
+fixture checks upward-facing ramps at several grades and directions.
 
 ## Mountain traversal — version 8
 

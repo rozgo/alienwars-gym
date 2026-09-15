@@ -1,5 +1,6 @@
 /* Map Lab viewer. The shared map.h also serves the PufferLib environment. */
 #include "render.h"
+#include "patrol_render.h"
 #include <inttypes.h>
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -18,6 +19,8 @@ EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached
 
 static AwMap world;
 static AwScene scene;
+static AwPatrols patrols;
+static int patrol_mode=0; /* Live, paused, hidden. */
 static AwOptions settings={1,6,6,0,1};
 static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,show_tiles=0,scout_tour=0;
 static float scout_floor=1;
@@ -65,6 +68,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
         aw_publish();
         return;
     }
+    aw_patrol_build(&world,&patrols);
     generation_ms=(GetTime()-start)*1000;
     aw_build_scene(&scene,&world);aw_set_occlusion(&scene,baked_occlusion);aw_set_detail(&scene,surface_detail);
     if(isolate_tunnels)aw_set_isolation(world.cave_count>0);
@@ -90,6 +94,7 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==9)show_ocean=!!value;
     if(option==10){baked_occlusion=!!value;aw_set_occlusion(&scene,baked_occlusion);}
     if(option==11){surface_detail=!!value;aw_set_detail(&scene,surface_detail);}
+    if(option==12)patrol_mode=aw_clamp(value,0,2);
     aw_publish();
 }
 
@@ -210,6 +215,14 @@ AW_EXPORT void aw_inspect_bridge(void){
     focus=aw_bridge_point(b,b->length*.5f,0,0);zoom=b->length*AW_UNIT+16;pitch=.70f;yaw=b->dx?.8f:2.3f;aw_publish();
 }
 
+AW_EXPORT int aw_inspect_patrol(void){
+    static unsigned next=0;if(!world.valid||!patrols.count)return -1;
+    int i=next++%AW_PATROLS;const AwPatrol*p=&patrols.units[i];if(p->count<2)return -1;
+    AwPatrolPoint point=aw_patrol_position(&world,p,p->progress);
+    aw_set_isolation(0);follow_scout=0;focus=(Vector3){point.x*AW_UNIT,aw_y(point.q/4),point.z*AW_UNIT};
+    zoom=p->layer==AW_PATROL_AIR?45:24;pitch=.8f;yaw=.75f;aw_publish();return i;
+}
+
 static void aw_draw_unit(void) {
     Vector3 p=aw_unit_position();
     DrawCylinder((Vector3){p.x,p.y+0.025f,p.z},0.6f,0.6f,0.01f,12,(Color){26,39,38,170});
@@ -224,6 +237,15 @@ static void aw_draw_unit(void) {
 
 static void aw_update(void) {
     float dt=fminf(GetFrameTime(),0.05f);
+    if(patrol_mode==0&&revealed>=AW_CELLS&&!isolate_tunnels)for(int i=0;i<AW_PATROLS;i++){
+        AwPatrol*p=&patrols.units[i];float speed=p->speed;
+        if(p->layer==AW_PATROL_GROUND&&p->count>1){
+            float cycle=fmodf(p->progress,(p->count-1)*2.0f),step=cycle>p->count-1?(p->count-1)*2-cycle:cycle;
+            int n=aw_clamp((int)step,0,p->count-2);
+            speed*=10.0f/fmaxf(10,aw_move_cost(&world,p->route[n],p->route[n+1]));
+        }
+        p->progress+=dt*speed;
+    }
     animation_time+=dt;
     if(!paused&&revealed<AW_CELLS)revealed=fminf(AW_CELLS,revealed+dt*320);
     if(revealed>=AW_CELLS&&!unit_paused&&world.path_length>1){
@@ -309,6 +331,7 @@ static void aw_update(void) {
                 }
             }
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
+            if(!isolate_tunnels&&patrol_mode!=2)aw_patrol_draw(&world,&patrols,animation_time);
         }else{
             /* The wire footprint makes the incomplete terrain readable. */
             for(int z=0;z<=AW_SIZE;z+=4)DrawLine3D((Vector3){0,0.02f,z*AW_UNIT},(Vector3){128,0.02f,z*AW_UNIT},(Color){56,100,108,90});

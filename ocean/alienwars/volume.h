@@ -21,7 +21,13 @@ static void aw_tetrahedron(AwVolumePoint*p,float*v,AwVolumeTriangle emit,void*ct
     int solid[4],air[4],ns=0,na=0;
     for(int i=0;i<4;i++){if(v[i]>0)solid[ns++]=i;else air[na++]=i;}
     if(!ns||!na)return;
-    AwVolumePoint direction={p[air[0]].x-p[solid[0]].x,p[air[0]].q-p[solid[0]].q,p[air[0]].z-p[solid[0]].z};
+    /* Use the strongest signed samples for orientation. The first pair can
+     * lie almost on the isosurface, making its direction tangent to a graded
+     * face. Float cancellation then flips whole rows of visible triangles. */
+    int inside=solid[0],outside=air[0];
+    for(int i=1;i<ns;i++)if(v[solid[i]]>v[inside])inside=solid[i];
+    for(int i=1;i<na;i++)if(v[air[i]]<v[outside])outside=air[i];
+    AwVolumePoint direction={p[outside].x-p[inside].x,p[outside].q-p[inside].q,p[outside].z-p[inside].z};
     if(ns==1||na==1){
         int a=ns==1?solid[0]:air[0];int *other=ns==1?air:solid;
         AwVolumePoint t[3];for(int i=0;i<3;i++){int b=other[i];t[i]=aw_volume_lerp(p[a],p[b],v[a],v[b]);}

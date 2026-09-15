@@ -156,9 +156,12 @@
         <label class="toggle" for="tile-boundaries">Tile boundaries<input type="checkbox" id="tile-boundaries"></label>
         <label class="toggle" for="ocean-access">Ocean access<input type="checkbox" id="ocean-access"></label>
         <button id="ocean-view" data-camera="9">View ocean extent</button>
-        <p class="seed-note" id="ocean-key" hidden>Blue: sea-connected water · 16-tile outer belt. Navigation preview; ships are not implemented yet.</p>
+        <p class="seed-note" id="ocean-key" hidden>Blue: sea-connected water · 16-tile outer belt. Naval patrols stay in sea-connected water and respect their draft.</p>
         <label class="toggle" for="walkability">Walkability overlay<input type="checkbox" id="walkability"></label>
         <label class="toggle" for="path"><span id="path-toggle-label">Scout route</span><input type="checkbox" id="path" checked></label>
+        <label for="patrol-mode">Patrol traffic</label><select id="patrol-mode"><option value="0">Live · ground, naval &amp; air</option><option value="1">Paused</option><option value="2">Hidden</option></select>
+        <button id="find-patrol">Find next patrol</button><p class="seed-note" id="patrol-note">3 ground · 3 naval · 3 air · scripted traffic</p>
+        <details><summary>Nine unit types</summary><p>Ground: inspection scout, tracked rover, cargo hauler.<br>Naval: skiff, patrol boat, cutter.<br>Air: quadrotor, gunship, transport.<br>Scripted patrols follow terrain clearance and water depth. No combat or learned policies yet.</p></details>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
         <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
         <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Horizontal section</option><option value="0">Off · solid terrain</option></select>
@@ -188,7 +191,7 @@
         </dl>
       </section>
       <section class="panel-section">
-        <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity support future naval movement, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>Broad seeded hills add rolling ground between roads while cliff bands retain their sharper contours. Bridges fit existing banks over water, with graded decks and separate walkable floors above the unchanged bed. Cross a bridge follows a validated crossing.</p><p>The landscape is completed first. Directional WFC sockets fit optional passages and shallow surface bypasses to existing hills, with compatible grades and eight arch profiles. No peaks or route foundations are added to force a crossing; unsuitable worlds keep their original terrain. Walkable floor spans connect chambers, ramps and natural surface openings; stacked floors remain separate. Mountain passage and Mountain bypass let the scout explore each route.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
+        <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity guide naval patrols, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>Broad seeded hills add rolling ground between roads while cliff bands retain their sharper contours. Bridges fit existing banks over water, with graded decks and separate walkable floors above the unchanged bed. Cross a bridge follows a validated crossing.</p><p>The landscape is completed first. Directional WFC sockets fit optional passages and shallow surface bypasses to existing hills, with compatible grades and eight arch profiles. No peaks or route foundations are added to force a crossing; unsuitable worlds keep their original terrain. Walkable floor spans connect chambers, ramps and natural surface openings; stacked floors remain separate. Mountain passage and Mountain bypass let the scout explore each route.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
         <p class="provenance">Generator v9 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
@@ -208,6 +211,7 @@
     $('baked-occlusion').checked=params.get('ao')!=='0';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if($('scout-pause').checked)$('patrol-mode').value='1';
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
     const bounded = (name,fallback,min,max) => {const raw=params.get(name);const n=Number(raw);return raw!==null && Number.isInteger(n) && n>=min && n<=max?n:fallback;};
     $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
@@ -279,6 +283,7 @@
           Module._aw_option(0,Number($('walkability').checked));
           Module._aw_option(1,Number($('path').checked));
           Module._aw_option(2,Number($('scout-pause').checked));
+          Module._aw_option(12,Number($('patrol-mode').value));
           Module._aw_option(4,Number($('cutaway').value));
           Module._aw_option(6,Number($('tile-boundaries').checked));
           Module._aw_option(9,Number($('ocean-access').checked));
@@ -341,6 +346,7 @@
           Module._aw_config(seed,0,...args);
           rebuilding=false; ready=false; lastReport=null;
           Module._aw_option(2,Number($('scout-pause').checked));
+          Module._aw_option(12,Number($('patrol-mode').value));
           syncUrl();
         } catch(error) { rebuilding=false; ready=false; fail(error); }
       },0));
@@ -376,6 +382,8 @@
     $('tile-boundaries').addEventListener('change',()=>{Module._aw_option(6,Number($('tile-boundaries').checked));syncUrl();});
     $('walkability').addEventListener('change',()=>{Module._aw_option(0,Number($('walkability').checked));$('overlay-key').hidden=!$('walkability').checked;syncUrl();});
     $('path').addEventListener('change',()=>{Module._aw_option(1,Number($('path').checked));syncUrl();});
+    $('find-patrol').addEventListener('click',()=>{const i=Module._aw_inspect_patrol();if(i>=0){$('patrol-note').textContent=['Tracked rover','Cargo hauler','Skiff','Patrol boat','Cutter','Quadrotor','Gunship','Air transport'][i];$('follow').checked=false;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();}});
+    $('patrol-mode').addEventListener('change',()=>Module._aw_option(12,Number($('patrol-mode').value)));
     $('scout-pause').addEventListener('change',()=>Module._aw_option(2,Number($('scout-pause').checked)));
     $('overlay-key').hidden=!$('walkability').checked;
     $('ocean-key').hidden=!$('ocean-access').checked;

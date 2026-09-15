@@ -198,3 +198,11 @@ Bridges fit the completed terrain through `bridges.h`; deck geometry in
 unchanged water beds. Validate both bank joins, both body sizes, headroom below
 low decks, meaningful water gaps and rotational pairs. Never fill the channel
 or reposition a lake to force a bridge. Decorative trusses are not collision.
+
+`patrols.h` adds scripted ground/naval/air traffic without changing generation,
+the world hash or the inspection path. Keep heavy ground clearance, naval draft
+and mast checks, and the aircraft terrain envelope in native/WASM parity tests.
+The original inspection scout counts as one of the three ground types. Patrols
+are not trained policies and currently have no mutual collision avoidance.
+Surface-triangle winding must use a reliable signed-field direction; retain the
+sloped-mesh regression so near-zero samples cannot invert visible triangles.
