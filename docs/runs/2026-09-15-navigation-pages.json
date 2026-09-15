@@ -1,0 +1,23 @@
+{
+  "source_commit": "01bc51a51721d3ce8855d562fb28e38652d8617f",
+  "merged_worktree_commit": "1f3e975234de408f0dd4c2f462032ece6a70a1e7",
+  "checkpoint_sha256": "ec8c3c85f688e79704a585068434c7eb1b8e4d356585ed28ceb8fb43071fcc5a",
+  "video_sha256": "45446653ed03b172cb3f7da26f5d847fd197a7520e453798e301f37e6f23f3fe",
+  "validation": {
+    "navigation_contract_and_adapter": "ASan/UBSan passed",
+    "native_wasm_task_outcomes": "passed; 2051 vs 2055 decisions from libm drift",
+    "native_checkpoint_smoke": {
+      "surface": "8/8",
+      "bridge": "8/8",
+      "tunnel": "8/8"
+    },
+    "maplab_and_minimal": "debug smoke passed",
+    "chrome_desktop": "checkpoint arrival, overlays, recorded metrics, and video playback passed",
+    "chrome_mobile": "390px: all four pages fit viewport"
+  },
+  "pages": {
+    "branch": "main",
+    "path": "/docs",
+    "release": "navigation-2026-09-15"
+  }
+}

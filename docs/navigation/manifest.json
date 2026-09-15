@@ -1,0 +1,21 @@
+{
+  "contract": 1,
+  "checkpoint": "final-s173.bin",
+  "checkpoint_sha256": "ec8c3c85f688e79704a585068434c7eb1b8e4d356585ed28ceb8fb43071fcc5a",
+  "hidden": 128,
+  "layers": 2,
+  "source": "01bc51a51721d3ce8855d562fb28e38652d8617f",
+  "dirty": false,
+  "site_links": {
+    "maplab": "../maplab/",
+    "training": "../training/",
+    "demo": "../demo/"
+  },
+  "files": {
+    "index.wasm": "e044ef5a6ae027e694644313b493aacd6cd6ea5e1d75eb0c8fe0c0e9f437df4b",
+    "theme.css": "37667df5acd500ec6b953f9fa031461df32cabd36ea68c9ebb3e8c5c6ee43574",
+    "index.html": "af02e897c545d8af1b6ce9072ec2cfd98eee5f03e3cc905c3b59b17c05c53cc8",
+    "index.js": "dbb443da73286172def6a5620cdde92f21e2926a08eb6b124ed1bc752baeebff",
+    "index.data": "1f63b81f92560aacb7b47220924155a2fb5aa68995f75bb7930f0e9f5b16fb89"
+  }
+}
