@@ -138,7 +138,12 @@ samples. A second covered section is permitted when the existing landform
 provides it, but is never required.
 
 Eight compatible arch profiles still determine local passage width, headroom
-and haunch shape. Their continuous sweeps and rounded junctions subtract rock
+and haunch shape. Mountain crowns range from 3 to 5 quarter floors (previously
+3.6 to 6.8), with lower haunches; the four deep-cave profiles range from 3.3 to
+4.5 quarter floors. Widths are unchanged. Where at least four quarter floors of
+rock lie above a mountain route floor, WFC only admits crowns leaving at least
+one quarter floor overhead at the center sample. Thinner rim sections can still
+open naturally. Their continuous sweeps and rounded junctions subtract rock
 from the shared scalar field. Natural mouths and roof openings occur where
 excavation intersects the existing surface. Walkable floor spans validate actual
 support, body clearance, grade and connections, including the larger-body bypass.
@@ -420,7 +425,9 @@ bypass clearance. The same landforms, heights, road tiles, base sites and lakes
 must survive route fitting unchanged. A flat-world fixture must remain exactly
 unchanged, with no manufactured mountain. Fixtures also verify off-center
 chamber traversal, separate stacked floors, narrow-body restrictions and rejected
-topology/grade/profile contradictions.
+topology/grade/profile contradictions. Every mountain arch profile also checks
+small-body clearance, empty space below its crown, solid rock above it, an
+occluded overhead sightline and a clear sightline along the interior.
 
 ```sh
 ./build.sh alienwars build/maplab --cpu --debug

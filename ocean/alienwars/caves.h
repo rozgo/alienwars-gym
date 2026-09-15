@@ -13,7 +13,7 @@ static float aw_height_q(const AwMap*m,float x,float z){
 }
 #include "mountain.h"
 static float aw_cave_radius(int profile){return 0.85f+0.18f*profile;}
-static float aw_cave_height(int profile){return 4.0f+0.5f*profile;}
+static float aw_cave_height(int profile){return 3.3f+0.4f*profile;}
 static int aw_cave_node(AwMap*m,int x,int z,int q){
     for(int i=0;i<m->cave_count;i++)if(m->cave[i].x==x&&m->cave[i].z==z&&m->cave[i].q==q)return i;
     if(m->cave_count>=AW_CAVE_NODES)return -1;

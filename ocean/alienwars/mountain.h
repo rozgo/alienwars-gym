@@ -7,8 +7,10 @@
  * high vault, low barrel and great chamber. Compatibility uses dimensions,
  * not neighboring numeric IDs. */
 static float aw_trail_radius(int profile){static const float r[8]={.72f,.90f,1.08f,1.26f,.92f,1.10f,1.24f,1.44f};return r[profile];}
-static float aw_trail_height(int profile){static const float h[8]={4,4.6f,4.8f,5.8f,6.6f,5.6f,3.6f,6.8f};return h[profile];}
-static float aw_trail_haunch(int profile){static const float h[8]={2,2,2,2.4f,3.5f,2.8f,1.2f,3};return h[profile];}
+/* Low crowns preserve the hillside above the passage. Width variation and
+ * headroom remain separate: broad chambers need not become tall voids. */
+static float aw_trail_height(int profile){static const float h[8]={3.2f,3.6f,3.8f,4.6f,4.8f,4.2f,3.0f,5.0f};return h[profile];}
+static float aw_trail_haunch(int profile){static const float h[8]={1.6f,1.7f,1.8f,2.1f,2.5f,2.2f,1.2f,2.4f};return h[profile];}
 static int aw_trail_compatible(int a,int b){return fabsf(aw_trail_radius(a)-aw_trail_radius(b))<=.26f&&fabsf(aw_trail_height(a)-aw_trail_height(b))<=1.6f;}
 static int aw_trail_grades(uint16_t*w,const uint8_t*ramp,int n){
     int changed=1;
@@ -93,9 +95,9 @@ static int aw_mountain_trail(AwMap*m,int region,int branch){
         int q=__builtin_ctz(wave[i]);float cover=aw_height_q(m,x[i]+.5f,z[i]+.5f)-q;
         profiles[i]=branch?((1<<2)|(1<<3)|(1<<6)):255;
         if(r->step==2)profiles[i]&=branch?(1<<2):((1<<0)|(1<<1)|(1<<4));
-        if(!branch&&cover>=5){
-            for(int p=0;p<8;p++)if(aw_trail_height(p)+.65f>cover)profiles[i]&=~(1<<p);
-            if(!profiles[i])profiles[i]=1;
+        if(!branch&&cover>=4){
+            for(int p=0;p<8;p++)if(aw_trail_height(p)+1.0f>cover)profiles[i]&=~(1<<p);
+            if(!profiles[i])return 0;
         }
     }
     if(!aw_trail_profiles(profiles,n))return 0;

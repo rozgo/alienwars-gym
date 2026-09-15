@@ -22,6 +22,18 @@ int main(void){
     for(int d=0;d<4;d++)if(map.spans[low].links[d]>=0)assert(map.spans[map.spans[low].links[d]].q<8);
     assert(aw_density(&map,15.5f,6,10.5f)<0&&aw_density(&map,15.5f,10,10.5f)>0);
     assert(aw_density(&map,15.5f,20,15.5f)<0); /* Open cutting has no cap. */
+    /* The arch crown must retain real overhead rock, not just report a lower
+     * profile label. Check every socket against the composed meshed density. */
+    for(int profile=0;profile<8;profile++){
+        memset(&map,0,sizeof(map));for(int c=0;c<AW_CELLS;c++)aw_flat(&map.cells[c],16);
+        line(10,4,profile,0);assert(aw_mountain_index(&map));
+        assert(aw_body_fits(&map,15.5f,4,10.5f,0));
+        float crown=4+aw_trail_height(profile);
+        assert(aw_density(&map,15.5f,crown-.6f,10.5f)<0);
+        assert(aw_density(&map,15.5f,crown+.6f,10.5f)>0);
+        assert(aw_occluded(&map,15.5f,30,10.5f,15.5f,5,10.5f));
+        assert(!aw_occluded(&map,11.5f,5,10.5f,19.5f,5,10.5f));
+    }
     assert(!aw_trail_compatible(0,7)&&aw_trail_compatible(3,7));
     uint8_t impossible[2]={1,128};assert(!aw_trail_profiles(impossible,2));
     uint16_t grades[3]={1<<4,1<<8,1<<4};uint8_t ramp[3]={0,1,1};assert(!aw_trail_grades(grades,ramp,3));
