@@ -298,7 +298,7 @@
     $('surface-detail').checked=params.get('detail')!=='0';
     $('baked-occlusion').checked=params.get('ao')!=='0';
     $('path').checked = params.get('path') !== '0';
-    $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('scout-pause').checked = false;
     const patrolParam=params.get('patrol');
     if(patrolParam==='0'||patrolParam==='1'||patrolParam==='2')$('patrol-mode').value=patrolParam;
     const sensorLayerMask=Number(params.get('sensors')??1)&15;
@@ -306,7 +306,6 @@
     $('sensor-unit').value=String(Math.max(0,Math.min(8,Number(params.get('unit'))||0)));
     $('sensor-all').checked=params.get('sensorsAll')==='1';
     $('sensor-xray').checked=params.get('sensorXray')!=='0';
-    if($('scout-pause').checked&&patrolParam===null)$('patrol-mode').value='1';
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
     const bounded = (name,fallback,min,max) => {const raw=params.get(name);const n=Number(raw);return raw!==null && Number.isInteger(n) && n>=min && n<=max?n:fallback;};
     $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
