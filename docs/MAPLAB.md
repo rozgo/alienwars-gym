@@ -5,7 +5,7 @@ Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
 The site root opens Map Lab; existing `/maplab/` seed links continue to work.
 
-## World contract — generator version 9
+## World contract — generator version 10
 
 The 64 × 64 land region sits inside a 96 × 96 ocean domain, two world units per tile. A floor is three
 world units; elevations use quarter floors. Bases support floors 1–10. Surface
@@ -68,7 +68,7 @@ Tunnel entrances occupy the **northeast/southwest diagonal**, opposite the
 northwest/southeast bases. The planner ranks flat, dry, surface-reachable sites
 in those regions using seeded regional targets and available approach space.
 A shortest surface approach from the existing roads is reserved before material
-WFC, so lava cannot cut it off. Approach materials change without overriding
+WFC to reserve low-cost access. Approach materials change without overriding
 terrain elevation sockets or their curved edge profiles.
 
 Each entrance starts at surface floor 1 and descends toward a wide underground
@@ -93,7 +93,10 @@ pass WFC, body/support checks, surface access to each mouth and a cave-only
 crossing between them. Exhaustion reports generation failure; it never silently
 substitutes the old central layout. Seeds, settings and generator version
 identify the world. Version 9 adds lowland relief and fitted bridge crossings,
-changing seeded worlds. Older seed URLs regenerate using version 9; use the
+changing seeded worlds. Version 10 removes the volcanic palette and lava
+material; mixed worlds combine temperate, desert and frozen terrain. Old
+`biome=4` links and invalid palette IDs fall back to Mixed biomes. Older seed
+URLs regenerate using version 10; use the
 previous release revision for an exact older world.
 
 This is a bounded, static terrain milestone. It does not yet generate arbitrary
@@ -254,7 +257,7 @@ Use different constraints for different jobs:
    elevation sockets. Every neighbor must match both corners and its complete
    sampled edge profile, including tiles above caves. Beveled cliff transitions
    preserve flat shelves; road support weights join the surrounding soil to
-   road grades. Twelve material domains enforce biome compatibility and blend
+   road grades. Eleven material domains enforce biome compatibility and blend
    colors across shared vertices. No cave-specific shape-adjacency exceptions.
 3. **3D A* passage planning.** Search states include x/z position, signed
    elevation, heading and previous grade. Cardinal flat/ramp moves enforce
@@ -336,7 +339,7 @@ uses a temporary density cache and frees it after validation.
 | Ice | 23 |
 | Mud | 28 |
 | Shallow water | 34 |
-| Deep water, lava | Blocked |
+| Deep water | Blocked |
 
 Violet markers identify both tunnel mouths in the landscape view. **Tunnel
 floors NE / SW** reports the two chamber elevations. **Inspect entrance** frames
@@ -377,12 +380,12 @@ are omitted.
 The renderer uses a neutral daylight treatment with physically based material
 response (GGX specular, roughness, Fresnel and filmic tone mapping). World-space
 stone grain, weathering, soil variation and wet shore tint continue across tile
-boundaries. Volcanic regions use cooled crust with narrow emissive fissures.
+boundaries.
 `detail.h` synthesizes a seamless 512-square RGBA height texture: granular
 soil/pebbles, fractured stone, grass/litter and fine snow crust. A 65-square
 material mask follows the same shared-corner neighborhoods as terrain colors;
 roads use finer aggregate and less relief. Excavated triangles carry a dedicated
-rock material kind so underground floors cannot inherit grass, snow or lava
+rock material kind so underground floors cannot inherit grass or snow
 from the surface above. This changes materials only, not excavation or navigation.
 
 Two world-space scales of [triplanar sampling](https://developer.nvidia.com/gpugems/gpugems3/part-i-geometry/chapter-1-generating-complex-procedural-terrains-using-gpu)
@@ -473,7 +476,7 @@ version 6 release also extended the sea, updates camera bounds and dims world li
 ## Validation and release
 
 `tests/alienwars/map_test.c` runs 256 seed/configuration cases covering the full
-symmetry × ten floors × five palettes × tunnel-toggle matrix. It checks repeat
+symmetry × ten floors × four palettes × tunnel-toggle matrix. It checks repeat
 hashes, shape/material symmetry, mirrored passage graphs, all road lanes,
 resources, cave reachability, graph reciprocity, path costs, full boundary
 profiles, field-based body clearance, retained road support, signed depths and

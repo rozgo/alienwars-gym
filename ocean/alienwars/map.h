@@ -17,7 +17,7 @@
 #define AW_SPANS 4096
 #define AW_SPAN_START (AW_CELLS+AW_CAVE_NODES)
 #define AW_NODES (AW_SPAN_START+AW_SPANS)
-#define AW_VERSION 9
+#define AW_VERSION 10
 #define AW_BRIDGES 4
 #define AW_MOUNTAINS 2
 #define AW_MOUNT_GRID 5
@@ -34,11 +34,12 @@
 #define AW_SUBDIV 6
 #define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
-#define AW_TILES 12
+#define AW_TILES 11
+#define AW_BIOMES 4
 #define AW_ALL ((1u<<AW_TILES)-1)
-enum {AW_GRASS,AW_FOREST,AW_DIRT,AW_SAND,AW_ROCK,AW_SNOW,AW_ICE,AW_MUD,AW_SHALLOW,AW_DEEP,AW_LAVA,AW_ROAD};
-static const char *aw_terrain_names[AW_TILES]={"Grass","Forest","Soil","Sand","Rock","Snow","Ice","Mud","Shallow water","Deep water","Lava","Road"};
-static const int aw_cost[AW_TILES]={12,19,13,18,16,20,23,28,34,0,0,10};
+enum {AW_GRASS,AW_FOREST,AW_DIRT,AW_SAND,AW_ROCK,AW_SNOW,AW_ICE,AW_MUD,AW_SHALLOW,AW_DEEP,AW_ROAD};
+static const char *aw_terrain_names[AW_TILES]={"Grass","Forest","Soil","Sand","Rock","Snow","Ice","Mud","Shallow water","Deep water","Road"};
+static const int aw_cost[AW_TILES]={12,19,13,18,16,20,23,28,34,0,10};
 typedef struct {int symmetry,floors_a,floors_b,biome,tunnels;} AwOptions;
 typedef struct {int x2,z2,rx,rz,height,rotation;} AwLandform;
 typedef struct {int x,z,rx,rz;} AwLake;
@@ -262,7 +263,6 @@ static int aw_shape_wfc(AwMap*m){
     return 1;
 }
 static int aw_material_ok(int a,int b){
-    if((a==AW_LAVA&&(b==AW_FOREST||b==AW_SNOW||b==AW_ICE||b==AW_SHALLOW||b==AW_DEEP))||(b==AW_LAVA&&(a==AW_FOREST||a==AW_SNOW||a==AW_ICE||a==AW_SHALLOW||a==AW_DEEP)))return 0;
     if((a==AW_SAND&&(b==AW_SNOW||b==AW_ICE))||(b==AW_SAND&&(a==AW_SNOW||a==AW_ICE)))return 0;
     return 1;
 }
@@ -270,25 +270,24 @@ static uint32_t aw_domain(AwMap*m,int c){
     AwCell*t=&m->cells[c];if(t->road||m->cave_access[c])return 1u<<AW_ROAD;if(!(t->q[0]|t->q[1]|t->q[2]|t->q[3]))return 1u<<AW_DEEP;
     int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
     int climate=aw_noise(m->seed^71391u,x,z,12),wet=aw_noise(m->seed^317u,x,z,7),biome=m->options.biome;
-    if(!biome)biome=climate<145?1:climate<190?2:climate<220?3:4;
+    if(!biome)biome=climate<145?1:climate<190?2:3;
     uint32_t mask=1u<<AW_ROCK;
     if(biome==1)mask|=(1u<<AW_GRASS)|(1u<<AW_DIRT)|(1u<<(wet>130?AW_FOREST:AW_MUD));
     if(biome==2)mask|=(1u<<AW_SAND)|(1u<<AW_DIRT);
     if(biome==3)mask|=(1u<<AW_SNOW)|(1u<<AW_ICE);
-    if(biome==4)mask|=(1u<<AW_DIRT)|(1u<<AW_LAVA);
-    if(t->q[0]==4&&wet>165&&biome!=4)mask|=1u<<AW_SHALLOW;
+    if(t->q[0]==4&&wet>165)mask|=1u<<AW_SHALLOW;
     return mask;
 }
 static int aw_preferred_material(const AwMap*m,int c){
     int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
     int climate=aw_noise(m->seed^71391u,x,z,12),wet=aw_noise(m->seed^317u,x,z,7),detail=aw_noise(m->seed^715u,x,z,5),biome=m->options.biome;
-    if(!biome)biome=climate<145?1:climate<190?2:climate<220?3:4;
-    if(m->cells[c].q[0]==4&&wet>180&&biome!=4)return AW_SHALLOW;
+    if(!biome)biome=climate<145?1:climate<190?2:3;
+    if(m->cells[c].q[0]==4&&wet>180)return AW_SHALLOW;
     if(detail>202)return AW_ROCK;
     if(biome==1)return wet>155?AW_FOREST:wet<75?AW_MUD:detail>170?AW_DIRT:AW_GRASS;
     if(biome==2)return wet>85?AW_SAND:AW_DIRT;
     if(biome==3)return wet>100?AW_SNOW:AW_ICE;
-    return wet>175||wet<75?AW_LAVA:AW_DIRT;
+    return AW_ROCK;
 }
 static int aw_propagate(AwMap*m,int start){
     int queue[AW_CELLS],head=0,tail=0,count=0;uint8_t queued[AW_CELLS]={0};
@@ -515,7 +514,7 @@ static uint32_t aw_fingerprint(const AwMap*m){
     }
     return h;
 }
-/* Reserve walkable approaches before material WFC can put lava on them.
+/* Reserve low-cost, walkable approaches before material WFC.
  * Multi-source BFS starts at existing roads and follows only matching surface
  * sockets. The selected path changes material, never elevations or cliff shape. */
 static int aw_cave_approaches(AwMap*m){
@@ -545,7 +544,9 @@ static int aw_cave_approaches(AwMap*m){
 #include "bridges.h"
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
-    options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
+    options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);
+    /* Retired palette IDs (including old volcanic links) use mixed biomes. */
+    if(options.biome<0||options.biome>=AW_BIOMES)options.biome=0;
     /* Establish a valid world before fitting optional passages to its rock. */
     for(int layout=0;layout<24;layout++){
         memset(m,0,sizeof(*m));m->seed=seed;m->layout_seed=aw_hash(seed^(uint32_t)layout*0x9e3779b9u);m->rng=m->layout_seed;m->options=options;m->attempts=1;m->layout_attempts=layout+1;

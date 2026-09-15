@@ -8,7 +8,7 @@ int main(int argc,char**argv){
     int entrance_seen[AW_CELLS]={0},depth_seen=0,layouts=0,independent=0;
     for(int i=0;i<seeds;i++){
         uint32_t seed=i<4?(uint32_t[]){0,1,73,UINT32_MAX}[i]:aw_hash(i);
-        AwOptions o={i%2,1+(i/2)%10,1+(i*7)%10,(i/20)%5,(i/100)%2};
+        AwOptions o={i%2,1+(i/2)%10,1+(i*7)%10,(i/20)%AW_BIOMES,(i/(20*AW_BIOMES))%2};
         if(!aw_generate_options(&map,seed,o)){
             fprintf(stderr,"FAIL seed=%u sym=%d a=%d b=%d biome=%d tunnels=%d resolved=%d reached=%d\n",seed,o.symmetry,o.floors_a,o.floors_b,o.biome,o.tunnels,map.order_count,map.reached_count);return 1;
         }
@@ -103,6 +103,14 @@ int main(int argc,char**argv){
     }
     if(seeds>=200){assert(layouts>=10);assert(__builtin_popcount(depth_seen)>=4);assert(independent>=10);}
     assert(terrain_seen==AW_ALL);assert(max_structure>0&&geometry_choices>0);
+    /* Retired and malformed palette IDs agree with the mixed default. */
+    assert(aw_generate(&repeat,73));
+    for(int i=0;i<3;i++){
+        AwOptions legacy=aw_defaults();legacy.biome=(int[]){4,-1,INT_MAX}[i];
+        assert(aw_generate_options(&map,73,legacy));
+        assert(map.options.biome==0&&map.hash==repeat.hash);
+        assert(!memcmp(map.cells,repeat.cells,sizeof(map.cells)));
+    }
     assert(aw_generate(&map,73));
     /* Signed depths and independent spans, with field-derived clearance. */
     assert(map.cave_count>20&&map.cave_decisions>0&&map.cave_expanded>0);
@@ -138,7 +146,7 @@ int main(int argc,char**argv){
     /* Incompatible road elevation sockets and terrain sockets reject explicitly. */
     uint64_t wave[2]={1ull<<40,1ull<<4};int ramp[2]={0,1},reductions=0;
     assert(!aw_road_propagate(wave,ramp,2,&reductions));
-    assert(aw_generate(&map,73));map.wave[0]=1u<<AW_LAVA;map.wave[1]=1u<<AW_SNOW;assert(!aw_propagate(&map,0));
+    assert(aw_generate(&map,73));map.wave[0]=1u<<AW_SAND;map.wave[1]=1u<<AW_SNOW;assert(!aw_propagate(&map,0));
     /* A mismatched ordinary terrain boundary is invalid even if bases connect. */
     assert(aw_generate(&map,73));map.cells[200].q[0]^=4;assert(!aw_validate(&map));
     /* Shape WFC must reject contradictory corner sockets. */

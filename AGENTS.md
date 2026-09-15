@@ -201,3 +201,8 @@ The original inspection scout counts as one of the three ground types. Patrols
 are not trained policies and currently have no mutual collision avoidance.
 Surface-triangle winding must use a reliable signed-field direction; retain the
 sloped-mesh regression so near-zero samples cannot invert visible triangles.
+
+Version 10 removes the volcanic palette and lava material from generation,
+rendering and the terrain UI. The four palettes are Mixed, Temperate, Desert
+and Frozen. Retired `biome=4` URLs and out-of-range native palette IDs must fall
+back to Mixed consistently. Keep this fallback covered in native/WASM checks.

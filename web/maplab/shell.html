@@ -109,13 +109,13 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 009</span></a>
+    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 010</span></a>
     <nav aria-label="Project"><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 09</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 10</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
@@ -136,7 +136,7 @@
           <label for="symmetry">Layout</label>
           <select id="symmetry"><option value="1">Symmetric · 180° rotation</option><option value="0">Asymmetric · independent bases</option></select>
           <div class="floor-row"><label for="floor-a">Base A floor<input id="floor-a" type="number" min="1" max="10" value="6" required></label><label for="floor-b">Base B floor<input id="floor-b" type="number" min="1" max="10" value="6" required></label></div>
-          <label for="biome">Terrain palette</label><select id="biome"><option value="0">Mixed biomes</option><option value="1">Temperate</option><option value="2">Desert</option><option value="3">Frozen</option><option value="4">Volcanic</option></select>
+          <label for="biome">Terrain palette</label><select id="biome"><option value="0">Mixed biomes</option><option value="1">Temperate</option><option value="2">Desert</option><option value="3">Frozen</option></select>
           <label class="toggle" for="tunnels">Underground network<input type="checkbox" id="tunnels" checked></label>
         </form>
         <div class="seed-actions"><button id="new-seed">New world</button><button id="share">Copy seed link</button></div>
@@ -183,7 +183,7 @@
           <span style="--terrain:#777f83"><i></i>Rock · 16</span><span style="--terrain:#d1e1e6"><i></i>Snow · 20</span>
           <span style="--terrain:#78bed1"><i></i>Ice · 23</span><span style="--terrain:#5f5241"><i></i>Mud · 28</span>
           <span style="--terrain:#43858f"><i></i>Shallows · 34</span><span style="--terrain:#5b6766"><i></i>Road · 10</span>
-          <span style="--terrain:#204452"><i></i>Deep water · land scout blocked</span><span style="--terrain:#f25b1c"><i></i>Lava · blocked</span>
+          <span style="--terrain:#204452"><i></i>Deep water · land scout blocked</span>
         </div><p>Lower cost is easier travel. Climbing adds cost. Trees and rocks are decorative.</p></details>
       </section>
       <section class="panel-section">
@@ -198,7 +198,7 @@
       </section>
       <section class="panel-section">
         <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity guide naval patrols, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>Broad seeded hills add rolling ground between roads while cliff bands retain their sharper contours. Bridges fit existing banks over water, with graded decks and separate walkable floors above the unchanged bed. Cross a bridge follows a validated crossing.</p><p>The landscape is completed first. Directional WFC sockets fit optional passages and shallow surface bypasses to existing hills, with compatible grades and eight arch profiles. No peaks or route foundations are added to force a crossing; unsuitable worlds keep their original terrain. Walkable floor spans connect chambers, ramps and natural surface openings; stacked floors remain separate. Mountain passage and Mountain bypass let the scout explore each route.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v9 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <p class="provenance">Generator v10 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>
@@ -221,7 +221,7 @@
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
     const bounded = (name,fallback,min,max) => {const raw=params.get(name);const n=Number(raw);return raw!==null && Number.isInteger(n) && n>=min && n<=max?n:fallback;};
     $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
-    $('biome').value=bounded('biome',0,0,4);$('tunnels').checked=bounded('tunnels',1,0,1)===1;
+    $('biome').value=bounded('biome',0,0,3);$('tunnels').checked=bounded('tunnels',1,0,1)===1;
     $('cutaway').value=bounded('cut',1,0,2);$('ocean-access').checked=bounded('ocean',0,0,1)===1;
     function syncIsolation(){
       const isolated=$('isolate-tunnels').checked;

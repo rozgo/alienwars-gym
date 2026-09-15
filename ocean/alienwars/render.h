@@ -114,7 +114,7 @@ static void aw_rock(AwBuilder *b,Vector3 p,float radius,float height,uint32_t se
 static const Color aw_palette[AW_TILES]={
     {96,121,72,255},{64,87,45,255},{130,117,95,255},{182,167,131,255},
     {122,124,116,255},{214,222,222,255},{129,167,179,255},{99,91,74,255},
-    {82,119,115,255},{32,68,82,255},{142,86,53,255},{103,107,102,255}
+    {82,119,115,255},{32,68,82,255},{103,107,102,255}
 };
 static float aw_world_q(const AwMap*m,float x,float z){
     x=fminf(AW_SIZE-0.0001f,fmaxf(0,x));z=fminf(AW_SIZE-0.0001f,fmaxf(0,z));
@@ -136,14 +136,6 @@ static Color aw_vertex_color(const AwMap*m,int vx,int vz){
     }
     return (Color){r/n,g/n,b/n,255};
 }
-static float aw_vertex_lava(const AwMap*m,int vx,int vz){
-    int lava=0,n=0;
-    for(int dz=-1;dz<=0;dz++)for(int dx=-1;dx<=0;dx++){
-        int x=vx+dx,z=vz+dz;if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE)continue;
-        lava+=m->cells[z*AW_SIZE+x].material==AW_LAVA;n++;
-    }
-    return (float)lava/n;
-}
 static Color aw_tile_color(const Color colors[4],float x,float z){
     return (Color){
         (uint8_t)aw_bilinear(colors[0].r,colors[1].r,colors[2].r,colors[3].r,x,z),
@@ -157,7 +149,6 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
         float x=p[k].x,z=p[k].z,q=p[k].q;
         int cx=aw_clamp((int)x,0,63),cz=aw_clamp((int)z,0,63);float fx=x-cx,fz=z-cz;
         Color colors[4]={aw_vertex_color(m,cx,cz),aw_vertex_color(m,cx+1,cz),aw_vertex_color(m,cx+1,cz+1),aw_vertex_color(m,cx,cz+1)};
-        float lava=aw_bilinear(aw_vertex_lava(m,cx,cz),aw_vertex_lava(m,cx+1,cz),aw_vertex_lava(m,cx+1,cz+1),aw_vertex_lava(m,cx,cz+1),fx,fz);
         Color color=aw_tile_color(colors,fx,fz);Vector3 normal=aw_surface_normal(m,x,z);
         int deck=m->bridge_bins[cz*64+cx]&&q>aw_height_q(m,x,z)+.02f;
         if(deck||((m->cave_bin_count[cz*64+cx]||m->trail_bin_count[cz*64+cx])&&q<aw_height_q(m,x,z)-0.08f)){
@@ -166,9 +157,9 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
             float ny=aw_density(m,x,q-e,z)-aw_density(m,x,q+e,z);
             float nz=aw_density(m,x,q,z-e)-aw_density(m,x,q,z+e);
             normal=Vector3Normalize((Vector3){nx/AW_UNIT,ny/0.75f,nz/AW_UNIT});
-            color=deck?(Color){105,116,116,255}:(Color){112,119,105,255};lava=0;
+            color=deck?(Color){105,116,116,255}:(Color){112,119,105,255};
         }
-        int n=r->b->count++;r->b->positions[n]=(Vector3){x*AW_UNIT,aw_y(q/4),z*AW_UNIT};r->b->normals[n]=normal;r->b->colors[n]=color;r->b->uv[n]=(Vector2){r->rank,deck?5:10+lava};
+        int n=r->b->count++;r->b->positions[n]=(Vector3){x*AW_UNIT,aw_y(q/4),z*AW_UNIT};r->b->normals[n]=normal;r->b->colors[n]=color;r->b->uv[n]=(Vector2){r->rank,deck?5:10};
     }
     /* Keep actual excavated triangles for inspection. No proxy boxes or second
      * mesher: the isolated shell uses the same vertices as the world surface.
