@@ -9,8 +9,10 @@ A 3D route planner connects ramp entrances below ground; passage WFC matches
 arch profiles, and marching tetrahedra extracts one shared terrain solid. Shaped cliffs,
 slopes and shorelines share continuous boundaries between tiles. Bases can stand ten floors
 high, with connected roads, weighted navigation and automatic tunnel cutaways.
-A scripted scout tests the routes. Combat and AlienWars policy
-training are the next implementation stage.
+Regional WFC creates mountain loops with an interior passage and an exposed
+bypass. Eight passage shapes, graded floors and sampled chamber navigation give
+the scripted scout real alternatives to traverse. Combat and AlienWars policy
+training remain future work.
 
 **[Explore the 3D Map Lab](https://rozgo.github.io/alienwars-gym/maplab/?seed=73)**
 · [Watch trained Breakout](https://rozgo.github.io/alienwars-gym/)

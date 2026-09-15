@@ -42,8 +42,8 @@ static float aw_y(float height) {
 }
 
 static float aw_ground_y(const AwMap *m,int node,float fx,float fz){
-    int c=aw_node_cell(m,node);float q=node>=AW_CELLS?m->cave[node-AW_CELLS].q:aw_surface_q(m,node,fx,fz);
-    if(m->cave_bin_count[c])q=aw_support_q(m,c%64+fx,c/64+fz,q);
+    int c=aw_node_cell(m,node);float q=node>=AW_SPAN_START?m->spans[node-AW_SPAN_START].q:node>=AW_CELLS?m->cave[node-AW_CELLS].q:aw_surface_q(m,node,fx,fz);
+    if(m->cave_bin_count[c]||m->trail_bin_count[c])q=aw_support_q(m,c%64+fx,c/64+fz,q);
     return aw_y(q/4.0f);
 }
 static Vector3 aw_center(const AwMap *m,int node){
@@ -159,7 +159,7 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
         Color colors[4]={aw_vertex_color(m,cx,cz),aw_vertex_color(m,cx+1,cz),aw_vertex_color(m,cx+1,cz+1),aw_vertex_color(m,cx,cz+1)};
         float lava=aw_bilinear(aw_vertex_lava(m,cx,cz),aw_vertex_lava(m,cx+1,cz),aw_vertex_lava(m,cx+1,cz+1),aw_vertex_lava(m,cx,cz+1),fx,fz);
         Color color=aw_tile_color(colors,fx,fz);Vector3 normal=aw_surface_normal(m,x,z);
-        if(m->cave_bin_count[cz*64+cx]&&q<aw_height_q(m,x,z)-0.08f){
+        if((m->cave_bin_count[cz*64+cx]||m->trail_bin_count[cz*64+cx])&&q<aw_height_q(m,x,z)-0.08f){
             const float e=0.02f;
             float nx=aw_density(m,x-e,q,z)-aw_density(m,x+e,q,z);
             float ny=aw_density(m,x,q-e,z)-aw_density(m,x,q+e,z);
@@ -174,9 +174,10 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
      * Include entrance floors where the terrain and passage floor coincide. */
     float x=(a.x+b.x+c.x)/3,z=(a.z+b.z+c.z)/3,q=(a.q+b.q+c.q)/3;
     int cell=aw_clamp((int)z,0,63)*64+aw_clamp((int)x,0,63),excavated=0;
-    if(m->cave_bin_count[cell]){
+    if(m->cave_bin_count[cell]||m->trail_bin_count[cell]){
         for(int k=0;k<3;k++)excavated|=p[k].q<aw_height_q(m,p[k].x,p[k].z)-0.001f;
         excavated|=aw_cave_field(m,x,q+0.1f,z)<0;
+        excavated|=aw_mountain_field(m,x,q+0.1f,z)<0;
     }
     if(excavated){
         AwBuilder*t=r->tunnels;aw_reserve(t,3);
@@ -272,7 +273,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
 
         int canonical=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c;
         uint32_t h=aw_hash(m->seed^(uint32_t)canonical*8191u);Vector3 p=aw_center(m,c);
-        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&m->walkable[c]){
+        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&!m->trail_bin_count[c]&&m->walkable[c]){
             float jitter=(aw_prop_random(h)-.5f)*.65f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;
             p.x+=jitter;p.z-=jitter;
             p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);
@@ -298,6 +299,14 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
             for(int k=0;k<4;k++){v[k].y=aw_y(t->q[k]/4.0f)+0.04f;}
             Color color=m->reachable[c]?(Color){66,236,178,105}:(Color){246,132,82,105};aw_top(&overlay,v,4,color,rank,2);
         }
+    }
+    for(int i=0;i<m->span_count;i++){
+        const AwSpan*s=&m->spans[i];int c=s->cell;
+        if(m->surface_span[c]==i&&m->walkable[c])continue;
+        float x=c%64,z=c/64;Vector3 v[4];
+        const float dx[4]={.12f,.88f,.88f,.12f},dz[4]={.12f,.12f,.88f,.88f};
+        for(int k=0;k<4;k++){float q=aw_support_q(m,x+dx[k],z+dz[k],s->q);v[k]=(Vector3){(x+dx[k])*AW_UNIT,aw_y(q/4)+.06f,(z+dz[k])*AW_UNIT};}
+        Color color=m->reachable[AW_SPAN_START+i]?(Color){66,236,178,105}:(Color){246,132,82,105};aw_top(&overlay,v,4,color,0,2);
     }
     for(int i=0;i<m->cave_count;i++)if(i%3==0){
         Vector3 p=aw_center(m,AW_CELLS+i);p.y+=0.06f;

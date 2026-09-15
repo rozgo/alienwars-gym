@@ -39,6 +39,10 @@ static void aw_volume_cell(const AwMap*m,int cell,AwVolumeTriangle emit,void*ctx
         const AwCaveEdge*e=&m->cave_edges[m->cave_bins[cell][i]];
         bottom=fminf(bottom,fminf(m->cave[e->a].q,m->cave[e->b].q)-1);
     }
+    for(int i=0;i<m->trail_bin_count[cell];i++){
+        const AwTrailEdge*e=&m->trail_edges[m->trail_bins[cell][i]];
+        bottom=fminf(bottom,fminf(m->trail[e->a].q,m->trail[e->b].q)-1);
+    }
     for(int z=0;z<AW_SUBDIV;z++)for(int x=0;x<AW_SUBDIV;x++){
         float h[4],lo=1000,hi=-1000;AwVolumePoint p[8];float v[8];
         for(int k=0;k<4;k++){

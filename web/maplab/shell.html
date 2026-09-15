@@ -103,13 +103,13 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 006</span></a>
+    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 007</span></a>
     <nav aria-label="Project"><a href="../">Breakout experiment</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 06</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 07</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
@@ -163,6 +163,8 @@
         <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
         <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Horizontal section</option><option value="0">Off · solid terrain</option></select>
         <div class="floor-row"><button id="inspect-entrance">Inspect entrance</button><button id="inspect-tunnel">Inspect tunnel</button></div>
+        <div class="floor-row"><button id="mountain-interior">Mountain passage</button><button id="mountain-bypass">Mountain bypass</button></div>
+        <p class="seed-note">Walk the mountain’s interior route or follow its open bypass.</p>
         <p id="cut-status" class="seed-note" role="status">Cutaway ready</p>
         <p class="seed-note" id="overlay-key" hidden>Mint: connected surface · Coral: isolated surface</p>
         <details><summary>Terrain &amp; movement</summary><div class="terrain-key">
@@ -186,7 +188,7 @@
       </section>
       <section class="panel-section">
         <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity support future naval movement, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v6 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <p class="provenance">Generator v7 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>
@@ -300,7 +302,9 @@
         $('base-sites').textContent=[report.baseA,report.baseB].map(c=>`${c%64}, ${Math.floor(c/64)}`).join(' / ');
       }
       $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;
-      $('route-label').textContent=report.tour?'Cave inspection route':'Base-to-base path';
+      $('route-label').textContent=['Base-to-base path','Cave inspection route','Mountain passage','Mountain bypass'][report.tour]||'Scout route';
+      $('scout-heading').textContent=['NAVIGATION SCOUT / A ↔ B','UNDERGROUND CROSSING','MOUNTAIN PASSAGE','MOUNTAIN BYPASS'][report.tour]||'NAVIGATION SCOUT';
+      $('mountain-interior').disabled=$('mountain-bypass').disabled=!report.mountains;
       $('cut-status').textContent=$('isolate-tunnels').checked?`Tunnels isolated · ceilings ${$('tunnel-ceilings').checked?'shown':'hidden'}`:$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
       $('fps').textContent=`${report.fps} fps`;
       $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${report.floor} · Scripted scout`;
@@ -353,6 +357,7 @@
     $('follow').addEventListener('change',()=>Module._aw_option(5,Number($('follow').checked)));
     $('inspect-entrance').addEventListener('click',()=>{Module._aw_inspect_entrance();$('scout-pause').checked=true;$('follow').checked=false;});
     $('inspect-tunnel').addEventListener('click',()=>{Module._aw_inspect_tunnel();$('scout-pause').checked=true;$('follow').checked=false;});
+    for(const [id,bypass] of [['mountain-interior',0],['mountain-bypass',1]])$(id).addEventListener('click',()=>{Module._aw_inspect_mountain(bypass);$('scout-pause').checked=false;$('follow').checked=false;$('path').checked=true;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();});
     $('new-seed').addEventListener('click',()=>loadSeed(crypto.getRandomValues(new Uint32Array(1))[0]));
     $('share').addEventListener('click',async()=>{
       syncUrl();

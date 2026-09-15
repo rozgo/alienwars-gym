@@ -34,9 +34,20 @@ int main(void){
     for(int i=0;i<3;i++){float q=(float[]){-6,4,12}[i];assert(aw_density(&m,12.5f,q+1,12.5f)<0);assert(aw_density(&m,12.5f,q-0.5f,12.5f)>0);}
     assert(aw_density(&m,12.5f,1,12.5f)>0);assert(aw_density(&m,12.5f,10,12.5f)>0);assert(aw_density(&m,12.5f,18,12.5f)>0);
     int total_triangles=0,total_edges=0,total_boundary=0;
-    for(int breach=0;breach<2;breach++){
+    for(int breach=0;breach<3;breach++){
         memset(edges,0,sizeof(edges));triangles=edge_count=0;
-        for(int c=0;c<AW_CELLS;c++)aw_flat(&m.cells[c],breach?14:20);
+        for(int c=0;c<AW_CELLS;c++)aw_flat(&m.cells[c],breach==1?14:20);
+        if(breach==2){
+            /* New arched sweeps: a graded passage meeting an open cutting,
+             * with a separate crossing above it and the older caves below. */
+            for(int route=0;route<3;route++)for(int j=0;j<9;j++){
+                int i=m.trail_count++;
+                m.trail[i]=(AwTrailNode){.x=route==2?10:8+j,.z=route==2?8+j:8+route*3,
+                    .q=route==2?12:4+(j>2&&j<6?j-2:j>=6?3:0),.profile=route==2?1:3};
+                if(j)m.trail_edges[m.trail_edge_count++]=(AwTrailEdge){i-1,i,0,route==1};
+            }
+            assert(aw_mountain_index(&m));
+        }
         for(int z=6;z<19;z++)for(int x=6;x<19;x++)aw_volume_cell(&m,z*64+x,triangle,NULL);
         int boundary=0;
         for(int i=0;i<TABLE;i++)if(edges[i].count){
@@ -51,5 +62,5 @@ int main(void){
     /* A surface breach is a true absence of rock, not a hidden roof mesh. */
     for(int c=0;c<AW_CELLS;c++)aw_flat(&m.cells[c],14);
     assert(aw_density(&m,12.5f,14,12.5f)<=0);assert(aw_density(&m,12.5f,13,12.5f)<0);
-    printf("VOLUME_TEST spans=3 fixtures=2 triangles=%d edges=%d boundary=%d manifold=PASS\n",total_triangles,total_edges,total_boundary);
+    printf("VOLUME_TEST spans=3 fixtures=3 mountain_joins=PASS triangles=%d edges=%d boundary=%d manifold=PASS\n",total_triangles,total_edges,total_boundary);
 }

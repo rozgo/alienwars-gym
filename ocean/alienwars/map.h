@@ -13,9 +13,17 @@
 #define AW_CAVE_NODES 512
 #define AW_CAVE_EDGES 768
 #define AW_BIN_SIZE 48
-#define AW_LINKS 7
-#define AW_NODES (AW_CELLS+AW_CAVE_NODES)
-#define AW_VERSION 6
+#define AW_LINKS 8
+#define AW_SPANS 4096
+#define AW_SPAN_START (AW_CELLS+AW_CAVE_NODES)
+#define AW_NODES (AW_SPAN_START+AW_SPANS)
+#define AW_VERSION 7
+#define AW_MOUNTAINS 2
+#define AW_MOUNT_GRID 5
+#define AW_MOUNT_CELLS 25
+#define AW_TRAIL_NODES 640
+#define AW_TRAIL_EDGES 640
+#define AW_TRAIL_BIN 32
 #define AW_LANDFORMS 24
 #define AW_LAKES 6
 #define AW_OCEAN_MARGIN 2
@@ -36,7 +44,29 @@ typedef struct {int x,z,rx,rz;} AwLake;
 typedef struct {uint8_t q[4],material,road,tunnel,portal;} AwCell;
 typedef struct {int16_t x,z,q,portal; uint8_t profile,junction; int16_t links[6];} AwCaveNode;
 typedef struct {int16_t a,b;} AwCaveEdge;
+/* Regional WFC chooses a connected cycle of directional route sockets. The
+ * two arcs between its approaches become an interior route and an open bypass. */
 typedef struct {
+    int x,z,step,rotation,a,b,peak_count,peak_x[4],peak_z[4],peak_q[4],peak_radius[4];
+    uint8_t sockets[AW_MOUNT_CELLS];
+    int branch[2][AW_MOUNT_CELLS],length[2],trail[2][160],trail_length[2];
+    uint32_t salt;int decisions,backtracks;
+} AwMountain;
+enum {AW_TRAIL_COVERED,AW_TRAIL_GALLERY,AW_TRAIL_CUT};
+typedef struct {int16_t x,z,q;uint8_t profile,mode,junction;} AwTrailNode;
+typedef struct {int16_t a,b;uint8_t region,branch;} AwTrailEdge;
+typedef struct {int16_t cell,next,links[4],cave;float q;uint8_t fits,edge_fits[4];} AwSpan;
+typedef struct {int16_t x,q,z;uint16_t valid;float value;} AwDensitySample;
+#define AW_DENSITY_CACHE (1<<17)
+typedef struct {
+    AwDensitySample*density_cache; /* Temporary, per-map validation cache. */
+    AwSpan spans[AW_SPANS];int span_count,span_ready;
+    int16_t span_first[AW_CELLS],surface_span[AW_CELLS],cave_span[AW_CAVE_NODES],trail_span[AW_TRAIL_NODES];
+    AwMountain mountains[AW_MOUNTAINS];int mountain_count;
+    uint8_t mountain_mask[AW_CELLS];
+    AwTrailNode trail[AW_TRAIL_NODES];AwTrailEdge trail_edges[AW_TRAIL_EDGES];
+    int trail_count,trail_edge_count;
+    uint16_t trail_bins[AW_CELLS][AW_TRAIL_BIN];uint8_t trail_bin_count[AW_CELLS];
     uint16_t ocean_depth[AW_OCEAN_CELLS]; /* Hundredths of a quarter-floor. */
     uint8_t ocean_connected[AW_OCEAN_CELLS];int ocean_count;
     AwLandform landforms[AW_LANDFORMS];AwLake lakes[AW_LAKES];
@@ -74,7 +104,7 @@ static int aw_noise(uint32_t seed,int x,int z,int scale){
     return ((a*(scale-fx)+b*fx)*(scale-fz)+(c*(scale-fx)+d*fx)*fz)/(scale*scale);
 }
 static int aw_neighbor(int c,int d){int x=c%AW_SIZE,z=c/AW_SIZE; if(d==0)return z?c-AW_SIZE:-1;if(d==1)return x<AW_SIZE-1?c+1:-1;if(d==2)return z<AW_SIZE-1?c+AW_SIZE:-1;return x?c-1:-1;}
-static int aw_corner_q(const AwMap*m,int node,int k){return node>=AW_CELLS?m->cave[node-AW_CELLS].q:m->cells[node].q[k];}
+static int aw_corner_q(const AwMap*m,int node,int k){return node>=AW_SPAN_START?(int)lroundf(m->spans[node-AW_SPAN_START].q):node>=AW_CELLS?m->cave[node-AW_CELLS].q:m->cells[node].q[k];}
 static void aw_flat(AwCell*c,int q){for(int k=0;k<4;k++)c->q[k]=(uint8_t)q;}
 static int aw_edge_matches(const AwMap*m,int a,int b,int d){
     static const int edge[4][2]={{0,1},{1,2},{3,2},{0,3}};
@@ -109,7 +139,10 @@ static int aw_road_wfc(AwMap*m,int *height,const int *ramp,int n,int floor){
     }
     for(int i=0;i<n;i++)height[i]=__builtin_ctzll(wave[i]);return 1;
 }
+static int aw_mountain_plan(AwMap*m);
+static int aw_mountain_height(const AwMap*m,int x,int z,int original);
 #include "layout.h"
+#include "mountain_layout.h"
 /* Surface tiles carry four elevation sockets. The 16 corner patterns use a
  * local low/high elevation domain; propagation matches actual elevations, not
  * paint IDs. Shared edge samples are authoritative for render and visibility. */
@@ -322,14 +355,24 @@ static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
 
 #include "caves.h"
 #include "ocean.h"
+#include "traversal.h"
 static int aw_open(const AwMap*m,int node,int d){
     if(node<0||node>=AW_NODES||!m->walkable[node]||d<0||d>=AW_LINKS)return -1;
+    if(node>=AW_SPAN_START){
+        const AwSpan*s=&m->spans[node-AW_SPAN_START];int next=-1;
+        if(d<4&&s->links[d]>=0)next=AW_SPAN_START+s->links[d];
+        if(d==4&&m->surface_span[s->cell]==node-AW_SPAN_START)next=s->cell;
+        if(d==5&&s->cave>=0)next=AW_CELLS+s->cave;
+        return next>=0&&m->walkable[next]?next:-1;
+    }
     if(node>=AW_CELLS){
         const AwCaveNode*n=&m->cave[node-AW_CELLS];
+        if(d==7){int s=m->span_ready?m->cave_span[node-AW_CELLS]:-1;return s>=0&&m->walkable[AW_SPAN_START+s]?AW_SPAN_START+s:-1;}
         int next=d==6?n->portal:(n->links[d]<0?-1:AW_CELLS+n->links[d]);
         return next>=0&&m->walkable[next]?next:-1;
     }
     if(d==4){for(int i=0;i<m->cave_count;i++)if(m->cave[i].portal==node)return AW_CELLS+i;return -1;}
+    if(d==5){int s=m->span_ready?m->surface_span[node]:-1;return s>=0&&m->walkable[AW_SPAN_START+s]?AW_SPAN_START+s:-1;}
     if(d>3)return -1;
     int next=aw_neighbor(node,d);if(next<0)return -1;
     return m->walkable[next]&&aw_edge_matches(m,node,next,d)?next:-1;
@@ -341,13 +384,14 @@ static void aw_navigation(AwMap*m){
     for(int c=0;c<AW_CELLS;c++){
         int lo=40,hi=0;for(int k=0;k<4;k++){int q=m->cells[c].q[k];if(q<lo)lo=q;if(q>hi)hi=q;}
         m->walkable[c]=aw_cost[m->cells[c].material]>0&&lo>=4&&hi-lo<=1;
-        if(m->walkable[c]&&m->cave_bin_count[c]){
+        if(m->walkable[c]&&(m->cave_bin_count[c]||m->trail_bin_count[c])){
             float q=aw_surface_q(m,c,0.5f,0.5f);
             if(fabsf(aw_support_q(m,c%64+0.5f,c/64+0.5f,q)-q)>0.1f)m->walkable[c]=0;
         }
         m->walk_count+=m->walkable[c];
     }
     for(int i=0;i<m->cave_count;i++){m->walkable[AW_CELLS+i]=1;m->walk_count++;}
+    for(int i=0;i<m->span_count;i++){m->walkable[AW_SPAN_START+i]=1;m->walk_count++;}
     m->tunnel_count=m->cave_count;
     int queue[AW_NODES],head=0,tail=0,start=m->spawns[0];
     if(!m->walkable[start])return;
@@ -358,7 +402,7 @@ static void aw_navigation(AwMap*m){
 static int aw_move_cost(const AwMap*m,int a,int b){
     int ca=a>=AW_CELLS?10:aw_cost[m->cells[a].material],cb=b>=AW_CELLS?10:aw_cost[m->cells[b].material];
     int qa=0,qb=0;for(int k=0;k<4;k++){qa+=aw_corner_q(m,a,k);qb+=aw_corner_q(m,b,k);}
-    return (a<AW_CELLS&&b>=AW_CELLS&&m->cave[b-AW_CELLS].portal==a)||(b<AW_CELLS&&a>=AW_CELLS&&m->cave[a-AW_CELLS].portal==b)?1:(ca+cb)/2+aw_abs(qa-qb);
+    return (a<AW_CELLS&&b>=AW_CELLS&&b<AW_SPAN_START&&m->cave[b-AW_CELLS].portal==a)||(b<AW_CELLS&&a>=AW_CELLS&&a<AW_SPAN_START&&m->cave[a-AW_CELLS].portal==b)?1:(ca+cb)/2+aw_abs(qa-qb);
 }
 /* Indexed binary heap: deterministic Dijkstra with terrain and grade costs. */
 static int aw_find_path(AwMap*m,int from,int to){
@@ -421,7 +465,7 @@ static int aw_validate(AwMap*m){
         if(!aw_material_ok(m->cells[c].material,m->cells[n].material))return 0;
         if(!aw_edge_matches(m,c,n,d))return 0;
     }
-    if(!aw_cave_validate(m))return 0;
+    if(!aw_cave_validate(m)||!aw_traversal_build(m))return 0;
     aw_navigation(m);
     for(int s=0;s<2;s++){int floor=s?m->options.floors_b:m->options.floors_a;for(int k=0;k<4;k++)if(m->cells[m->spawns[s]].q[k]!=floor*4)return 0;}
     if(!m->reachable[m->spawns[1]]||!m->reachable[m->center])return 0;
@@ -438,7 +482,7 @@ static int aw_validate(AwMap*m){
         }}
         for(int side=0;side<2;side++)if(!seen[m->cave[m->cave_entrances[side]].portal])return 0;
     }
-    return aw_find_path(m,m->spawns[0],m->spawns[1]);
+    return aw_mountain_validate(m)&&aw_find_path(m,m->spawns[0],m->spawns[1]);
 }
 static uint32_t aw_fingerprint(const AwMap*m){
     uint32_t h=2166136261u;
@@ -452,6 +496,10 @@ static uint32_t aw_fingerprint(const AwMap*m){
         const AwLake*l=&m->lakes[i];h=(h^(uint32_t)l->x)*16777619u;h=(h^(uint32_t)l->z)*16777619u;h=(h^(uint32_t)l->rx)*16777619u;h=(h^(uint32_t)l->rz)*16777619u;
     }
     for(int i=0;i<m->cave_room_count;i++)h=(h^(uint32_t)m->cave_rooms[i])*16777619u;
+    for(int i=0;i<m->trail_count;i++){
+        const AwTrailNode*n=&m->trail[i];h=(h^n->x)*16777619u;h=(h^n->z)*16777619u;h=(h^n->q)*16777619u;h=(h^n->profile)*16777619u;h=(h^n->mode)*16777619u;
+    }
+    for(int i=0;i<m->mountain_count;i++)for(int c=0;c<25;c++)h=(h^m->mountains[i].sockets[c])*16777619u;
     return h;
 }
 /* Reserve walkable approaches before material WFC can put lava on them.
@@ -483,9 +531,11 @@ static int aw_cave_approaches(AwMap*m){
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
-    for(int layout=0;layout<12;layout++){
+    /* Reserving mirrored mountain regions adds spatial constraints to crowded
+     * high-base/lake plans; retain quality checks and search more candidates. */
+    for(int layout=0;layout<24;layout++){
         memset(m,0,sizeof(*m));m->seed=seed;m->layout_seed=aw_hash(seed^(uint32_t)layout*0x9e3779b9u);m->rng=m->layout_seed;m->options=options;m->attempts=1;m->layout_attempts=layout+1;
-        if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_cave_approaches(m)||!aw_wfc(m))continue;
+        if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_mountain_build(m)||!aw_mountain_quality(m)||!aw_cave_approaches(m)||!aw_wfc(m))continue;
         uint32_t surface_rng=m->rng;
         for(int attempt=0;attempt<(options.tunnels?16:1);attempt++){
             aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;

@@ -15,7 +15,7 @@ PAGES = ROOT / 'docs/maplab'
 BUILD.mkdir(exist_ok=True)
 
 def run(args, **kwargs):
-    return subprocess.check_output(args, cwd=ROOT, text=True, timeout=180, **kwargs).strip()
+    return subprocess.check_output(args, cwd=ROOT, text=True, timeout=600, **kwargs).strip()
 
 emcc = shutil.which('emcc') or str(ROOT / '.local/emsdk/upstream/emscripten/emcc')
 env = os.environ.copy()
@@ -45,6 +45,15 @@ run([emcc,'-std=c11','-O3','-I.',diversity_source,'-lm','-o','build/diversity-te
 diversity_wasm = run(['node','build/diversity-test.js'])
 assert diversity_native == diversity_wasm, 'Native/WASM global layout diversity disagree'
 print(diversity_native)
+
+mountain_source = 'tests/alienwars/mountain_test.c'
+run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',mountain_source,'-lm','-o','build/mountain-test'])
+mountain_native = run(['build/mountain-test'])
+run([emcc,'-std=c11','-O3','-I.',mountain_source,'-lm','-o','build/mountain-test.js',
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+mountain_wasm = run(['node','build/mountain-test.js'])
+assert mountain_native == mountain_wasm, 'Native/WASM mountain topology and traversal disagree'
+print(mountain_native)
 
 volume_source = 'tests/alienwars/volume_test.c'
 run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',volume_source,'-lm','-o','build/volume-test'])
@@ -117,11 +126,12 @@ for seed in [0, 1, 73, 4294967295]:
     web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
-report = {'generator_version':6,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+report = {'generator_version':7,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+          'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
           'detail_native':detail_native,'detail_wasm':detail_wasm,
           'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
           'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,
           'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
           'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, closed lakes/ocean boundary, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')
+print('PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, mountain WFC / walkable spans, closed lakes/ocean boundary, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')

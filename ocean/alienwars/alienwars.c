@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps,int lakes,int rooms,int baseA,int baseB,int ocean),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps,int lakes,int rooms,int baseA,int baseB,int ocean,int mountains),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps,lakes,rooms,baseA,baseB,ocean
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps,lakes,rooms,baseA,baseB,ocean,mountains
     });
 });
 #else
@@ -40,6 +40,11 @@ static void aw_frame_tunnels(void){
         lo.x=fminf(lo.x,x-r);hi.x=fmaxf(hi.x,x+r);lo.z=fminf(lo.z,z-r);hi.z=fmaxf(hi.z,z+r);
         lo.y=fminf(lo.y,aw_y(n->q/4.0f));hi.y=fmaxf(hi.y,aw_y((n->q+aw_cave_height(n->profile))/4.0f));
     }
+    for(int i=0;i<world.trail_count;i++){
+        const AwTrailNode*n=&world.trail[i];float x=(n->x+.5f)*AW_UNIT,z=(n->z+.5f)*AW_UNIT,r=aw_trail_radius(n->profile)*AW_UNIT;
+        lo.x=fminf(lo.x,x-r);hi.x=fmaxf(hi.x,x+r);lo.z=fminf(lo.z,z-r);hi.z=fmaxf(hi.z,z+r);
+        lo.y=fminf(lo.y,aw_y(n->q/4.0f));hi.y=fmaxf(hi.y,aw_y((n->q+aw_trail_height(n->profile))/4.0f));
+    }
     focus=Vector3Scale(Vector3Add(lo,hi),0.5f);yaw=0.75f;pitch=0.8f;
     zoom=Clamp(Vector3Distance(lo,hi)*1.12f,16,210);
 }
@@ -52,7 +57,7 @@ static void aw_set_isolation(int value){
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS(),world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.ocean_count);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS(),world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.ocean_count,world.mountain_count);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -153,6 +158,10 @@ static Vector3 aw_unit_position(void) {
     }else{
         int node=(int)gz*AW_SIZE+(int)gx;position.y=aw_ground_y(&world,node,gx-(int)gx,gz-(int)gz);
     }
+    if(world.path[segment]>=AW_SPAN_START){
+        float q=(position.y+1.2f)/.75f;scout_layer=0;
+        for(float h=q+3;h<aw_height_q(&world,gx,gz)+1;h+=.5f)if(aw_density(&world,gx,h,gz)>0){scout_layer=1;break;}
+    }
     return position;
 }
 
@@ -174,6 +183,20 @@ static void aw_tour(int entrance){
 }
 AW_EXPORT void aw_inspect_tunnel(void){aw_tour(0);}
 AW_EXPORT void aw_inspect_entrance(void){aw_tour(1);}
+AW_EXPORT void aw_inspect_mountain(int bypass){
+    if(!world.valid||!world.mountain_count)return;
+    int branch=!!bypass;const AwMountain*r=&world.mountains[0];
+    world.path_length=0;world.path_cost=0;
+    for(int i=0;i<r->trail_length[branch];i++){
+        int node=AW_SPAN_START+world.trail_span[r->trail[branch][i]];
+        if(world.path_length&&node==world.path[world.path_length-1])continue;
+        if(world.path_length)world.path_cost+=aw_move_cost(&world,world.path[world.path_length-1],node);
+        world.path[world.path_length++]=node;
+    }
+    aw_set_isolation(0);scout_tour=2+branch;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
+    focus=(Vector3){(r->x+2*r->step+.5f)*AW_UNIT,aw_y(2),(r->z+2*r->step+.5f)*AW_UNIT};
+    zoom=4*r->step*AW_UNIT+22;pitch=.8f;yaw=.75f+r->rotation*1.5707963f;aw_publish();
+}
 
 static void aw_draw_unit(void) {
     Vector3 p=aw_unit_position();
@@ -246,6 +269,11 @@ static void aw_update(void) {
             }
             aw_draw_markers();
             if(show_path&&isolate_tunnels){
+                for(int i=0;i<world.trail_edge_count;i++){
+                    const AwTrailEdge*e=&world.trail_edges[i];
+                    Vector3 a=aw_center(&world,AW_SPAN_START+world.trail_span[e->a]),b=aw_center(&world,AW_SPAN_START+world.trail_span[e->b]);
+                    a.y+=.12f;b.y+=.12f;DrawCylinderEx(a,Vector3Lerp(a,b,.72f),.055f,.055f,4,e->branch?(Color){119,204,180,220}:(Color){245,201,100,220});
+                }
                 for(int i=0;i<world.cave_edge_count;i++){
                     Vector3 a=aw_center(&world,AW_CELLS+world.cave_edges[i].a),b=aw_center(&world,AW_CELLS+world.cave_edges[i].b);
                     a.y+=0.12f;b.y+=0.12f;DrawCylinderEx(a,Vector3Lerp(a,b,0.72f),0.055f,0.055f,4,(Color){245,201,100,220});

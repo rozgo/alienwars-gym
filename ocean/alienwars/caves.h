@@ -4,12 +4,14 @@
  * floors. No fixed layer number, rectangular roof, or terrain-height override. */
 static int aw_node_cell(const AwMap*m,int node){
     if(node<AW_CELLS)return node;
+    if(node>=AW_SPAN_START)return m->spans[node-AW_SPAN_START].cell;
     const AwCaveNode*n=&m->cave[node-AW_CELLS];return n->z*AW_SIZE+n->x;
 }
 static float aw_height_q(const AwMap*m,float x,float z){
     x=fminf(AW_SIZE-0.0001f,fmaxf(0,x));z=fminf(AW_SIZE-0.0001f,fmaxf(0,z));
     return aw_surface_q(m,(int)z*AW_SIZE+(int)x,x-floorf(x),z-floorf(z));
 }
+#include "mountain.h"
 static float aw_cave_radius(int profile){return 0.85f+0.18f*profile;}
 static float aw_cave_height(int profile){return 4.0f+0.5f*profile;}
 static int aw_cave_node(AwMap*m,int x,int z,int q){
@@ -70,6 +72,14 @@ static int aw_cave_route(AwMap*m,int sx,int sz,int sq,int gx,int gz,int gq,int m
             }
             if(wet)continue;
             if((m->cells[nc].road||m->cave_access[nc])&&nq<h&&nq+6>h)continue;
+            int trail_support=1;
+            for(int j=0;j<m->trail_bin_count[nc];j++){
+                const AwTrailEdge*e=&m->trail_edges[m->trail_bins[nc][j]];
+                const AwTrailNode*a=&m->trail[e->a],*b=&m->trail[e->b];
+                int floor=a->q<b->q?a->q:b->q;
+                if(nq<floor&&nq+7>floor){trail_support=0;break;}
+            }
+            if(!trail_support)continue;
             int separated=1;
             for(int j=0;j<m->cave_count;j++){
                 const AwCaveNode*v=&m->cave[j];int dx=nx-v->x,dz=nz-v->z,dq=aw_abs(nq-v->q);
@@ -174,8 +184,9 @@ static float aw_cave_field(const AwMap*m,float x,float yq,float z){
     }return result;
 }
 static float aw_density_at_height(const AwMap*m,float x,float q,float z,float height){
-    float rock=height-q;if(!m->cave_edge_count)return rock;
-    return fminf(rock,aw_cave_field(m,x,q,z));
+    float rock=height-q;
+    if(m->trail_edge_count)rock=fminf(rock,aw_mountain_field(m,x,q,z));
+    return m->cave_edge_count?fminf(rock,aw_cave_field(m,x,q,z)):rock;
 }
 /* Barycentric sampling of the SAME six tetrahedra used by the mesher. This
  * makes collision/clearance agree with polygonal cave walls, not an unsampled
@@ -187,7 +198,13 @@ static float aw_density(const AwMap*m,float x,float q,float z){
     float value[4];
     for(int i=0;i<4;i++){
         float gx=(float)lattice[0]/AW_SUBDIV,gq=lattice[1]*0.5f,gz=(float)lattice[2]/AW_SUBDIV;
-        value[i]=aw_density_at_height(m,gx,gq,gz,aw_height_q(m,gx,gz));
+        if(m->density_cache){
+            uint32_t h=aw_hash((uint32_t)lattice[0]*73856093u^(uint32_t)lattice[1]*19349663u^(uint32_t)lattice[2]*83492791u)&(AW_DENSITY_CACHE-1);
+            AwDensitySample*s=&m->density_cache[h];
+            if(!s->valid||s->x!=lattice[0]||s->q!=lattice[1]||s->z!=lattice[2]){
+                *s=(AwDensitySample){lattice[0],lattice[1],lattice[2],1,aw_density_at_height(m,gx,gq,gz,aw_height_q(m,gx,gz))};
+            }value[i]=s->value;
+        }else value[i]=aw_density_at_height(m,gx,gq,gz,aw_height_q(m,gx,gz));
         if(i<3)lattice[axis[i]]++;
     }
     float a=fraction[axis[0]],b=fraction[axis[1]],c=fraction[axis[2]];
@@ -282,6 +299,7 @@ static int aw_cave_site(const AwMap*m,int side,int rank){
     return count?sites[rank%count]:-1;
 }
 static void aw_cave_clear(AwMap*m){
+    m->span_count=m->span_ready=0;
     m->cave_count=m->cave_edge_count=m->cave_decisions=m->cave_expanded=m->cave_backtracks=m->cave_room_count=0;
     memset(m->cave_bin_count,0,sizeof(m->cave_bin_count));
     for(int c=0;c<AW_CELLS;c++)m->cells[c].tunnel=m->cells[c].portal=0;

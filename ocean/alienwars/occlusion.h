@@ -129,7 +129,7 @@ static float aw_ao_sample(AwOcclusion*a,float x,float y,float z,float nx,float n
     uint32_t h=2166136261u;for(int i=0;i<6;i++)h=(h^(uint32_t)key[i])*16777619u;h=aw_hash(h)&(AW_AO_CACHE-1);
     AwAoSample*c=&a->samples[h];if(c->valid&&!memcmp(c->key,key,sizeof(key)))return c->value;
     int cell=aw_clamp((int)(z*.5f),0,63)*64+aw_clamp((int)(x*.5f),0,63);
-    int underground=x>=0&&z>=0&&x<128&&z<128&&a->map->cave_bin_count[cell]&&y<aw_ao_height(a,x,z)-.06f;
+    int underground=x>=0&&z>=0&&x<128&&z<128&&(a->map->cave_bin_count[cell]||a->map->trail_bin_count[cell])&&y<aw_ao_height(a,x,z)-.06f;
     float occlusion;
     if(underground){
         occlusion=aw_ao_cavity(a,x,y,z,nx,ny,nz);a->cave_samples++;

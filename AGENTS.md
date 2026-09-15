@@ -39,6 +39,8 @@ current minimal template. Inspect headers before following an older tutorial.
 - `web/shell.html`: authored browser presentation for the Raylib web build.
 - `ocean/alienwars/map.h`, `layout.h`: deterministic global planning, WFC and
   navigation; independent of rendering.
+- `ocean/alienwars/mountain_layout.h`, `mountain.h`, `traversal.h`: regional
+  route WFC, graded excavation sockets and sampled walkable floor spans.
 - `ocean/alienwars/render.h`, `props.h`, `shaders.h`, `alienwars.c`: Raylib
   Map Lab rendering, cosmetic meshes, materials and viewer.
 - `web/maplab/shell.html`, `docs/maplab/`: Map Lab source and compiled Pages output.
@@ -171,3 +173,13 @@ prove world variety. Respect the two diagonals and rotational symmetry.
 The ocean grid in `ocean.h` spans 96 × 96 cells around the 64 × 64 land region.
 Preserve the submerged outer land sockets, continuous shelf, draft-aware naval
 routing and separation from enclosed lakes. Naval IDs are not surface/cave IDs.
+
+Version 7 mountain regions use a connected-cycle WFC with two route arcs, then
+solve grades and eight compatible arch profiles against the terrain. Preserve
+actual covered travel, a larger-body traversable bypass, seeded topology and
+rotational equality. Do not replace the route solver with stored footprints.
+The existing deep cave A* and its four profiles remain separate. Walkable spans
+come from the same meshed density as support/collision; never link stacked floors
+by x/z alone. Keep sampled small/large-body clearance tests and the mountain
+meshing fixture in native/WASM parity checks. This is the first regional grammar,
+not the complete terrain-aware road-search/hydrology research roadmap.
