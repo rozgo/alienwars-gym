@@ -126,7 +126,7 @@ for seed in [0, 1, 73, 4294967295]:
     web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
-report = {'generator_version':7,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+report = {'generator_version':8,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
           'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
           'detail_native':detail_native,'detail_wasm':detail_wasm,
           'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,

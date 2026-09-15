@@ -102,6 +102,7 @@ static int aw_mountain_quality(const AwMap*m){
 }
 static int aw_mountain_validate(const AwMap*m){
     if(!m->options.tunnels)return !m->mountain_count&&!m->trail_count;
+    if(!m->mountain_count)return !m->trail_count;
     if(m->mountain_count!=(m->options.symmetry?2:1)||!m->span_ready)return 0;
     for(int region=0;region<m->mountain_count;region++){
         const AwMountain*r=&m->mountains[region];

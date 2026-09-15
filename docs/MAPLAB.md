@@ -5,7 +5,7 @@ Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
 The [trained Breakout baseline](https://rozgo.github.io/alienwars-gym/) is preserved.
 
-## World contract — generator version 7
+## World contract — generator version 8
 
 The 64 × 64 land region sits inside a 96 × 96 ocean domain, two world units per tile. A floor is three
 world units; elevations use quarter floors. Bases support floors 1–10. Surface
@@ -92,9 +92,9 @@ the cave planner tries up to 16 seeded passage alternatives. Each must
 pass WFC, body/support checks, surface access to each mouth and a cave-only
 crossing between them. Exhaustion reports generation failure; it never silently
 substitutes the old central layout. Seeds, settings and generator version
-identify the world. Version 7 adds regional mountain topology, graded excavations
-and walkable floor spans, changing seeded worlds. Older seed URLs regenerate
-using version 7; use the previous release revision for an exact older world.
+identify the world. Version 8 fits optional crossings to existing terrain and
+removes the dedicated mountain stamp, changing seeded worlds. Older seed URLs regenerate
+using version 8; use the previous release revision for an exact older world.
 
 This is a bounded, static terrain milestone. It does not yet generate arbitrary
 strategic graphs, mine shafts, elevators, destructible terrain or simulated
@@ -112,46 +112,55 @@ Emissive effects retain their response; navigation overlays use stable unlit
 color so units, effects and inspection information stand out from the world.
 The scout and UI use separate, unchanged rendering passes.
 
-## Mountain traversal — version 7
+## Mountain traversal — version 8
 
-With tunnels enabled, each asymmetric world adds one mountain region; symmetric
-worlds add a pair related by 180-degree rotation. Seeded placement protects base
-pads, elevated roads, primary entrance districts and buffered lakes. A region
-spans 8, 12 or 16 tiles between its outer route sockets, with additional approach
-and terrain margins. Compact regions permit placement in crowded worlds.
+The landscape, roads, lakes, materials and deep cave network are completed and
+validated **before** optional mountain crossings are considered. Version 8
+removes the region reservation, dedicated peak generator and route-shaped
+terrain foundation introduced in version 7. This pass never changes the
+landforms, shared surface elevations, road tiles, base sites or lake plan.
 
-A **5 × 5 regional WFC** selects empty cells, straights and corners with matching
-directional exits and walls. Connectivity propagation and bounded backtracking
-require one connected cycle through two approaches and a seeded interior site.
-It rejects detached loops. The two arcs give distinct routes between the same
-junctions; the short external approaches are shared. This topology is solved,
-not selected from stored mountain or road footprints. The current grammar is
-one cycle per region, not an arbitrary strategic graph.
+The planner samples the existing rock and looks for dry, supported crossings
+with reachable approaches. It tests regions spanning 12 or 16 tiles between
+outer sockets. WFC domains prohibit exits across unsupported or wet terrain and
+protect the full footprint of elevated roads. The two approaches can occupy
+different rows; a required interior socket is selected from actual high ground.
+Directional socket propagation and bounded backtracking solve a connected cycle
+through those sites, with two route arcs and no disconnected loops.
 
-Seeded, domain-warped rock lobes establish peaks; a low foundation follows the
-route footprint and preserves existing hills. Rock heights are evaluated before
-passage grades and excavation. The region does not raise roofs after carving.
-Local grade WFC fits quarter-floor ramps with level bends and approaches, and
-reserves a feasible crest where the support permits one. The more enclosed arc
-becomes the interior route; the other is an exposed bypass with open cuttings.
-An interior route must contain at least four covered samples, including three
-consecutive samples. It may have several tunnels separated by exposed ledges;
-multiple tunnels are not mandatory in every seed. Neither route is guaranteed
-to be shorter or higher than the other.
+The more enclosed arc becomes a passage; the other follows exposed ground.
+Grade WFC fits the existing support with flat bends and quarter-floor ramps.
+There is no mandatory raised crest. The bypass can cut at most 1.25 quarter
+floors at its center samples, and 2.5 quarter floors over its sampled footprint;
+it cannot excavate a deep trench merely to complete a circuit around a peak.
+The passage must have at least four covered samples, including three consecutive
+samples. A second covered section is permitted when the existing landform
+provides it, but is never required.
 
-Eight mountain passage sockets vary radius, headroom and arch haunch: narrow,
-standard, broad, chamber, tall fissure, high vault, low barrel and great chamber.
-WFC matches dimensions, with radius transitions at most 0.26 tile and headroom
-transitions at most 1.6 quarter floors. Compact regions restrict widths to avoid
-merging adjacent branches. Continuous sweeps and rounded flat junctions excavate
-the same terrain solid; open cuttings have no ceiling. Where rock ends, passages
-form real mouths or roof openings. The original deep NE/SW network remains and
-its route search protects the new mountain floors.
+Eight compatible arch profiles still determine local passage width, headroom
+and haunch shape. Their continuous sweeps and rounded junctions subtract rock
+from the shared scalar field. Natural mouths and roof openings occur where
+excavation intersects the existing surface. Walkable floor spans validate actual
+support, body clearance, grade and connections, including the larger-body bypass.
+Unexcavated path surfaces retain their grass/soil materials. Prop clearance uses
+the actual passage footprint near the surface rather than clearing the entire
+spatial lookup neighborhood, so vegetation can remain above and beside tunnels.
 
-This first region uses the existing integer value noise and marching tetrahedra.
-A unified search choosing between contour roads, cuts and tunnels, ridge/pass
-module families, hydrological valleys, rivers and erosion remain future work.
-See the [research and longer-term direction](GENERATION_RESEARCH.md).
+Each world may have **no suitable optional crossing**. An asymmetric world can
+accept one; a symmetric world can accept a rotated pair. Search is bounded to
+3,000 regional candidates, 96 WFC solves and 24 geometry validations. Failed
+candidates restore the completed world exactly. The planner does not reroll the
+world, add a mountain, raise ground or relax clearance to force this feature.
+The original NE/SW underground network remains available even when no optional
+mountain crossing fits. The UI explains why the mountain tour buttons are then
+disabled.
+
+This is terrain-first route fitting with a regional cycle grammar. It is not a
+geological cave/erosion simulation or an unrestricted continuous road planner.
+The underlying regional lattice is still cardinal, and the overall base-road
+and landform algorithms retain their existing behavior. Hydrology, larger maps,
+ridge/pass module families and more general terrain-aware route searches remain
+future work. See the [research direction](GENERATION_RESEARCH.md).
 
 ## Why this algorithm
 
@@ -213,7 +222,7 @@ counts include road, regional mountain, grade and passage WFC decisions.
 Surface cells use cardinal matching edges, legal terrain cost and at most one
 quarter-floor height difference. Caves use independent graph nodes carrying
 position, elevation and passage profile; a node ID is not a fixed layer index.
-Version 7 also samples floor spans in cells near excavations, including chamber
+Navigation also samples floor spans in cells near excavations, including chamber
 sides and several floors in one column. Each accepted span has real support and
 body clearance in the meshed solid. Cardinal links validate intermediate support,
 headroom and grade; openings join the surrounding surface only at matching
@@ -257,7 +266,7 @@ the northeast entry and pauses the scout.
 entrances. Unpause and enable **Follow scout** to traverse that route. Load a
 world again to restore the base-to-base route.
 
-**Mountain passage** and **Mountain bypass** frame the first mountain region and
+**Mountain passage** and **Mountain bypass** frame a suitable terrain crossing and
 start the scout along the selected validated route. Enable **Auto cutaway** to
 see it inside the terrain. **Walkability overlay** includes sampled chamber and
 passage floors. In tunnel isolation, passage guides include the mountain routes
@@ -407,8 +416,11 @@ execute these suites and must agree.
 
 `tests/alienwars/mountain_test.c` checks 32 worlds across both symmetry modes for
 varied WFC topology and profiles, graded routes, covered travel and larger-body
-bypass clearance. Fixtures verify off-center chamber traversal, separate stacked
-floors, narrow-body restrictions and rejected topology/grade/profile contradictions.
+bypass clearance. The same landforms, heights, road tiles, base sites and lakes
+must survive route fitting unchanged. A flat-world fixture must remain exactly
+unchanged, with no manufactured mountain. Fixtures also verify off-center
+chamber traversal, separate stacked floors, narrow-body restrictions and rejected
+topology/grade/profile contradictions.
 
 ```sh
 ./build.sh alienwars build/maplab --cpu --debug

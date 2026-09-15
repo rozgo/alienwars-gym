@@ -173,16 +173,19 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
      * mesher: the isolated shell uses the same vertices as the world surface.
      * Include entrance floors where the terrain and passage floor coincide. */
     float x=(a.x+b.x+c.x)/3,z=(a.z+b.z+c.z)/3,q=(a.q+b.q+c.q)/3;
-    int cell=aw_clamp((int)z,0,63)*64+aw_clamp((int)x,0,63),excavated=0;
+    int cell=aw_clamp((int)z,0,63)*64+aw_clamp((int)x,0,63),excavated=0,cut_rock=0;
     if(m->cave_bin_count[cell]||m->trail_bin_count[cell]){
-        for(int k=0;k<3;k++)excavated|=p[k].q<aw_height_q(m,p[k].x,p[k].z)-0.001f;
+        for(int k=0;k<3;k++)cut_rock|=p[k].q<aw_height_q(m,p[k].x,p[k].z)-0.08f;
+        excavated=cut_rock;
         excavated|=aw_cave_field(m,x,q+0.1f,z)<0;
         excavated|=aw_mountain_field(m,x,q+0.1f,z)<0;
     }
     if(excavated){
         AwBuilder*t=r->tunnels;aw_reserve(t,3);
         for(int k=r->b->count-3;k<r->b->count;k++){
-            r->b->uv[k].y=12; /* Excavated rock: never inherit surface grass or snow detail. */
+            /* A path on unchanged ground keeps its grass/soil material. Only
+             * newly exposed rock gets cavity detail, including in isolation. */
+            if(cut_rock)r->b->uv[k].y=12;
             int n=t->count++;t->positions[n]=r->b->positions[k];t->normals[n]=r->b->normals[k];
             t->colors[n]=r->b->colors[k];t->uv[n]=r->b->uv[k];
         }
@@ -273,7 +276,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
 
         int canonical=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c;
         uint32_t h=aw_hash(m->seed^(uint32_t)canonical*8191u);Vector3 p=aw_center(m,c);
-        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&!m->trail_bin_count[c]&&m->walkable[c]){
+        int trail_surface=m->trail_bin_count[c]&&aw_mountain_field(m,x+.5f,aw_height_q(m,x+.5f,z+.5f)+1,z+.5f)<1;
+        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&!trail_surface&&m->walkable[c]){
             float jitter=(aw_prop_random(h)-.5f)*.65f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;
             p.x+=jitter;p.z-=jitter;
             p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);

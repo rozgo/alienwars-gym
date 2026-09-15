@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include "ocean/alienwars/map.h"
-static AwMap map;
+static AwMap map,terrain;
 static void line(int z,int q,int profile,int branch){
     int first=map.trail_count;
     for(int x=10;x<=20;x++){
@@ -28,14 +28,34 @@ int main(void){
     uint16_t sockets[25];for(int i=0;i<25;i++)sockets[i]=1;
     sockets[5]=1<<3;sockets[9]=1<<9;assert(!aw_mountain_propagate(sockets,5,9));
 
-    uint32_t digest=2166136261u,topologies[32];int shapes=0,raised=0,multiple=0,normal=0,min_covered=1000,min_large=1000;
+    /* A flat world must remain flat, with no mountain manufactured for a route. */
+    memset(&map,0,sizeof(map));map.options=(AwOptions){0,6,6,1,1};
+    for(int c=0;c<AW_CELLS;c++)aw_flat(&map.cells[c],4);
+    terrain=map;aw_natural_passages(&map);
+    assert(!map.mountain_count&&!memcmp(&terrain,&map,sizeof(map)));
+
+    uint32_t digest=2166136261u,topologies[32];int shapes=0,raised=0,multiple=0,normal=0,min_covered=1000,min_large=1000,found=0,by_sym[2]={0};
     for(int sym=0;sym<2;sym++)for(int i=0;i<16;i++){
         uint32_t seed=i<4?(uint32_t[]){0,1,73,UINT32_MAX}[i]:aw_hash(i);
         assert(aw_generate_options(&map,seed,(AwOptions){sym,6,6,1,1}));
         assert(aw_mountain_validate(&map)&&map.span_count>map.cave_count);
+        /* Recreate the same surface with passage generation disabled. Fitting
+         * tunnels may subtract rock, but cannot change the original landform,
+         * shared surface sockets, roads, base sites or lake plan. */
+        memset(&terrain,0,sizeof(terrain));terrain.seed=map.seed;terrain.layout_seed=map.layout_seed;
+        terrain.rng=map.layout_seed;terrain.options=map.options;terrain.options.tunnels=0;
+        assert(aw_layout(&terrain)&&aw_shape_wfc(&terrain));
+        assert(!memcmp(map.macro_q,terrain.macro_q,sizeof(map.macro_q)));
+        assert(!memcmp(map.landforms,terrain.landforms,sizeof(map.landforms)));
+        assert(!memcmp(map.lakes,terrain.lakes,sizeof(map.lakes)));
+        assert(!memcmp(map.spawns,terrain.spawns,sizeof(map.spawns)));
+        for(int c=0;c<AW_CELLS;c++)assert(!memcmp(map.cells[c].q,terrain.cells[c].q,4)&&map.cells[c].road==terrain.cells[c].road);
+        digest=(digest^map.hash)*16777619u;
+        if(!map.mountain_count)continue;
+        by_sym[sym]++;
         const AwMountain*r=&map.mountains[0];normal+=r->step>=3;
         uint32_t topology=2166136261u;for(int c=0;c<25;c++)topology=(topology^r->sockets[c])*16777619u;
-        topologies[sym*16+i]=topology;
+        topologies[found++]=topology;
         int covered=0,runs=0,prev=0,large=0;
         for(int branch=0;branch<2;branch++){
             int earlier=4;
@@ -49,7 +69,7 @@ int main(void){
                     if(branch)assert(large_edge);
                 }
                 earlier=n->q;
-                if(branch){large+=!!(map.spans[span].fits&2);continue;}
+                if(branch){assert(aw_height_q(&map,n->x+.5f,n->z+.5f)-n->q<=1.251f);large+=!!(map.spans[span].fits&2);continue;}
                 int roof=0;
                 for(float q=n->q+3;q<aw_height_q(&map,n->x+.5f,n->z+.5f)+1;q+=.5f)
                     roof|=aw_density(&map,n->x+.5f,q,n->z+.5f)>0;
@@ -63,10 +83,9 @@ int main(void){
             const AwTrailNode*a=&map.trail[r->trail[b][j]],*z=&map.trail[map.mountains[1].trail[b][j]];
             assert(a->x+z->x==63&&a->z+z->z==63&&a->q==z->q&&a->profile==z->profile&&a->mode==z->mode);
         }
-        digest=(digest^map.hash)*16777619u;
         if((i+1)%8==0)fprintf(stderr,"mountain %d/32\n",sym*16+i+1);
     }
-    int distinct=0;for(int i=0;i<32;i++){int seen=0;for(int j=0;j<i;j++)seen|=topologies[i]==topologies[j];distinct+=!seen;}
-    assert(distinct>=20&&__builtin_popcount((unsigned)shapes)>=6&&raised>=16&&min_covered>=4&&multiple>=8&&min_large==1000);
-    printf("MOUNTAIN_TEST version=%d worlds=32 digest=%08" PRIx32 " topologies=%d profiles=%d graded_edges=%d multiple_tunnels=%d full_regions=%d min_covered=%d min_large_permille=%d stacked_spans=PASS clearance=PASS contradictions=PASS\n",AW_VERSION,digest,distinct,__builtin_popcount((unsigned)shapes),raised,multiple,normal,min_covered,min_large);
+    int distinct=0;for(int i=0;i<found;i++){int seen=0;for(int j=0;j<i;j++)seen|=topologies[i]==topologies[j];distinct+=!seen;}
+    assert(found>=8&&by_sym[0]>0&&by_sym[1]>0&&distinct>=8&&__builtin_popcount((unsigned)shapes)>=6&&raised>=8&&min_covered>=4&&min_large==1000);
+    printf("MOUNTAIN_TEST version=%d worlds=32 terrain_invariance=PASS optional_regions=%d digest=%08" PRIx32 " topologies=%d profiles=%d graded_edges=%d multiple_tunnels=%d full_regions=%d min_covered=%d min_large_permille=%d stacked_spans=PASS clearance=PASS contradictions=PASS\n",AW_VERSION,found,digest,distinct,__builtin_popcount((unsigned)shapes),raised,multiple,normal,min_covered,min_large);
 }

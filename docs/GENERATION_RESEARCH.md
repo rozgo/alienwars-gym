@@ -4,7 +4,8 @@ Research date: September 14, 2026. This proposal was written against generator
 version 6. Version 7 implements the first bounded mountain milestone: regional
 route WFC, eight passage profiles, graded interior/bypass routes and sampled
 walkable floor spans. The remaining ideas below are a roadmap, not implemented
-features. See [the current world contract](MAPLAB.md#mountain-traversal--version-7).
+features. Version 8 corrects the mountain-first coupling: crossings now fit the completed
+terrain and may be absent when unsuitable. See [the current world contract](MAPLAB.md#mountain-traversal--version-8).
 
 The recommendation is to combine **hierarchical WFC with connectivity
 constraints, terrain-aware route search, and continuous volumetric terrain**.

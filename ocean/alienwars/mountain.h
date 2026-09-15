@@ -59,9 +59,9 @@ static int aw_mountain_trail(AwMap*m,int region,int branch){
     }
     uint16_t wave[160];uint8_t ramp[160],target[160],profiles[160];
     for(int i=0;i<n;i++){
-        float ground=40;
+        float ground=40,high=0;
         for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++){
-            float q=aw_height_q(m,x[i]+.5f+dx*1.15f,z[i]+.5f+dz*1.15f);ground=fminf(ground,q);
+            float q=aw_height_q(m,x[i]+.5f+dx*1.15f,z[i]+.5f+dz*1.15f);ground=fminf(ground,q);high=fmaxf(high,q);
         }
         int cap=aw_clamp((int)floorf(ground+.001f),4,12);
         wave[i]=((1u<<(cap+1))-1)&~15u;
@@ -71,6 +71,13 @@ static int aw_mountain_trail(AwMap*m,int region,int branch){
         }
         ramp[i]=eligible;
         target[i]=branch?cap:aw_clamp(cap-2,4,9);
+        /* The bypass follows the existing ground: no deep trench around a peak. */
+        if(branch){
+            float top=aw_height_q(m,x[i]+.5f,z[i]+.5f);
+            int minimum=(int)ceilf(fmaxf(top-1.25f,high-2.5f));
+            if(minimum>cap)return 0;
+            if(minimum>4)wave[i]&=~((1u<<minimum)-1);
+        }
         /* Existing road lanes and their full support stay authoritative. */
         for(int dz=-2;dz<=2;dz++)for(int dx=-2;dx<=2;dx++){
             int c=(z[i]+dz)*64+x[i]+dx;if(!m->cells[c].road)continue;
@@ -80,14 +87,7 @@ static int aw_mountain_trail(AwMap*m,int region,int branch){
     }
     wave[0]=wave[n-1]=1<<4;
     if(!aw_trail_grades(wave,ramp,n))return 0;
-    /* Reserve a feasible raised section before weighted collapse can settle
-     * every intermediate socket at the lowest datum. No unsupported grades. */
-    int crest=-1,crest_q=4;
-    for(int i=3;i<n-3;i++){
-        int q=31-__builtin_clz((unsigned)wave[i]);q=q>(branch?10:8)?(branch?10:8):q;
-        if(q>crest_q){crest=i;crest_q=q;}
-    }
-    if(crest>=0)wave[crest]=1<<crest_q;
+    /* Grades follow the available ground rather than demanding a raised crest. */
     if(!aw_trail_grade_solve(m,wave,ramp,target,n))return 0;
     for(int i=0;i<n;i++){
         int q=__builtin_ctz(wave[i]);float cover=aw_height_q(m,x[i]+.5f,z[i]+.5f)-q;

@@ -17,7 +17,7 @@
 #define AW_SPANS 4096
 #define AW_SPAN_START (AW_CELLS+AW_CAVE_NODES)
 #define AW_NODES (AW_SPAN_START+AW_SPANS)
-#define AW_VERSION 7
+#define AW_VERSION 8
 #define AW_MOUNTAINS 2
 #define AW_MOUNT_GRID 5
 #define AW_MOUNT_CELLS 25
@@ -47,7 +47,8 @@ typedef struct {int16_t a,b;} AwCaveEdge;
 /* Regional WFC chooses a connected cycle of directional route sockets. The
  * two arcs between its approaches become an interior route and an open bypass. */
 typedef struct {
-    int x,z,step,rotation,a,b,peak_count,peak_x[4],peak_z[4],peak_q[4],peak_radius[4];
+    int x,z,step,rotation,a,b,core;
+    uint16_t domains[AW_MOUNT_CELLS];
     uint8_t sockets[AW_MOUNT_CELLS];
     int branch[2][AW_MOUNT_CELLS],length[2],trail[2][160],trail_length[2];
     uint32_t salt;int decisions,backtracks;
@@ -63,7 +64,6 @@ typedef struct {
     AwSpan spans[AW_SPANS];int span_count,span_ready;
     int16_t span_first[AW_CELLS],surface_span[AW_CELLS],cave_span[AW_CAVE_NODES],trail_span[AW_TRAIL_NODES];
     AwMountain mountains[AW_MOUNTAINS];int mountain_count;
-    uint8_t mountain_mask[AW_CELLS];
     AwTrailNode trail[AW_TRAIL_NODES];AwTrailEdge trail_edges[AW_TRAIL_EDGES];
     int trail_count,trail_edge_count;
     uint16_t trail_bins[AW_CELLS][AW_TRAIL_BIN];uint8_t trail_bin_count[AW_CELLS];
@@ -139,8 +139,6 @@ static int aw_road_wfc(AwMap*m,int *height,const int *ramp,int n,int floor){
     }
     for(int i=0;i<n;i++)height[i]=__builtin_ctzll(wave[i]);return 1;
 }
-static int aw_mountain_plan(AwMap*m);
-static int aw_mountain_height(const AwMap*m,int x,int z,int original);
 #include "layout.h"
 #include "mountain_layout.h"
 /* Surface tiles carry four elevation sockets. The 16 corner patterns use a
@@ -528,20 +526,20 @@ static int aw_cave_approaches(AwMap*m){
     }
     return 1;
 }
+#include "natural_routes.h"
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
-    /* Reserving mirrored mountain regions adds spatial constraints to crowded
-     * high-base/lake plans; retain quality checks and search more candidates. */
+    /* Establish a valid world before fitting optional passages to its rock. */
     for(int layout=0;layout<24;layout++){
         memset(m,0,sizeof(*m));m->seed=seed;m->layout_seed=aw_hash(seed^(uint32_t)layout*0x9e3779b9u);m->rng=m->layout_seed;m->options=options;m->attempts=1;m->layout_attempts=layout+1;
-        if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_mountain_build(m)||!aw_mountain_quality(m)||!aw_cave_approaches(m)||!aw_wfc(m))continue;
+        if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_cave_approaches(m)||!aw_wfc(m))continue;
         uint32_t surface_rng=m->rng;
         for(int attempt=0;attempt<(options.tunnels?16:1);attempt++){
             aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;
             if(!aw_caves(m,attempt))continue;
             m->valid=aw_validate(m);
-            if(m->valid){aw_ocean_build(m);m->hash=aw_fingerprint(m);return 1;}
+            if(m->valid){aw_natural_passages(m);aw_ocean_build(m);m->hash=aw_fingerprint(m);return 1;}
         }
     }
     return 0;

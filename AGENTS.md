@@ -39,7 +39,7 @@ current minimal template. Inspect headers before following an older tutorial.
 - `web/shell.html`: authored browser presentation for the Raylib web build.
 - `ocean/alienwars/map.h`, `layout.h`: deterministic global planning, WFC and
   navigation; independent of rendering.
-- `ocean/alienwars/mountain_layout.h`, `mountain.h`, `traversal.h`: regional
+- `ocean/alienwars/mountain_layout.h`, `mountain.h`, `natural_routes.h`, `traversal.h`: regional
   route WFC, graded excavation sockets and sampled walkable floor spans.
 - `ocean/alienwars/render.h`, `props.h`, `shaders.h`, `alienwars.c`: Raylib
   Map Lab rendering, cosmetic meshes, materials and viewer.
@@ -174,17 +174,19 @@ The ocean grid in `ocean.h` spans 96 × 96 cells around the 64 × 64 land region
 Preserve the submerged outer land sockets, continuous shelf, draft-aware naval
 routing and separation from enclosed lakes. Naval IDs are not surface/cave IDs.
 
-Version 7 mountain regions use a connected-cycle WFC with two route arcs, then
-solve grades and eight compatible arch profiles against the terrain. Preserve
-actual covered travel, a larger-body traversable bypass, seeded topology and
-rotational equality. Do not replace the route solver with stored footprints.
-The existing deep cave A* and its four profiles remain separate. Walkable spans
-come from the same meshed density as support/collision; never link stacked floors
-by x/z alone. Keep sampled small/large-body clearance tests and the mountain
-meshing fixture in native/WASM parity checks. This is the first regional grammar,
-not the complete terrain-aware road-search/hydrology research roadmap.
+Version 8 fits optional mountain passages to the completed, validated world.
+Never add peaks, raise a route foundation or reroll the landscape to force a
+mountain/tunnel composition. Regional WFC domains must reflect existing dry
+support, rock and reachable approaches. Failed candidates restore the world;
+no suitable crossing is a valid result. Keep the larger-body bypass near the
+existing surface, preserve covered travel, seeded topology and rotational
+symmetry, and test that all original terrain/road/lake metadata stays unchanged.
+The deep cave A* and its four profiles remain separate. Walkable spans come from
+the same meshed density as support/collision; never link stacked floors by x/z
+alone. Keep small/large-body and mesh tests in native/WASM checks. This remains
+a regional grammar, not the complete road-search/hydrology research roadmap.
 
 The user permits doubling map size when features need more room. Treat a larger
 land grid as an architectural change: scale ocean bounds, navigation/storage
 capacities and the browser mesh budget together; do not compress features merely
-to preserve the current dimensions. Version 7 still uses the 64 × 64 land grid.
+to preserve the current dimensions. Version 8 still uses the 64 × 64 land grid.

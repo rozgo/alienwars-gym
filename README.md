@@ -9,8 +9,8 @@ A 3D route planner connects ramp entrances below ground; passage WFC matches
 arch profiles, and marching tetrahedra extracts one shared terrain solid. Shaped cliffs,
 slopes and shorelines share continuous boundaries between tiles. Bases can stand ten floors
 high, with connected roads, weighted navigation and automatic tunnel cutaways.
-Regional WFC creates mountain loops with an interior passage and an exposed
-bypass. Eight passage shapes, graded floors and sampled chamber navigation give
+Regional WFC fits optional passages and exposed bypasses to existing hills;
+it never adds mountains to force a crossing. Eight passage shapes, graded floors and sampled chamber navigation give
 the scripted scout real alternatives to traverse. Combat and AlienWars policy
 training remain future work.
 

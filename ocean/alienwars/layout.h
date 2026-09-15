@@ -105,7 +105,6 @@ static int aw_flat_corridor(AwMap*m,int start,int goal,int mirror,uint32_t salt)
     for(int c=0;c<AW_CELLS;c++){
         dist[c]=INT_MAX;prev[c]=-1;
         int x=c%64,z=c/64;if(x<4||z<4||x>59||z>59){blocked[c]=1;continue;}
-        if(m->mountain_mask[c])blocked[c]=1;
         for(int dz=-2;dz<=2;dz++)for(int dx=-2;dx<=2;dx++){
             int n=(z+dz)*64+x+dx;if(!m->cells[n].road)continue;
             for(int k=0;k<4;k++)if(m->cells[n].q[k]!=4)blocked[c]=1;
@@ -217,14 +216,12 @@ static int aw_layout(AwMap*m){
     }
     aw_plan_lakes(m,&rng);
     if(!m->lake_count)return 0;
-    if(!aw_mountain_plan(m))return 0;
     if(!aw_flat_corridor(m,m->road_ends[0],m->landmarks[0],m->options.symmetry,aw_plan_random(&rng)))return 0;
     if(!m->options.symmetry&&!aw_flat_corridor(m,m->road_ends[1],m->landmarks[1],0,aw_plan_random(&rng)))return 0;
     if(!aw_flat_corridor(m,m->landmarks[0],m->landmarks[1],m->options.symmetry,aw_plan_random(&rng)))return 0;
     for(int v=0;v<AW_VERT*AW_VERT;v++){
         int cv=m->options.symmetry&&v>2112?4224-v:v,x=cv%65,z=cv/65,top=4;
         int land=aw_land_score(m,x,z,&top),q=land< -85?0:land<85?2:top;
-        q=aw_mountain_height(m,x,z,q);
         /* The seeded entrance districts have room for actual descending mouths. */
         for(int side=0;side<2;side++){
             int c=m->landmarks[side],dx=x-c%64,dz=z-c/64;
