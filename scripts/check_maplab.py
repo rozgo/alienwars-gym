@@ -116,7 +116,9 @@ html = (PAGES / 'index.html').read_text()
 assert '{{{ SCRIPT }}}' not in html
 parser = Assets()
 parser.feed(html)
-assert 'maplab.js' in parser.scripts
+asset_version = hashlib.sha256((PAGES / 'maplab.js').read_bytes() + (PAGES / 'maplab.wasm').read_bytes()).hexdigest()[:16]
+assert f'maplab.js?v={asset_version}' in parser.scripts
+assert f'?v={asset_version}' in '\n'.join(parser.inline) and '__MAPLAB_ASSET_VERSION__' not in html
 (BUILD / 'maplab-inline.js').write_text('\n'.join(parser.inline))
 run(['node','--check','build/maplab-inline.js'])
 run(['node','--check','docs/maplab/maplab.js'])

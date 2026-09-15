@@ -318,6 +318,7 @@
       $('pause').textContent=report.paused?'Resume':'Pause';
     };
     var Module = {
+      locateFile:(file,prefix)=>`${prefix}${file}?v=__MAPLAB_ASSET_VERSION__`,
       canvas:$('canvas'), arguments:[`--seed=${currentSeed}`,`--symmetry=${$('symmetry').value}`,`--floor-a=${$('floor-a').value}`,`--floor-b=${$('floor-b').value}`,`--biome=${$('biome').value}`,`--tunnels=${Number($('tunnels').checked)}`],
       print:(...args)=>console.log(...args), printErr:(...args)=>console.error(...args),
       onAbort:fail,

@@ -9,4 +9,17 @@ emcc ocean/alienwars/alienwars.c -o build/web/alienwars/maplab.html \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=1MB \
     -sASSERTIONS=1 -sENVIRONMENT=web,node \
     --shell-file web/maplab/shell.html
+# Keep each page paired with its compiled runtime even when Pages or the
+# browser still caches the previous build under the same asset filenames.
+python3 - <<'PY'
+import hashlib
+from pathlib import Path
+root=Path('build/web/alienwars')
+version=hashlib.sha256((root/'maplab.js').read_bytes()+(root/'maplab.wasm').read_bytes()).hexdigest()[:16]
+page=root/'maplab.html'
+html=page.read_text()
+assert '__MAPLAB_ASSET_VERSION__' in html and 'src="maplab.js"' in html
+html=html.replace('__MAPLAB_ASSET_VERSION__',version).replace('src="maplab.js"',f'src="maplab.js?v={version}"')
+page.write_text(html)
+PY
 echo 'Built: build/web/alienwars/maplab.html'

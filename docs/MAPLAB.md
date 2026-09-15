@@ -458,7 +458,10 @@ mesh construction.
 For Pages, commit authored source first, rebuild from that source revision,
 validate and inspect the real browser, then commit generated `docs/maplab/`
 artifacts. Push to `main`; Pages serves `main:/docs`. Verify the deployment and
-public hashes. Keep SDKs, credentials, raw logs and local binaries ignored.
+public artifact hashes. The generated page versions JavaScript and WASM URLs
+with a digest of both compiled files, preventing a fresh page from reusing a
+previous release's cached runtime. Existing open pages need a reload to update.
+Keep SDKs, credentials, raw logs and local binaries ignored.
 
 The PufferLib observation/action/reward contract remains future work. Keep
 `map.h`, `caves.h` and `volume.h` independent of Raylib, Python and browser APIs.
