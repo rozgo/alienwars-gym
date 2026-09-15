@@ -5,15 +5,17 @@
 This is a source-based PufferLib 5.0 project. Start with `README.md`,
 `docs/DEVELOPMENT.md`, and `docs/UPSTREAM.md`. Check `git status` before edits and
 preserve unrelated work. Follow explicit user instructions over this guide.
-The initial training baseline is upstream Breakout. AlienWars has a procedural
-3D Map Lab with a scripted navigation scout; combat and an AlienWars policy are
-not implemented. Do not describe the scout or Breakout as an AlienWars policy.
+AlienWars has a procedural 3D Map Lab with scripted ground, naval and air
+patrols; combat and an AlienWars policy are not implemented. Do not describe
+scripted patrols as trained policies. The Breakout bootstrap experiment was
+retired on September 15, 2026; do not restore its demo or project tooling.
 
 User direction, September 14, 2026: the repository is public and the first
 browser release uses the existing **Raylib web path**, published through
-GitHub Pages from **`main:/docs`**. See `docs/WEB.md`. Preserve the working
-browser baseline; Three.js is not part of this release. Browser simulation and
-inference use WASM; CUDA training stays on the GPU machine.
+GitHub Pages from **`main:/docs`**. See `docs/WEB.md`. Map Lab is the site entry point;
+`docs/index.html` redirects to `maplab/` while retaining query and fragment.
+Three.js is not part of this release. Browser simulation uses WASM; CUDA
+training stays on the GPU machine.
 
 Use the native C/CUDA API in this checkout. Do not add a legacy PufferLib 2/3
 Python package, Gymnasium wrapper, PyTorch trainer, or global Python environment
@@ -28,15 +30,13 @@ current minimal template. Inspect headers before following an older tutorial.
   before assuming which it is. `--cu` selects a CUDA environment backend.
 - `src/pufferenv.h`: `Env`, `Agent`, logging, and `puf_*` interface.
 - `ocean/minimal/`: commented multiagent example with a custom encoder.
-- `ocean/breakout/`: small CPU/CUDA baseline used for bring-up.
 - `config/default.ini` then `config/<env>.ini`: merged runtime configuration;
   command-line `--section.key=value` overrides both.
 - `src/pufferl.cu`, `src/algo.cu`: native trainer and learning kernels.
 - `src/puffercpu.c`: standalone CPU inference and viewer.
-- `scripts/`: project checks, bounded training, playback.
+- `scripts/`: Map Lab builds, native smoke checks and native/WASM validation.
 - `outputs/`, `build/`, `checkpoints/`, `logs/`: ignored generated artifacts.
 - `docs/runs/`: concise checked-in measurements and artifact hashes.
-- `web/shell.html`: authored browser presentation for the Raylib web build.
 - `ocean/alienwars/map.h`, `layout.h`: deterministic global planning, WFC and
   navigation; independent of rendering.
 - `ocean/alienwars/mountain_layout.h`, `mountain.h`, `natural_routes.h`, `traversal.h`: regional
@@ -44,8 +44,9 @@ current minimal template. Inspect headers before following an older tutorial.
 - `ocean/alienwars/render.h`, `props.h`, `shaders.h`, `alienwars.c`: Raylib
   Map Lab rendering, cosmetic meshes, materials and viewer.
 - `web/maplab/shell.html`, `docs/maplab/`: Map Lab source and compiled Pages output.
-- `docs/index.html`, `docs/game.*`, `docs/web-build.json`: deliberate compiled
-  Pages artifacts; regenerate with `scripts/build_web.sh`, never hand-edit.
+- `docs/index.html`: authored site-entry redirect to Map Lab.
+- `docs/maplab/index.html`, `maplab.js`, `maplab.wasm`, `build.json`: deliberate
+  compiled Pages artifacts; regenerate with `scripts/build_maplab.sh`, never hand-edit.
 
 ## Environment implementation
 
@@ -76,12 +77,6 @@ Run from the repository root (configuration/resources use relative paths).
 
 ```sh
 ./scripts/check.sh
-./build.sh breakout build/breakout --cpu
-./build.sh breakout build/puffer-breakout --cu   # Linux NVIDIA CUDA toolkit
-./scripts/train_breakout.sh                    # bounded 55M-step baseline
-./scripts/play_breakout.sh PATH/TO/CHECKPOINT.bin
-./scripts/build_web.sh                         # Emscripten 6.0.9, Raylib web
-python3 scripts/check_web.py                   # artifact hashes + actual WASM inference
 ./build.sh alienwars build/maplab --cpu --debug # terrain viewer, not training
 ./scripts/build_maplab.sh
 python3 scripts/check_maplab.py                # native/WASM parity + navigation

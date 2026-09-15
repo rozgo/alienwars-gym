@@ -1,9 +1,9 @@
 # AlienWars Map Lab
 
-[Open Strata Frontier](https://rozgo.github.io/alienwars-gym/maplab/?seed=73).
+[Open Strata Frontier](https://rozgo.github.io/alienwars-gym/?seed=73).
 Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
-The [trained Breakout baseline](https://rozgo.github.io/alienwars-gym/) is preserved.
+The site root opens Map Lab; existing `/maplab/` seed links continue to work.
 
 ## World contract — generator version 9
 

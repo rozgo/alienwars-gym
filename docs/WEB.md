@@ -1,18 +1,23 @@
 # Raylib web build and GitHub Pages
 
-The public browser experience uses **PufferLib's existing Raylib/Emscripten
-path**. The first demo is the previously trained Breakout baseline. Simulation
-and inference execute locally in WebAssembly; Raylib renders through WebGL 2.
-The browser does not run CUDA training, and the game is not streamed video.
+The public experience is **AlienWars Map Lab**, built with Raylib and
+Emscripten. Generation, simulation and scripted patrols execute locally in
+WebAssembly; Raylib renders through WebGL 2. AlienWars training is not yet
+implemented, and future CUDA training runs on the GPU machine.
 
 - Public repository: <https://github.com/rozgo/alienwars-gym>
 - Site: <https://rozgo.github.io/alienwars-gym/>
 - Pages source: **Deploy from a branch → `main` → `/docs`**
-- Authored page: `web/shell.html`
-- Build: `scripts/build_web.sh`
-- Check: `python3 scripts/check_web.py`
-- Published files: `docs/index.html`, `game.js`, `game.wasm`, `game.data`,
-  `.nojekyll`, and `web-build.json`
+- Authored interface: `web/maplab/shell.html`
+- Authored entry point: `docs/index.html`
+- Build: `scripts/build_maplab.sh`
+- Check: `python3 scripts/check_maplab.py`
+- Compiled output: `docs/maplab/index.html`, `maplab.js`, `maplab.wasm`,
+  and `build.json`
+
+The root page redirects to `maplab/`, retaining the query string and fragment.
+Existing `/maplab/` seed URLs remain valid. The former bootstrap demo, its
+packaged weights and its dedicated build/playback/training helpers are retired.
 
 ## Install the compiler once
 
@@ -25,78 +30,54 @@ git clone --depth 1 https://github.com/emscripten-core/emsdk.git .local/emsdk
 ./.local/emsdk/emsdk activate 6.0.9
 ```
 
-If the SDK already exists, use it rather than cloning over it. The current web
-build inherits the upstream macOS `libomp` dependency lookup even though WASM
-inference itself is single-threaded. Install `libomp` if that lookup fails.
-Node.js and Python 3 are needed for the checks. No Python ML packages or npm
-application dependencies are needed.
+Use an existing SDK if present. The native build uses macOS `libomp`; install
+it if the dependency lookup fails. Node.js and Python 3 are used for validation.
+No Python ML packages or npm application dependencies are needed.
 
-## Build the exact trained baseline
+## Build and inspect
 
 ```sh
-./scripts/build_web.sh
-python3 scripts/check_web.py
+./build.sh alienwars build/maplab --cpu --debug
+./scripts/build_maplab.sh
+python3 scripts/check_maplab.py
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
-Open <http://127.0.0.1:8781/>. The wrapper downloads the selected public release
-checkpoint if it is absent and verifies SHA-256 before packaging. It supplies
-the policy through the upstream `PUFFER_WEBSITE_DIR` asset mechanism, then runs:
-
-```sh
-PUFFER_WEBSITE_DIR="$PWD/build/pages-input" \
-PUFFER_WEB_SHELL=web/shell.html ./build.sh breakout --web
-```
-
-`PUFFER_WEB_SHELL` is a small project addition; the default remains upstream's
-shell. Published builds omit source maps. Breakout's web renderer leaves Escape
-and Tab to the browser; desktop shortcuts are preserved. The simulation, policy
-architecture and gameplay are unchanged.
-
-The policy is 64,768 bytes, with SHA-256
-`868fb8b97a85946141bdc4a50b2e6bd20b0d9be3c4df114aaa1fb2aed95f08d4`.
-The web package includes the matching configuration and shared Raylib assets.
-No secrets or machine-specific GPU connection details are bundled.
-
-The checker verifies artifact hashes and runs the exact WASM module in Node.js
-for ten headless episodes, requiring loaded weights and the correct network
-shape. This validates simulation/inference; inspect the browser separately for
-loading, visible gameplay, keyboard control, restart, expanded viewing and layout.
-WASM and native CPU builds may use different C-library RNG implementations;
-do not interpret their scores as exact cross-device equivalence.
+Open <http://127.0.0.1:8781/>. The checker compares native and WASM generation,
+navigation, mesh, occlusion, detail and patrol results; checks packaged viewer
+output; and verifies artifact hashes and JavaScript syntax. Inspect the browser
+for loading, controls, terrain joins, tunnel visibility, patrols and layout.
+See [the Map Lab contract](MAPLAB.md) for the full validation scope.
 
 ## Publish from main
 
-Commit authored source first, then rebuild so `web-build.json` records a clean
-source revision. Stage only the deliberate generated artifacts and related
-documentation. These modest compiled files are committed because branch-based
-Pages hosting serves `main:/docs` directly; other build products stay ignored.
+Commit authored source first, then rebuild so `docs/maplab/build.json` records
+a clean source revision. Stage only the intended compiled artifacts and related
+documentation. Other build products remain ignored.
 
 ```sh
-./scripts/build_web.sh
-python3 scripts/check_web.py
-git add docs/index.html docs/game.js docs/game.wasm docs/game.data \
-  docs/.nojekyll docs/web-build.json
+./scripts/build_maplab.sh
+python3 scripts/check_maplab.py
+git add docs/maplab/index.html docs/maplab/maplab.js docs/maplab/maplab.wasm docs/maplab/build.json
 git diff --cached --check
-git commit -m "Publish verified Raylib web build"
+git commit -m "Publish verified Map Lab build"
 git push origin main
 ```
 
-Pages configuration can be inspected with:
+For presentation-only changes, matching compiled JS/WASM bytes against the
+previous validated release plus artifact, syntax and browser checks is sufficient.
+
+Inspect deployment with:
 
 ```sh
 gh api repos/rozgo/alienwars-gym/pages
 gh api repos/rozgo/alienwars-gym/pages/builds/latest
 ```
 
-After the Pages build completes, open the public URL and verify the deployed
-files against `web-build.json`, including the `application/wasm` content type.
-Keep asset URLs relative so the `/alienwars-gym/` project path works. `.nojekyll`
-serves the compiled files directly. No custom domain, server, credential or
-cross-origin isolation headers are required by this single-threaded build.
-
-## References
-
-- [PufferLib web build](https://puffer.ai/docs.html)
-- [Emscripten installation](https://emscripten.org/docs/getting_started/downloads.html)
-- [GitHub Pages branch publishing](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+After Pages completes, open the root URL and an existing `/maplab/` seed URL.
+Verify the root HTML and compiled public files against the local checkout and
+`docs/maplab/build.json`. Runtime URLs include a content digest so a new page
+loads the matching JavaScript and WASM. Existing tabs need a reload to update.
+Keep asset URLs relative to support the `/alienwars-gym/` project path.
+`.nojekyll` serves compiled files directly; no custom server or cross-origin
+isolation headers are required by this single-threaded build.

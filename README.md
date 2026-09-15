@@ -1,101 +1,66 @@
 # AlienWars Gym
 
-A native C/CUDA reinforcement-learning workspace based on **PufferLib 5.0**.
-The first baseline is upstream **Breakout**: train on an NVIDIA GPU, then watch
-the learned policy run in your browser through Raylib and WebAssembly.
-The AlienWars **Map Lab** generates symmetric or asymmetric 3D worlds with
-WFC corner-height terrain shapes, road ramps and volumetric cave networks.
-A 3D route planner connects ramp entrances below ground; passage WFC matches
-arch profiles, and marching tetrahedra extracts one shared terrain solid. Shaped cliffs,
-slopes and shorelines share continuous boundaries between tiles. Bases can stand ten floors
-high, with connected roads, weighted navigation and automatic tunnel cutaways.
-Regional WFC fits optional passages and exposed bypasses to existing hills;
-it never adds mountains to force a crossing. Eight passage shapes, graded floors and sampled chamber navigation give
-the scripted scout real alternatives to traverse. Combat and AlienWars policy
-training remain future work.
+Procedural 3D battlefields and traversal experiments, built on **PufferLib 5.0**
+with native C, Raylib and WebAssembly.
 
-**[Explore the 3D Map Lab](https://rozgo.github.io/alienwars-gym/maplab/?seed=73)**
-· [Watch trained Breakout](https://rozgo.github.io/alienwars-gym/)
+**[Open AlienWars Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)**
+
+Map Lab generates symmetric or asymmetric worlds with continuous WFC terrain,
+rolling hills, cliffs, beaches, lakes and an extended ocean. Roads reach bases
+up to ten floors high. Volumetric tunnels descend through ramp entrances, while
+regional WFC fits optional mountain passages and exposed bypasses to existing
+terrain. Bridges cross suitable water gaps without changing the landscape.
+
+Three ground, three naval and three air unit types patrol the world using
+body clearance, water depth and terrain-aware flight routes. Tunnel isolation
+and automatic cutaways expose the underground structure. These are scripted
+patrols; combat and AlienWars policy training remain future work.
 
 - [Agent instructions](AGENTS.md)
-- [Map Lab specification, build and validation](docs/MAPLAB.md)
+- [Map Lab specification and validation](docs/MAPLAB.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
-- [Raylib web build and GitHub Pages workflow](docs/WEB.md)
-- [Upstream version and source references](docs/UPSTREAM.md)
-- [First GPU run: 54.9M steps in 1.98 seconds](docs/runs/breakout_20260914_01.md)
+- [Raylib web build and GitHub Pages](docs/WEB.md)
+- [Generation research](docs/GENERATION_RESEARCH.md)
+- [Upstream source and provenance](docs/UPSTREAM.md)
 - [PufferLib documentation](https://puffer.ai/docs.html)
 
-## Run the trained baseline locally
+## Run locally
 
-The bring-up run trained Breakout on an RTX 4090 and opened its learned policy
-on the Mac. Download its 64 KB checkpoint (already present locally):
-
-```sh
-mkdir -p outputs
-gh release download breakout-baseline-20260914 --repo rozgo/alienwars-gym \
-  --pattern breakout-demo.bin --dir outputs
-./scripts/play_breakout.sh outputs/breakout-demo.bin
-```
-
-## Try it
-
-On macOS, install the Xcode command-line tools and Homebrew `libomp`, then:
+Run from the repository root. On macOS, the native build uses the Xcode
+command-line tools and Homebrew `libomp`. Raylib 5.5 is downloaded on first use.
 
 ```sh
 ./scripts/check.sh
+./build/maplab --seed=73
 ```
 
-This compiles Breakout and the Minimal multiagent example with ASan/UBSan and
-runs 1,024 headless environment steps in each. `build.sh` downloads Raylib 5.5
-on first use. These checks exercise simulation without a learned policy.
+The smoke check builds Map Lab and the upstream Minimal interface example with
+ASan/UBSan, generates a headless world and runs Minimal for 1,024 steps.
 
-On Linux with an NVIDIA development toolkit:
+For the browser build, install the isolated Emscripten SDK described in
+[the web guide](docs/WEB.md), then:
 
 ```sh
-./scripts/train_breakout.sh
+./scripts/build_maplab.sh
+python3 scripts/check_maplab.py
+python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
-This builds native CUDA Breakout, trains with the upstream 55-million-step
-configuration and seed 73, and evaluates the final checkpoint. It uses one GPU
-and limits the training/evaluation process to three minutes. Each run gets a
-new ignored `outputs/breakout_<UTC>/` folder with source provenance, compiler/GPU
-information, logs, resolved configuration and a SHA-256 checkpoint manifest.
-Inspect existing GPU workloads first; do not launch concurrent builds/training
-in the same checkout.
+Open <http://127.0.0.1:8781/>. The checker covers native/WASM generation parity,
+navigation, terrain and tunnel meshes, world variety, and patrol clearance.
 
-Copy the selected `.bin` checkpoint back to this checkout and run:
+## Toward reinforcement learning
 
-```sh
-./scripts/play_breakout.sh outputs/YOUR_RUN/checkpoints/breakout/YOUR_RUN/YOUR_STEPS.bin
-```
+Generation, collision and navigation share a renderer-independent C model.
+Define observations, legal actions, rewards, episode boundaries and success
+criteria before adding an AlienWars training environment. The native interface
+lives in `src/pufferenv.h`, with `ocean/minimal/minimal.h` as a reference.
 
-The actual filename is recorded in `outputs/YOUR_RUN/run.json`. Playback uses
-the same `config/breakout.ini` policy architecture. Escape closes the window;
-hold Left Shift and use Left/Right arrows for human control. Run commands from
-the repo root so resource paths resolve.
-
-For headless CPU checkpoint evaluation:
-
-```sh
-./scripts/play_breakout.sh PATH/TO/CHECKPOINT.bin --headless --base.eval_episodes=10
-```
-
-A checkpoint is policy weights, not a complete optimizer-resume state. CPU and
-CUDA Breakout are separate implementations; cross-backend scores are not an
-exact numerical-equivalence test. See the run report for measured results.
-
-## Add AlienWars
-
-Define the game state, agent observations/actions, rewards, reset/termination
-rules and success criteria first. Implement `ocean/alienwars/alienwars.h` and
-`config/alienwars.ini` against `src/pufferenv.h`; study `ocean/minimal/minimal.h`
-and Breakout for the current interface. Validate CPU behavior and memory safety,
-then train a small baseline before adding CUDA simulation or sweeps.
-
-PufferLib 5 has no CPU training path and this setup does not use the older
-Python/Gymnasium API. Native trainer source is included so environment and
-learning behavior remain inspectable.
+Training requires NVIDIA CUDA hardware. Browser simulation runs locally in
+WASM; the project does not use the older Python/Gymnasium training path.
+GPU access and reproducible development practices are in
+[the development guide](docs/DEVELOPMENT.md).
 
 Based on [PufferAI/PufferLib](https://github.com/PufferAI/PufferLib), retained
-under its [MIT license](LICENSE). Existing third-party asset notices remain
-with their source files.
+under its [MIT license](LICENSE). Third-party asset notices remain with their
+source files.
