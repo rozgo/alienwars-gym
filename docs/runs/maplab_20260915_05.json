@@ -1,0 +1,98 @@
+{
+  "milestone": "Smoother unit steering and slower quadrotors",
+  "generator_version": 10,
+  "source_commit": "079e4aa919b611cc4babaa527986320d049af34a",
+  "source_dirty": false,
+  "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+  "raylib": "5.5",
+  "artifacts": {
+    "index.html": {
+      "bytes": 39798,
+      "sha256": "d32314edff5e23267eca7ae200b09417d79ecccbde363bcc641673353e4f162d"
+    },
+    "maplab.js": {
+      "bytes": 233512,
+      "sha256": "a406c13f3c1da061866569ead2d761cfb45dee32e452da9ab929dcfae5ac843f"
+    },
+    "maplab.wasm": {
+      "bytes": 397107,
+      "sha256": "967f4f4e9e900fa4c93710b4f90c6cff17c4d917c16c365a9951739363cc56e4"
+    }
+  },
+  "changes": [
+    "Shared C steering state eases body yaw and pitch with bounded angular velocity and acceleration.",
+    "Ground/naval motion slows into sharp turns; aircraft retain forward progress on their validated routes.",
+    "Quadrotor cruise pace reduced from 3.2 to 0.65 route segments/second; gunship remains 2.55 and transport 1.9.",
+    "Rendered orientation, odometry and sensor mounts consume the same steering state. Pause freezes steering; new worlds and inspection-tour changes reset it."
+  ],
+  "checks": {
+    "motion": {
+      "motion_version": 1,
+      "native": "MOTION_TEST profiles=9 rate/acceleration_bounds=PASS pitch=PASS reversals=PASS angle_wrap=PASS pause/reset=PASS 30/60/120Hz=PASS turn_pace=PASS",
+      "wasm": "MOTION_TEST profiles=9 rate/acceleration_bounds=PASS pitch=PASS reversals=PASS angle_wrap=PASS pause/reset=PASS 30/60/120Hz=PASS turn_pace=PASS"
+    },
+    "patrol_native": "PATROL_TEST worlds=8 routes=64 digest=438e8917 ground_nodes=2171 naval_nodes=3604 air_nodes=3036 large_body=PASS draft_and_mast=PASS flight_clearance=PASS deterministic=PASS map_unchanged=PASS",
+    "patrol_wasm": "PATROL_TEST worlds=8 routes=64 digest=438e8917 ground_nodes=2171 naval_nodes=3604 air_nodes=3036 large_body=PASS draft_and_mast=PASS flight_clearance=PASS deterministic=PASS map_unchanged=PASS",
+    "sensors": {
+      "sensor_version": 1,
+      "generator_version": 10,
+      "platform": "Darwin arm64",
+      "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+      "node": "v23.11.0",
+      "native": "SENSOR_TEST version=1 mesh_rays=704 caves/roofs/bridges/slopes=PASS sea/sonar=PASS unit_hits=PASS mounts=PASS RF=PASS odometry/reset=PASS cadence/cache=PASS finite_fixed_obs=613 no_step_alloc=PASS deterministic=PASS map_unchanged=PASS",
+      "wasm": "SENSOR_TEST version=1 mesh_rays=704 caves/roofs/bridges/slopes=PASS sea/sonar=PASS unit_hits=PASS mounts=PASS RF=PASS odometry/reset=PASS cadence/cache=PASS finite_fixed_obs=613 no_step_alloc=PASS deterministic=PASS map_unchanged=PASS",
+      "native_benchmark": {
+        "worlds": "3",
+        "units": "9",
+        "steps": "1800",
+        "simulation_seconds": "30",
+        "cpu_ms": "198.630",
+        "ms_per_world_step": "0.1103",
+        "rays": "62639",
+        "samples": "2241",
+        "state_bytes": "158752",
+        "obs_floats": "613",
+        "no_step_alloc": "PASS",
+        "map_unchanged": "PASS"
+      },
+      "wasm_benchmark": {
+        "worlds": "3",
+        "units": "9",
+        "steps": "1800",
+        "simulation_seconds": "30",
+        "cpu_ms": "320.198",
+        "ms_per_world_step": "0.1779",
+        "rays": "62639",
+        "samples": "2241",
+        "state_bytes": "158752",
+        "obs_floats": "613",
+        "no_step_alloc": "PASS",
+        "map_unchanged": "PASS"
+      },
+      "scope": "Sensor sampling and observation packing only. 9 units, 3 generated worlds, 1800 steps at 60 Hz, including an underground scout. Generation, route/pose preparation, rendering and training are excluded. Finite-observation checks are included. Optimized native timing uses process CPU time; Node timing is Emscripten clock(). No CUDA throughput claim."
+    },
+    "packaged": {
+      "artifacts": "PASS",
+      "javascript": "PASS",
+      "packaged_native_wasm": "MAP seed=2438762858 version=10 hash=817efaf8 walk=2669 reached=2549 path=175 decisions=1096 attempts=2 structure=126 tunnels=128 cost=1968 shapes=249 entrance_ne=1395 entrance_sw=2700 depth_ne=-4 depth_sw=-4 lakes=2 rooms=4 base_a=718 base_b=3377 landforms=18 plans=1 ocean=5982 bridges=2"
+    }
+  },
+  "browser": {
+    "seed": 2438762858,
+    "symmetry": 1,
+    "floors": [
+      6,
+      6
+    ],
+    "palette": 2,
+    "hash": "817efaf8",
+    "checks": [
+      "Chrome: quadrotor sampled at 1.4 world units/s, fixed-wing gunship at 5.1 world units/s on their current segments. Actual speeds vary with route geometry and turn easing.",
+      "Observed intermediate gunship headings (-17 to -11 degrees), with model and depth-camera orientation changing together.",
+      "Inspection scout moved underground after route reset, with cutaway active and live odometry.",
+      "Clean source build reloaded; slow quadrotor and live sensor readings confirmed.",
+      "No console warning/error entries."
+    ]
+  },
+  "validation_scope": "Native ASan/UBSan and WASM steering tests, 8-world/64-route patrol clearance and speed-order checks, sensor contracts/benchmark, and matched packaged viewer output. Generator, terrain geometry and route planning are unchanged; the v10 full generator suite from the volcanic-removal release remains applicable."
+}
