@@ -1,0 +1,209 @@
+{
+  "milestone": "Fit passages to existing terrain and lower tunnel crowns",
+  "generator_version": 8,
+  "source_commit": "54a46db4a2a3bc3ffa9845e44bb4bb103dcaeae4",
+  "source_dirty": false,
+  "changes": [
+    "Generate and validate the complete world before considering optional mountain crossings. Remove dedicated peak placement, region reservation and route-shaped raised foundations.",
+    "Filter directional WFC sockets by existing dry support, elevated road protection and reachable approaches. Failed candidates restore the completed world. No suitable crossing is a valid result.",
+    "Fit shallow surface bypasses to existing ground; preserve original landform, surface elevation, road, base and lake metadata.",
+    "Lower all eight mountain crowns from 3.6–6.8 to 3–5 quarter floors and deep-cave crowns from 4–5.5 to 3.3–4.5. Keep widths and physical clearance validation.",
+    "Preserve grass/soil on unchanged path surfaces and retain props outside the actual near-surface excavation footprint."
+  ],
+  "validation_commands": [
+    "./build.sh alienwars build/maplab --cpu --debug",
+    "./scripts/build_maplab.sh",
+    "python3 scripts/check_maplab.py"
+  ],
+  "toolchain": {
+    "native_compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+    "raylib": "5.5"
+  },
+  "checks": {
+    "generator_version": 8,
+    "native": "MAP_TEST version=8 seeds=256 digest=80146113 terrains=12 max_structure=181 geometry_choices=106771 entrance_sites=83 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=8 seeds=256 digest=80146113 terrains=12 max_structure=181 geometry_choices=106771 entrance_sites=83 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=3 mountain_joins=PASS triangles=186622 edges=280401 boundary=936 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=3 mountain_joins=PASS triangles=186622 edges=280401 boundary=936 manifold=PASS",
+    "mountain_native": "MOUNTAIN_TEST version=8 worlds=32 terrain_invariance=PASS optional_regions=18 digest=4751dc49 topologies=18 profiles=8 graded_edges=24 multiple_tunnels=6 full_regions=18 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+    "mountain_wasm": "MOUNTAIN_TEST version=8 worlds=32 terrain_invariance=PASS optional_regions=18 digest=4751dc49 topologies=18 profiles=8 graded_edges=24 multiple_tunnels=6 full_regions=18 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+    "detail_native": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+    "detail_wasm": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+    "occlusion_native": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "occlusion_wasm": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "diversity_native": "DIVERSITY sym=0 worlds=24 bases=22 entrances=23 outline_bits_x100=1399 height_q_x100=355 road_change_permille=756 cave_change_permille=970 lake_change_permille=954 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=939 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=8 digest=eac6fdc0 PASS",
+    "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=22 entrances=23 outline_bits_x100=1399 height_q_x100=355 road_change_permille=756 cave_change_permille=970 lake_change_permille=954 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=939 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=8 digest=eac6fdc0 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "8",
+        "hash": "886e7992",
+        "walk": "2052",
+        "reached": "1905",
+        "path": "175",
+        "decisions": "2188",
+        "attempts": "14",
+        "structure": "80",
+        "tunnels": "85",
+        "cost": "1941",
+        "shapes": "798",
+        "entrance_ne": "1201",
+        "entrance_sw": "3339",
+        "depth_ne": "-6",
+        "depth_sw": "-8",
+        "lakes": "2",
+        "rooms": "2",
+        "base_a": "774",
+        "base_b": "2990",
+        "landforms": "12",
+        "plans": "1",
+        "ocean": "6067"
+      },
+      {
+        "seed": "1",
+        "version": "8",
+        "hash": "1356a195",
+        "walk": "1926",
+        "reached": "1803",
+        "path": "174",
+        "decisions": "2078",
+        "attempts": "11",
+        "structure": "86",
+        "tunnels": "80",
+        "cost": "1906",
+        "shapes": "711",
+        "entrance_ne": "814",
+        "entrance_sw": "2888",
+        "depth_ne": "-8",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6301"
+      },
+      {
+        "seed": "73",
+        "version": "8",
+        "hash": "8c937a4a",
+        "walk": "2047",
+        "reached": "1923",
+        "path": "159",
+        "decisions": "2105",
+        "attempts": "6",
+        "structure": "24",
+        "tunnels": "82",
+        "cost": "1756",
+        "shapes": "539",
+        "entrance_ne": "1067",
+        "entrance_sw": "3472",
+        "depth_ne": "-4",
+        "depth_sw": "-7",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "775",
+        "base_b": "2745",
+        "landforms": "10",
+        "plans": "1",
+        "ocean": "6230"
+      },
+      {
+        "seed": "4294967295",
+        "version": "8",
+        "hash": "60e02ba4",
+        "walk": "1797",
+        "reached": "1778",
+        "path": "160",
+        "decisions": "1750",
+        "attempts": "4",
+        "structure": "102",
+        "tunnels": "45",
+        "cost": "1833",
+        "shapes": "531",
+        "entrance_ne": "1638",
+        "entrance_sw": "2323",
+        "depth_ne": "-7",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "782",
+        "base_b": "2995",
+        "landforms": "12",
+        "plans": "2",
+        "ocean": "6670"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "settings": {
+      "floors": [
+        6,
+        6
+      ],
+      "biome": 1,
+      "tunnels": 1
+    },
+    "worlds": [
+      {
+        "seed": 1,
+        "symmetry": 0,
+        "hash": "ea87aefb",
+        "mountain_regions": 1
+      },
+      {
+        "seed": 73,
+        "symmetry": 0,
+        "hash": "13f91cd1",
+        "mountain_regions": 0
+      },
+      {
+        "seed": 4294967295,
+        "symmetry": 1,
+        "hash": "39de6461",
+        "mountain_regions": 0
+      },
+      {
+        "seed": 4193662023,
+        "symmetry": 1,
+        "hash": "ca2babcd",
+        "mountain_regions": 2
+      }
+    ],
+    "verified": [
+      "Lower openings in existing hillsides; bypass retains surface materials with guides hidden.",
+      "Moving mountain scout triggers Auto cutaway, remains visible and can be paused inside. Same-camera Off/Auto comparison preserves surrounding cast shadows.",
+      "Deep-tunnel reveal, horizontal section, entrance ramp, isolated network with and without ceilings, and shared tile-boundary continuation.",
+      "No-crossing worlds retain the primary underground network and explain disabled mountain-tour controls.",
+      "Isolation changes neither the world hash nor the active route; no warning/error console entries."
+    ],
+    "visibility_followup": "The local geometry-review tab had cutaway set to Off. Restored Auto and verified the moving scout. Visibility and shadow shader code is unchanged from the prior shadow fix."
+  },
+  "limits": [
+    "Regional routes still use a cardinal WFC cycle grammar; this is not a geological cave or erosion simulation.",
+    "The existing base-road and landform planners retain their behavior. This pass does not redesign all base hills or roads.",
+    "Land remains 64 by 64 cells within the 96 by 96 ocean. Map expansion and general terrain-aware road search are future work.",
+    "Eighteen of 32 sampled worlds accepted optional crossings; this is a cohort observation, not a guaranteed frequency.",
+    "Terrain metadata invariance concerns the optional passage stage; excavation intentionally subtracts rock from the composed solid."
+  ],
+  "artifacts": {
+    "index.html": {
+      "bytes": 30420,
+      "sha256": "d47fde339d2fb4de79b42d7f3c16bab06b9d573360c1ebc71791a13c13962ced"
+    },
+    "maplab.js": {
+      "bytes": 232268,
+      "sha256": "1955ed99f4906eefdfa6ee8d1a21e41c431de2f616d58c6c130aa3f04d19ac3c"
+    },
+    "maplab.wasm": {
+      "bytes": 331834,
+      "sha256": "82ddadaad35d3ac7f8eff40741871987bc399c3c16da27418f85f65c3d11e8c2"
+    }
+  },
+  "breakout_artifacts_unchanged": true
+}
