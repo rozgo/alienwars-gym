@@ -183,3 +183,8 @@ come from the same meshed density as support/collision; never link stacked floor
 by x/z alone. Keep sampled small/large-body clearance tests and the mountain
 meshing fixture in native/WASM parity checks. This is the first regional grammar,
 not the complete terrain-aware road-search/hydrology research roadmap.
+
+The user permits doubling map size when features need more room. Treat a larger
+land grid as an architectural change: scale ocean bounds, navigation/storage
+capacities and the browser mesh budget together; do not compress features merely
+to preserve the current dimensions. Version 7 still uses the 64 × 64 land grid.
