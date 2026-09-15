@@ -5,7 +5,7 @@ Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
 The [trained Breakout baseline](https://rozgo.github.io/alienwars-gym/) is preserved.
 
-## World contract — generator version 4
+## World contract — generator version 5
 
 The world has 64 × 64 terrain tiles, two world units per tile. A floor is three
 world units; elevations use quarter floors. Bases support floors 1–10. Surface
@@ -17,17 +17,32 @@ rectangular tunnel box. The model supports multiple empty intervals in one
 vertical column. A fixture verifies three stacked passages, both inside a
 mountain and below the ground datum, separated by solid rock.
 
-Generation currently plans two road entrances, a deep connecting network and a
-small central loop. Entrances are flat at the road, then descend on ramps. The
-deep route targets elevation -6 quarter floors (floor -1.5); surface openings are
-allowed near entrances. The surface is never raised to hide a tunnel. Where an
-excavation intersects the terrain, it creates an actual opening. The central
-surface road continues above the network.
+Tunnel entrances occupy the **northeast/southwest diagonal**, opposite the
+northwest/southeast bases. The planner ranks flat, dry, surface-reachable sites
+in those regions using seeded regional targets and available approach space.
+A shortest surface approach from the existing roads is reserved before material
+WFC, so lava cannot cut it off. Approach materials change without overriding
+terrain elevation sockets or their curved edge profiles.
 
-Symmetric maps couple complete routes, passage profiles, terrain shapes and
-materials through a 180° rotation. Asymmetric maps independently search the two
-entrance approaches and permit different base elevations. Seeds, settings and
-generator version identify the world.
+Each entrance starts at surface floor 1 and descends toward a wide underground
+chamber. Chamber positions and depths vary by seed, currently from floor -1 to
+-2.5. A* connects the chambers through the generated terrain. There is no fixed
+central entrance, shaft, waypoint or ring. Symmetric maps mirror the entire
+entrance/approach/chamber/route plan and its WFC profiles through 180 degrees;
+asymmetric maps choose each side independently, including different depths.
+Mirrored connector routes can form a loop or merge into a broader passage.
+
+Surface openings are permitted along the first eight tiles of an entrance
+approach; later passage sockets require rock cover. The surface is never raised
+to hide a tunnel. Where excavation intersects the terrain, it creates an actual
+opening. Roads retain their support above the network.
+
+The planner tries up to 16 seeded alternatives on the same surface. Each must
+pass WFC, body/support checks, surface access to each mouth and a cave-only
+crossing between them. Exhaustion reports generation failure; it never silently
+substitutes the old central layout. Seeds, settings and generator version
+identify the world. Version 5 changes cave layouts and approach materials;
+version 4 URLs regenerate using the new generator.
 
 This is a bounded, static terrain milestone. It does not yet generate arbitrary
 strategic graphs, mine shafts, elevators, destructible terrain or simulated
@@ -51,13 +66,13 @@ Use different constraints for different jobs:
 3. **3D A* passage planning.** Search states include x/z position, signed
    elevation, heading and previous grade. Cardinal flat/ramp moves enforce
    maximum grade, level turns and flat entry/exit sockets. Required deep
-   waypoints establish excavation depth. Dry terrain, road support, overburden
+   chambers establish seeded excavation depths. Dry terrain, road/approach support, overburden
    away from entrances and separation from existing ramps constrain the search.
    Cost includes distance, excavation depth and deterministic spatial variation;
    the admissible heuristic uses horizontal distance and required elevation
    change. Failed searches reject the map, without a geometric fallback.
 4. **Passage WFC.** Four arched profiles range from narrow to chamber width.
-   Graph-vertex sockets encode width and headroom; sweeps share their exact
+   Chamber sockets pin a wide profile; graph-vertex sockets encode width and headroom, and sweeps share their exact
    endpoint profiles. Portal pins, narrow ramps, cover, maximum one-profile
    transitions and rotational equality propagate before MRV collapse. The
    solver has bounded backtracking (4,096 failures). WFC chooses local passage
@@ -117,7 +132,9 @@ not imply that every point in a wide chamber is navigable.
 | Shallow water | 34 |
 | Deep water, lava | Blocked |
 
-**Inspect entrance** frames the road-to-cave entry and pauses the scout.
+Violet markers identify both tunnel mouths in the landscape view. **Tunnel
+floors NE / SW** reports the two chamber elevations. **Inspect entrance** frames
+the northeast entry and pauses the scout.
 **Inspect tunnel** frames the deepest point of a cave-only route between the
 entrances. Unpause and enable **Follow scout** to traverse that route. Load a
 world again to restore the base-to-base route.
@@ -147,7 +164,9 @@ symmetry × ten floors × five palettes × tunnel-toggle matrix. It checks repea
 hashes, shape/material symmetry, mirrored passage graphs, all road lanes,
 resources, cave reachability, graph reciprocity, path costs, full boundary
 profiles, field-based body clearance, retained road support, signed depths and
-entrance references.
+entrance references. Checks also require entrances on the other diagonal,
+independent surface access to both, cave-only connectivity, mirrored graph edges,
+and variation across seeds in entrance locations and depths.
 Deliberate failures cover disconnected passage links, missing portals, invalid
 materials and incompatible road, terrain and passage sockets.
 

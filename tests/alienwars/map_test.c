@@ -5,6 +5,7 @@ static AwMap map,repeat;
 static int connected(int a,int b){for(int d=0;d<AW_LINKS;d++)if(aw_open(&map,a,d)==b)return 1;return 0;}
 int main(int argc,char**argv){
     int seeds=argc>1?atoi(argv[1]):256;uint32_t digest=2166136261u;int terrain_seen=0,max_structure=0,geometry_choices=0;
+    int entrance_seen[AW_CELLS]={0},depth_seen=0,layouts=0,independent=0;
     for(int i=0;i<seeds;i++){
         uint32_t seed=i<4?(uint32_t[]){0,1,73,UINT32_MAX}[i]:aw_hash(i);
         AwOptions o={i%2,1+(i/2)%10,1+(i*7)%10,(i/20)%5,(i/100)%2};
@@ -30,13 +31,34 @@ int main(int argc,char**argv){
                     }
                 }
             }
-            if(a->road){assert(map.reachable[c]);if(map.cave_bin_count[c]){float q=aw_surface_q(&map,c,.5f,.5f);assert(fabsf(q-aw_support_q(&map,c%64+.5f,c/64+.5f,q))<.05f);}for(int k=0;k<4;k++)assert(aw_abs(a->q[k]-a->q[(k+1)%4])<=1);}
+            if(a->road||map.cave_access[c]){assert(map.reachable[c]);if(map.cave_bin_count[c]){float q=aw_surface_q(&map,c,.5f,.5f);assert(fabsf(q-aw_support_q(&map,c%64+.5f,c/64+.5f,q))<.05f);}for(int k=0;k<4;k++)assert(aw_abs(a->q[k]-a->q[(k+1)%4])<=1);}
             if(a->tunnel)assert(o.tunnels);
 
         }
+        if(o.tunnels){
+            int a=map.cave_entrances[0],b=map.cave_entrances[1];
+            assert(a>=0&&b>=0&&a!=b);
+            AwCaveNode*pa=&map.cave[a],*pb=&map.cave[b];
+            assert(pa->x>=38&&pa->z<=29&&pb->x<=25&&pb->z>=34);
+            assert(aw_abs(pa->x-pb->x)+aw_abs(pa->z-pb->z)>=20);
+            layouts+=!entrance_seen[pa->portal]++;depth_seen|=1<<(-map.cave[map.cave_hubs[0]].q);
+            uint8_t surface[AW_CELLS];memcpy(surface,map.walkable,AW_CELLS);memset(map.walkable,0,AW_CELLS);
+            assert(aw_find_path(&map,AW_CELLS+a,AW_CELLS+b));
+            for(int k=0;k<map.path_length;k++)assert(map.path[k]>=AW_CELLS);
+            memcpy(map.walkable,surface,AW_CELLS);assert(aw_find_path(&map,map.spawns[0],map.spawns[1]));
+            if(o.symmetry)assert(pa->x+pb->x==63&&pa->z+pb->z==63);
+            else independent+=pa->x+pb->x!=63||pa->z+pb->z!=63||map.cave[map.cave_hubs[0]].q!=map.cave[map.cave_hubs[1]].q;
+            assert(!memcmp(map.cave,repeat.cave,sizeof(AwCaveNode)*map.cave_count));
+        }
         for(int n=0;n<map.cave_count;n++){
             AwCaveNode*a=&map.cave[n];assert(map.reachable[AW_CELLS+n]);
-            if(o.symmetry){int partner=-1;for(int j=0;j<map.cave_count;j++){AwCaveNode*b=&map.cave[j];if(a->x+b->x==63&&a->z+b->z==63&&a->q==b->q)partner=j;}assert(partner>=0&&a->profile==map.cave[partner].profile);}
+            if(o.symmetry){int partner=-1;for(int j=0;j<map.cave_count;j++){AwCaveNode*b=&map.cave[j];if(a->x+b->x==63&&a->z+b->z==63&&a->q==b->q)partner=j;}assert(partner>=0&&a->profile==map.cave[partner].profile);
+                for(int d=0;d<6;d++)if(a->links[d]>=0){
+                    AwCaveNode*next=&map.cave[a->links[d]];int matched=0;
+                    for(int e=0;e<6;e++)if(map.cave[partner].links[e]>=0){AwCaveNode*b=&map.cave[map.cave[partner].links[e]];matched|=next->x+b->x==63&&next->z+b->z==63&&next->q==b->q;}
+                    assert(matched);
+                }
+            }
         }
         for(int n=0;n<AW_NODES;n++)for(int d=0;d<AW_LINKS;d++){int next=aw_open(&map,n,d);if(next>=0){assert(connected(next,n));assert(aw_move_cost(&map,n,next)>0);}}
         assert(map.path[0]==map.spawns[0]&&map.path[map.path_length-1]==map.spawns[1]);
@@ -46,6 +68,7 @@ int main(int argc,char**argv){
         if(map.structure_decisions>max_structure)max_structure=map.structure_decisions;
         digest=(digest^map.hash)*16777619u;
     }
+    if(seeds>=200){assert(layouts>=10);assert(__builtin_popcount(depth_seen)>=4);assert(independent>=10);}
     assert(terrain_seen==AW_ALL);assert(max_structure>0&&geometry_choices>0);
     assert(aw_generate(&map,73));
     /* Signed depths and independent spans, with field-derived clearance. */
@@ -64,6 +87,8 @@ int main(int argc,char**argv){
     assert(!aw_validate(&map));assert(aw_generate(&map,73));
     map.cave[map.cave_edges[0].a].links[5]=-1;assert(!aw_validate(&map));
     assert(aw_generate(&map,73));map.cave[0].links[0]=AW_CAVE_NODES;assert(!aw_validate(&map));
+    assert(aw_generate(&map,73));map.cave_entrances[0]=-1;assert(!aw_validate(&map));
+    assert(aw_generate(&map,73));map.cave[map.cave_hubs[0]].profile=0;assert(!aw_validate(&map));
     /* Contradictory passage profiles cannot bypass socket propagation. */
     assert(aw_generate(&map,73));uint8_t profiles[AW_CAVE_NODES];memset(profiles,15,sizeof(profiles));
     profiles[map.cave_edges[0].a]=1;profiles[map.cave_edges[0].b]=8;assert(!aw_cave_propagate(&map,profiles));
@@ -85,6 +110,6 @@ int main(int argc,char**argv){
     memset(&map,0,sizeof(map));int start=65,end=69;
     for(int z=1;z<=2;z++)for(int x=1;x<=5;x++){int c=z*64+x;aw_flat(&map.cells[c],4);map.cells[c].material=z==1&&x>1&&x<5?AW_MUD:AW_ROAD;map.walkable[c]=1;}
     assert(aw_find_path(&map,start,end));assert(map.path_cost==60&&map.path_length==7);
-    printf("MAP_TEST version=%d seeds=%d digest=%08" PRIx32 " terrains=%d max_structure=%d geometry_choices=%d PASS\n",AW_VERSION,seeds,digest,__builtin_popcount(terrain_seen),max_structure,geometry_choices);
+    printf("MAP_TEST version=%d seeds=%d digest=%08" PRIx32 " terrains=%d max_structure=%d geometry_choices=%d entrance_sites=%d depths=%d independent=%d PASS\n",AW_VERSION,seeds,digest,__builtin_popcount(terrain_seen),max_structure,geometry_choices,layouts,__builtin_popcount(depth_seen),independent);
     return 0;
 }

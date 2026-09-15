@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB
     });
 });
 #else
@@ -51,7 +51,7 @@ static void aw_set_isolation(int value){
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -130,7 +130,12 @@ static void aw_draw_markers(void) {
             column.y+=0.56f;DrawCube(column,0.3f,0.13f,0.3f,accent);
         }
     }
-
+    for(int side=0;side<2;side++)if(world.cave_entrances[side]>=0){
+        Vector3 p=aw_center(&world,AW_CELLS+world.cave_entrances[side]);p.y+=0.12f;
+        Color accent={187,163,245,255};
+        DrawCylinderWires(p,1.1f,1.1f,0.06f,16,accent);
+        Vector3 top=p;top.y+=1.8f;DrawLine3D(p,top,accent);DrawSphereEx(top,.13f,4,6,accent);
+    }
 }
 
 static Vector3 aw_unit_position(void) {
@@ -155,7 +160,7 @@ static Vector3 aw_unit_position(void) {
 
 static void aw_tour(int entrance){
     if(!world.options.tunnels)return;
-    int a=-1,b=-1;for(int i=0;i<world.cave_count;i++)if(world.cave[i].portal>=0){if(a<0)a=i;else b=i;}
+    int a=world.cave_entrances[0],b=world.cave_entrances[1];
     if(a<0||b<0)return;
     uint8_t surface[AW_CELLS];memcpy(surface,world.walkable,AW_CELLS);memset(world.walkable,0,AW_CELLS);
     int valid=aw_find_path(&world,AW_CELLS+a,AW_CELLS+b);memcpy(world.walkable,surface,AW_CELLS);if(!valid)return;
@@ -296,8 +301,8 @@ int main(int argc,char **argv) {
     }
     if(headless){
         if(!aw_generate_options(&world,seed,settings))return 1;
-        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d\n",
-            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions);
+        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d entrance_ne=%d entrance_sw=%d depth_ne=%d depth_sw=%d\n",
+            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions,world.cave_entrances[0]>=0?world.cave[world.cave_entrances[0]].portal:-1,world.cave_entrances[1]>=0?world.cave[world.cave_entrances[1]].portal:-1,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0);
         return 0;
     }
     SetTraceLogLevel(LOG_WARNING);

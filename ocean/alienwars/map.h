@@ -15,7 +15,7 @@
 #define AW_BIN_SIZE 48
 #define AW_LINKS 7
 #define AW_NODES (AW_CELLS+AW_CAVE_NODES)
-#define AW_VERSION 4
+#define AW_VERSION 5
 #define AW_SUBDIV 6
 #define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
@@ -32,6 +32,8 @@ typedef struct {
     AwCaveNode cave[AW_CAVE_NODES]; AwCaveEdge cave_edges[AW_CAVE_EDGES];
     uint16_t cave_bins[AW_CELLS][AW_BIN_SIZE]; uint8_t cave_bin_count[AW_CELLS];
     int cave_count,cave_edge_count,cave_decisions,cave_expanded,cave_backtracks;
+    int cave_entrances[2],cave_hubs[2];
+    uint8_t cave_access[AW_CELLS];
     uint32_t seed,rng,hash,wave[AW_CELLS],compatible[AW_TILES];
     uint16_t shape_wave[AW_CELLS],shape_compatible[AW_CELLS][4][AW_SHAPES];
     uint8_t shape_lo[AW_CELLS][4],shape_hi[AW_CELLS][4],shape_preferred[AW_CELLS][4];
@@ -305,7 +307,7 @@ static int aw_material_ok(int a,int b){
     return 1;
 }
 static uint32_t aw_domain(AwMap*m,int c){
-    AwCell*t=&m->cells[c];if(t->road)return 1u<<AW_ROAD;if(!(t->q[0]|t->q[1]|t->q[2]|t->q[3]))return 1u<<AW_DEEP;
+    AwCell*t=&m->cells[c];if(t->road||m->cave_access[c])return 1u<<AW_ROAD;if(!(t->q[0]|t->q[1]|t->q[2]|t->q[3]))return 1u<<AW_DEEP;
     int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
     int climate=aw_noise(m->seed^71391u,x,z,12),wet=aw_noise(m->seed^317u,x,z,7),biome=m->options.biome;
     if(!biome)biome=climate<145?1:climate<190?2:climate<220?3:4;
@@ -473,8 +475,18 @@ static int aw_validate(AwMap*m){
     for(int s=0;s<2;s++){int floor=s?m->options.floors_b:m->options.floors_a;for(int k=0;k<4;k++)if(m->cells[m->spawns[s]].q[k]!=floor*4)return 0;}
     if(!m->reachable[m->spawns[1]]||!m->reachable[m->center])return 0;
     for(int r=0;r<4;r++)if(!m->reachable[m->resources[r]])return 0;
-    for(int c=0;c<AW_CELLS;c++)if(m->cells[c].road&&!m->reachable[c])return 0;
+    for(int c=0;c<AW_CELLS;c++)if((m->cells[c].road||m->cave_access[c])&&!m->reachable[c])return 0;
     for(int i=0;i<m->cave_count;i++)if(!m->reachable[AW_CELLS+i])return 0;
+    if(m->options.tunnels){
+        /* Each entrance must have its own surface approach. Reachability via
+         * the other cave mouth must not conceal an isolated landing. */
+        uint8_t seen[AW_CELLS]={0};int queue[AW_CELLS],head=0,tail=0;
+        queue[tail++]=m->spawns[0];seen[m->spawns[0]]=1;
+        while(head<tail){int c=queue[head++];for(int d=0;d<4;d++){
+            int n=aw_open(m,c,d);if(n>=0&&!seen[n]){seen[n]=1;queue[tail++]=n;}
+        }}
+        for(int side=0;side<2;side++)if(!seen[m->cave[m->cave_entrances[side]].portal])return 0;
+    }
     return aw_find_path(m,m->spawns[0],m->spawns[1]);
 }
 static uint32_t aw_fingerprint(const AwMap*m){
@@ -484,12 +496,45 @@ static uint32_t aw_fingerprint(const AwMap*m){
     for(int i=0;i<m->cave_edge_count;i++){h=(h^m->cave_edges[i].a)*16777619u;h=(h^m->cave_edges[i].b)*16777619u;}
     return h;
 }
+/* Reserve walkable approaches before material WFC can put lava on them.
+ * Multi-source BFS starts at existing roads and follows only matching surface
+ * sockets. The selected path changes material, never elevations or cliff shape. */
+static int aw_cave_approaches(AwMap*m){
+    if(!m->options.tunnels)return 1;
+    aw_navigation(m);
+    int prev[AW_CELLS],queue[AW_CELLS],head=0,tail=0;
+    for(int c=0;c<AW_CELLS;c++){prev[c]=-1;if(m->cells[c].road){prev[c]=-2;queue[tail++]=c;}}
+    while(head<tail){int c=queue[head++];for(int d=0;d<4;d++){
+        int n=aw_open(m,c,d);if(n<0||prev[n]!=-1)continue;prev[n]=c;queue[tail++]=n;
+    }}
+    for(int side=0;side<(m->options.symmetry?1:2);side++){
+        int portal=aw_cave_site(m,side,0);if(portal<0)return 0;
+        for(int c=portal;c>=0&&prev[c]!=-2;c=prev[c]){
+            m->cave_access[c]=1;
+            if(m->options.symmetry)m->cave_access[AW_CELLS-1-c]=1;
+        }
+        for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++){
+            int c=portal+dz*64+dx,flat=1;
+            for(int k=0;k<4;k++)flat&=m->cells[c].q[k]==4;
+            if(!flat||!m->reachable[c])continue;
+            m->cave_access[c]=1;if(m->options.symmetry)m->cave_access[AW_CELLS-1-c]=1;
+        }
+    }
+    return 1;
+}
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
     memset(m,0,sizeof(*m));m->seed=seed;m->rng=seed;m->options=options;m->attempts=1;
-    if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_wfc(m)||!aw_caves(m))return 0;
-    m->valid=aw_validate(m);m->hash=aw_fingerprint(m);return m->valid;
+    if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_cave_approaches(m)||!aw_wfc(m))return 0;
+    uint32_t surface_rng=m->rng;
+    for(int attempt=0;attempt<(options.tunnels?16:1);attempt++){
+        aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;
+        if(!aw_caves(m,attempt))continue;
+        m->valid=aw_validate(m);
+        if(m->valid){m->hash=aw_fingerprint(m);return 1;}
+    }
+    return 0;
 }
 static int aw_generate(AwMap*m,uint32_t seed){return aw_generate_options(m,seed,aw_defaults());}
 static int aw_solid(const AwMap*m,float x,float yq,float z){

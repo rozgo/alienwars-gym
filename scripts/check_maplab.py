@@ -90,7 +90,7 @@ for seed in [0, 1, 73, 4294967295]:
     web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
-report = {'generator_version':4,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+report = {'generator_version':5,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
           'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
           'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')

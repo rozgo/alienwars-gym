@@ -43,6 +43,7 @@
     .swatch { height:8px; width:8px; border:1px solid currentColor; display:inline-block; }
     .cyan { color:#66dfe1; } .orange { color:#f9a158; } .gold { color:var(--gold); }
     .gesture-help { color:var(--muted); font-size:12px; margin:8px 0 0; }
+    .swatch.violet { background:#bba3f5; }
     .scout { font:12px/1.5 ui-monospace,monospace; color:var(--gold); text-align:right; }
     .scout span { display:block; color:var(--muted); }
     aside { background:var(--panel); border-left:1px solid var(--line); overflow-y:auto; }
@@ -102,20 +103,20 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 004</span></a>
+    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 005</span></a>
     <nav aria-label="Project"><a href="../">Breakout experiment</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 04</p><h1>Strata Frontier</h1><p>Volumetric terrain · 64 × 64 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 05</p><h1>Strata Frontier</h1><p>Volumetric terrain · 64 × 64 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
         <button data-camera="2" aria-label="Zoom out" title="Zoom out">−</button><button data-camera="8" aria-label="Pan down" title="Pan down">↓</button><button data-camera="1" aria-label="Zoom in" title="Zoom in">+</button>
       </div>
       <div class="viewport-footer">
-        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to orbit · Shift-drag to pan · Scroll to zoom</p></div>
+        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch violet"></i>Tunnel entrances</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to orbit · Shift-drag to pan · Scroll to zoom</p></div>
         <div class="scout"><div id="scout-heading">NAVIGATION SCOUT / A ↔ B</div><span id="scout-status">Scripted path · Terrain validation</span></div>
       </div>
       <div class="loading" id="loading" role="status"><p id="loading-text">Preparing the map…</p><progress aria-label="Loading map runtime"></progress><small>Generated and rendered on your device.</small></div>
@@ -175,12 +176,12 @@
           <div><dt>Walkable spans</dt><dd id="walk-count">—</dd></div>
           <div><dt id="route-label">Base-to-base path</dt><dd id="path-length">—</dd></div>
           <div><dt>Shape WFC decisions</dt><dd id="shape-decisions">—</dd></div><div><dt>Material WFC decisions</dt><dd id="decisions">—</dd></div>
-          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Cave waypoints</dt><dd id="tunnel-count">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
+          <div><dt>Structure WFC decisions</dt><dd id="structural">—</dd></div><div><dt>Cave waypoints</dt><dd id="tunnel-count">—</dd></div><div><dt>Tunnel floors NE / SW</dt><dd id="tunnel-depths">—</dd></div><div><dt>Generation</dt><dd id="generation-ms">—</dd></div>
         </dl>
       </section>
       <section class="panel-section">
-        <details><summary>How this world is built</summary><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. A 3D route search plans descending entrances and an underground network. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v4 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <details><summary>How this world is built</summary><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
+        <p class="provenance">Generator v5 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>
@@ -279,6 +280,7 @@
         $('generation-ms').innerHTML=`${Math.round(report.milliseconds)} <small>ms</small>`;
         $('nav-status').textContent='Bases, roads & cave network connected';
         $('structural').textContent=report.structural; $('tunnel-count').textContent=report.tunnels;
+        $('tunnel-depths').textContent=report.tunnels?`${report.depthA/4} / ${report.depthB/4}`:'—';
         $('map-hash').textContent=report.hash;
       }
       $('path-length').innerHTML=`${report.length-1} <small>steps</small>`;

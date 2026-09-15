@@ -62,8 +62,8 @@ static int aw_cave_route(AwMap*m,int sx,int sz,int sq,int gx,int gz,int gq,int m
             if(pos[next]==-2||nx<3||nz<3||nx>60||nz>60)continue;
             float h=aw_surface_q(m,nc,0.5f,0.5f);
             int near=aw_abs(nx-sx)+aw_abs(nz-sz);
-            if(h<4 || (nq+6>h && near>3))continue;
-            if(m->cells[nc].road&&nq<h&&nq+6>h)continue;
+            if(h<4 || (nq+6>h && near>8))continue;
+            if((m->cells[nc].road||m->cave_access[nc])&&nq<h&&nq+6>h)continue;
             int separated=1;
             for(int j=0;j<m->cave_count;j++){
                 const AwCaveNode*v=&m->cave[j];int dx=nx-v->x,dz=nz-v->z,dq=aw_abs(nq-v->q);
@@ -216,7 +216,20 @@ static int aw_cave_validate(const AwMap*m){
             if(registered!=1)return 0;
         }
     }
-    if(portals<2)return 0;
+    if(portals!=2||m->cave_entrances[0]==m->cave_entrances[1]||m->cave_hubs[0]==m->cave_hubs[1])return 0;
+    for(int side=0;side<2;side++){
+        int p=m->cave_entrances[side],h=m->cave_hubs[side];
+        if(p<0||p>=m->cave_count||h<0||h>=m->cave_count)return 0;
+        const AwCaveNode*n=&m->cave[p],*hub=&m->cave[h];
+        int x=side?63-n->x:n->x,z=side?63-n->z:n->z;
+        if(n->portal<0||n->q!=4||x<38||x>57||z<12||z>29||hub->q>=0||hub->profile!=2)return 0;
+    }
+    uint8_t seen[AW_CAVE_NODES]={0};int queue[AW_CAVE_NODES],head=0,tail=0;
+    queue[tail++]=m->cave_entrances[0];seen[queue[0]]=1;
+    while(head<tail){int c=queue[head++];for(int d=0;d<6;d++){
+        int n=m->cave[c].links[d];if(n>=0&&!seen[n]){seen[n]=1;queue[tail++]=n;}
+    }}
+    if(tail!=m->cave_count)return 0;
     for(int i=0;i<m->cave_edge_count;i++){
         const AwCaveEdge*e=&m->cave_edges[i];if(e->a<0||e->b<0||e->a>=m->cave_count||e->b>=m->cave_count||e->a==e->b)return 0;
         const AwCaveNode*a=&m->cave[e->a],*b=&m->cave[e->b];
@@ -236,25 +249,73 @@ static int aw_cave_validate(const AwMap*m){
         }
     }return 1;
 }
-static int aw_caves(AwMap*m){
-    if(!m->options.tunnels)return 1;
-    /* Strategic entrance pair belongs to the existing road network. A* builds
-     * the actual 3D route; the deep waypoints establish a required excavation
-     * depth. Mirror constraints couple complete routes, not just surface paint. */
-    if(!aw_cave_route(m,29,31,4,31,19,-6,m->options.symmetry))return 0;
-    if(!aw_cave_route(m,31,19,-6,31,31,-6,m->options.symmetry))return 0;
-    if(!m->options.symmetry){
-        if(!aw_cave_route(m,34,32,4,32,44,-6,0)||!aw_cave_route(m,32,44,-6,32,32,-6,0))return 0;
+/* Entrance sites belong to the surface component shared by the bases. Rank
+ * flat, dry sites on the OTHER diagonal by regional position, approach space
+ * and a seeded preference. Retry ranks explore alternatives on the same world. */
+static int aw_cave_site(const AwMap*m,int side,int rank){
+    int sites[AW_CELLS],scores[AW_CELLS],count=0;
+    uint32_t salt=aw_hash(m->seed^(side?0x729a51u:0xa13b72u));
+    int tx=44+(salt%9),tz=17+((salt>>8)%9);
+    for(int z=12;z<=29;z++)for(int x=38;x<=57;x++){
+        int canonical=z*64+x,c=side?AW_CELLS-1-canonical:canonical;
+        const AwCell*t=&m->cells[c];
+        if(!m->reachable[c]||(t->road&&!m->cave_access[c])||t->material==AW_SHALLOW||t->q[0]!=4)continue;
+        int flat=1,approaches=0;
+        for(int k=1;k<4;k++)flat&=t->q[k]==4;
+        for(int d=0;d<4;d++){int n=aw_neighbor(c,d);if(n>=0&&m->reachable[n]&&aw_edge_matches(m,c,n,d))approaches++;}
+        if(!flat||approaches<2)continue;
+        int score=4*(aw_abs(x-tx)+aw_abs(z-tz))-3*approaches+(int)(aw_hash(salt^(uint32_t)c*71u)%32);
+        int at=count;while(at&&score<scores[at-1]){sites[at]=sites[at-1];scores[at]=scores[at-1];at--;}
+        sites[at]=c;scores[at]=score;count++;
     }
-    int c[4]={aw_cave_node(m,31,31,-6),aw_cave_node(m,32,31,-6),aw_cave_node(m,32,32,-6),aw_cave_node(m,31,32,-6)};
-    for(int i=0;i<4;i++)if(!aw_cave_link(m,c[i],c[(i+1)%4]))return 0;
-    int a=aw_cave_node(m,29,31,4),b=aw_cave_node(m,34,32,4);
-    m->cave[a].portal=31*64+29;m->cave[b].portal=32*64+34;
-    m->cells[m->cave[a].portal].portal=1;m->cells[m->cave[b].portal].portal=1;
+    return count?sites[rank%count]:-1;
+}
+static void aw_cave_clear(AwMap*m){
+    m->cave_count=m->cave_edge_count=m->cave_decisions=m->cave_expanded=m->cave_backtracks=0;
+    memset(m->cave_bin_count,0,sizeof(m->cave_bin_count));
+    for(int c=0;c<AW_CELLS;c++)m->cells[c].tunnel=m->cells[c].portal=0;
+    for(int s=0;s<2;s++)m->cave_entrances[s]=m->cave_hubs[s]=-1;
+}
+/* Choose a covered rendezvous in each half, inward from its entrance. The
+ * central connection searches between these sites; there is no fixed center
+ * shaft, ring, tunnel start, or prescribed Manhattan connector. */
+static int aw_cave_hub_cell(const AwMap*m,int portal,int side,uint32_t salt){
+    int x=portal%64,z=portal/64;
+    int tx=x+(side?1:-1)*(6+(salt%5)),tz=z+(side?-1:1)*(4+((salt>>8)%6));
+    int best=-1,score=INT_MAX;
+    for(int dz=-4;dz<=4;dz++)for(int dx=-4;dx<=4;dx++){
+        int nx=tx+dx,nz=tz+dz;if(nx<5||nx>58||nz<5||nz>58)continue;
+        int c=nz*64+nx;if(aw_surface_q(m,c,.5f,.5f)<4)continue;
+        int cost=8*(aw_abs(dx)+aw_abs(dz))+(aw_hash(salt^(uint32_t)c)%7);
+        if(cost<score){score=cost;best=c;}
+    }
+    return best;
+}
+static int aw_caves(AwMap*m,int attempt){
+    if(!m->options.tunnels)return 1;
+    int portals[2],hubs[2],depth[2];
+    uint32_t plan=aw_hash(m->seed^((uint32_t)attempt*0x9e3779b9u)^0x174b39u);
+    portals[0]=aw_cave_site(m,0,attempt);
+    portals[1]=m->options.symmetry?AW_CELLS-1-portals[0]:aw_cave_site(m,1,attempt*3);
+    if(portals[0]<0||portals[1]<0||portals[1]>=AW_CELLS)return 0;
+    hubs[0]=aw_cave_hub_cell(m,portals[0],0,plan);
+    hubs[1]=m->options.symmetry?AW_CELLS-1-hubs[0]:aw_cave_hub_cell(m,portals[1],1,aw_hash(plan^917u));
+    if(hubs[0]<0||hubs[1]<0||hubs[1]>=AW_CELLS||hubs[0]==hubs[1])return 0;
+    depth[0]=-4-(int)(plan%7);depth[1]=m->options.symmetry?depth[0]:-4-(int)((plan>>8)%7);
+    if(!aw_cave_route(m,portals[0]%64,portals[0]/64,4,hubs[0]%64,hubs[0]/64,depth[0],m->options.symmetry))return 0;
+    if(!m->options.symmetry&&!aw_cave_route(m,portals[1]%64,portals[1]/64,4,hubs[1]%64,hubs[1]/64,depth[1],0))return 0;
+    if(!aw_cave_route(m,hubs[0]%64,hubs[0]/64,depth[0],hubs[1]%64,hubs[1]/64,depth[1],m->options.symmetry))return 0;
+    for(int side=0;side<2;side++){
+        int p=aw_cave_node(m,portals[side]%64,portals[side]/64,4),h=aw_cave_node(m,hubs[side]%64,hubs[side]/64,depth[side]);
+        if(p<0||h<0)return 0;
+        m->cave[p].portal=portals[side];m->cells[portals[side]].portal=1;
+        m->cave_entrances[side]=p;m->cave_hubs[side]=h;
+    }
     uint8_t wave[AW_CAVE_NODES];
     for(int i=0;i<m->cave_count;i++){
         AwCaveNode*n=&m->cave[i];wave[i]=15;
         if(n->portal>=0)wave[i]=1;
+        if(i==m->cave_hubs[0]||i==m->cave_hubs[1])wave[i]=1<<2;
         for(int d=0;d<6;d++)if(n->links[d]>=0&&n->q!=m->cave[n->links[d]].q)wave[i]&=3;
         int low=n->q;
         for(int d=0;d<6;d++)if(n->links[d]>=0&&m->cave[n->links[d]].q<low)low=m->cave[n->links[d]].q;
@@ -262,13 +323,14 @@ static int aw_caves(AwMap*m){
          * including the flat socket immediately before a descending ramp. */
         for(int dz=-2;dz<=2;dz++)for(int dx=-2;dx<=2;dx++){
             int x=n->x+dx,z=n->z+dz;if(x<0||z<0||x>=64||z>=64)continue;
-            int c=z*64+x;if(!m->cells[c].road)continue;
+            int c=z*64+x;if(!m->cells[c].road&&!m->cave_access[c])continue;
             float road=aw_surface_q(m,c,0.5f,0.5f),distance=sqrtf((float)(dx*dx+dz*dz));
             if(low>=road)continue;
             for(int t=0;t<4;t++)if(n->q+aw_cave_height(t)>road&&aw_cave_radius(t)>distance-0.1f)wave[i]&=~(1<<t);
         }
         float cover=aw_height_q(m,n->x+0.5f,n->z+0.5f)-n->q;
-        if(n->q<=0)for(int t=0;t<4;t++)if(aw_cave_height(t)+1.5f>cover)wave[i]&=~(1<<t);
+        int approach=0;for(int side=0;side<2;side++)approach|=aw_abs(n->x-portals[side]%64)+aw_abs(n->z-portals[side]/64)<=8;
+        if(!approach)for(int t=0;t<4;t++)if(aw_cave_height(t)+1.5f>cover)wave[i]&=~(1<<t);
         if(!wave[i])return 0;
     }
     if(!aw_cave_collapse(m,wave,0))return 0;
