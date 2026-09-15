@@ -325,7 +325,8 @@ static void aw_update(void) {
         unit_progress+=dt*2.3f*10.0f/fmaxf(10,(float)cost)*aw_motion_pace(&unit_motion[0],b.x-a.x,b.z-a.z,0);
     }
     Vector2 mouse=GetMouseDelta();
-    if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&IsKeyDown(KEY_LEFT_SHIFT))){
+    int orbit_modifier=IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT);
+    if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&!orbit_modifier)){
         Vector3 right={cosf(yaw),0,-sinf(yaw)},forward={sinf(yaw),0,cosf(yaw)};
         focus=Vector3Add(focus,Vector3Scale(right,-mouse.x*zoom/GetScreenHeight()));
         focus=Vector3Add(focus,Vector3Scale(forward,-mouse.y*zoom/GetScreenHeight()));
@@ -412,7 +413,7 @@ static void aw_update(void) {
     EndMode3D();
 #ifndef PLATFORM_WEB
     DrawText(TextFormat("ALIENWARS / MAP LAB    SEED %u    %08x",world.seed,world.hash),24,22,20,(Color){223,233,229,255});
-    DrawText("Drag: orbit   Right drag: pan   Wheel: zoom   R: new seed   Space: assembly   G: walkability   P: path",24,GetScreenHeight()-30,16,(Color){159,182,183,255});
+    DrawText("Drag: pan   Shift-drag: orbit   Wheel: zoom   R: new seed   Space: assembly   G: walkability   P: path",24,GetScreenHeight()-30,16,(Color){159,182,183,255});
 #endif
     EndDrawing();
     static double last_report=0;

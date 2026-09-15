@@ -130,7 +130,7 @@
   </header>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
-      <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom. Camera buttons are also available."></canvas>
+      <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag or right-drag to pan, Shift-drag to orbit, scroll to zoom. Camera buttons are also available."></canvas>
       <div class="map-heading"><p class="eyebrow">Terrain study 10</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
@@ -138,7 +138,7 @@
         <button data-camera="2" aria-label="Zoom out" title="Zoom out">−</button><button data-camera="8" aria-label="Pan down" title="Pan down">↓</button><button data-camera="1" aria-label="Zoom in" title="Zoom in">+</button>
       </div>
       <div class="viewport-footer">
-        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch violet"></i>Tunnel entrances</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to orbit · Shift-drag to pan · Scroll to zoom</p></div>
+        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch violet"></i>Tunnel entrances</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to pan · Shift-drag to orbit · Scroll to zoom</p></div>
         <div class="scout"><div id="scout-heading">NAVIGATION SCOUT / A ↔ B</div><span id="scout-status">Scripted path · Terrain validation</span></div>
       </div>
       <div class="loading" id="loading" role="status"><p id="loading-text">Preparing the map…</p><progress aria-label="Loading map runtime"></progress><small>Generated and rendered on your device.</small></div>
