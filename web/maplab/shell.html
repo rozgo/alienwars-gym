@@ -299,12 +299,14 @@
     $('baked-occlusion').checked=params.get('ao')!=='0';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const patrolParam=params.get('patrol');
+    if(patrolParam==='0'||patrolParam==='1'||patrolParam==='2')$('patrol-mode').value=patrolParam;
     const sensorLayerMask=Number(params.get('sensors')??1)&15;
     for(let t=0;t<4;t++)$('sensor-show-'+t).checked=!!(sensorLayerMask&(1<<t));
     $('sensor-unit').value=String(Math.max(0,Math.min(8,Number(params.get('unit'))||0)));
     $('sensor-all').checked=params.get('sensorsAll')==='1';
     $('sensor-xray').checked=params.get('sensorXray')!=='0';
-    if($('scout-pause').checked)$('patrol-mode').value='1';
+    if($('scout-pause').checked&&patrolParam===null)$('patrol-mode').value='1';
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
     const bounded = (name,fallback,min,max) => {const raw=params.get(name);const n=Number(raw);return raw!==null && Number.isInteger(n) && n>=min && n<=max?n:fallback;};
     $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
@@ -351,6 +353,7 @@
       if($('sensor-all').checked)url.searchParams.set('sensorsAll','1');else url.searchParams.delete('sensorsAll');
       if(!$('sensor-xray').checked)url.searchParams.set('sensorXray','0');else url.searchParams.delete('sensorXray');
       for(const [id,key] of [['isolate-tunnels','isolate'],['tunnel-ceilings','ceilings'],['ocean-access','ocean']]){if($(id).checked)url.searchParams.set(key,'1');else url.searchParams.delete(key);}
+      if($('patrol-mode').value!=='0')url.searchParams.set('patrol',$('patrol-mode').value);else url.searchParams.delete('patrol');
       history.replaceState(null, '', url);
     }
     function resizeCanvas() {
@@ -509,7 +512,7 @@
     $('walkability').addEventListener('change',()=>{Module._aw_option(0,Number($('walkability').checked));$('overlay-key').hidden=!$('walkability').checked;syncUrl();});
     $('path').addEventListener('change',()=>{Module._aw_option(1,Number($('path').checked));syncUrl();});
     $('find-patrol').addEventListener('click',()=>{const i=Module._aw_inspect_patrol();if(i>=0){$('patrol-note').textContent=['Tracked rover','Cargo hauler','Skiff','Patrol boat','Cutter','Quadrotor','Gunship','Air transport'][i];$('follow').checked=false;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();}});
-    $('patrol-mode').addEventListener('change',()=>Module._aw_option(12,Number($('patrol-mode').value)));
+    $('patrol-mode').addEventListener('change',()=>{Module._aw_option(12,Number($('patrol-mode').value));syncUrl();});
     $('scout-pause').addEventListener('change',()=>Module._aw_option(2,Number($('scout-pause').checked)));
     $('overlay-key').hidden=!$('walkability').checked;
     $('ocean-key').hidden=!$('ocean-access').checked;

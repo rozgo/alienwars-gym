@@ -18,6 +18,8 @@ implemented, and future CUDA training runs on the GPU machine.
 The root page redirects to `maplab/`, retaining the query string and fragment.
 Existing `/maplab/` seed URLs remain valid. The former bootstrap demo, its
 packaged weights and its dedicated build/playback/training helpers are retired.
+Share links also preserve patrol traffic with `patrol=0` (live, the default),
+`patrol=1` (paused), or `patrol=2` (hidden).
 
 ## Install the compiler once
 
