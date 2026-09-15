@@ -255,29 +255,17 @@ static void aw_build_detail(AwScene*s,const AwMap*m){
     s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->surface_mask;
     s->land_material.maps[MATERIAL_MAP_ROUGHNESS].texture=s->detail;
 }
-/* Edge trusses are visual structure outside the validated walking strip.
+/* Bridge seams are visual detail outside the validated walking strip.
  * The deck itself is authoritative volume geometry, not this decorative mesh. */
 static Vector3 aw_bridge_point(const AwBridge*b,float u,float side,float rise){
     return (Vector3){(b->x+.5f+b->dx*u+b->dz*side)*AW_UNIT,
         aw_y(aw_bridge_q(b,u)/4)+rise,(b->z+.5f+b->dz*u-b->dx*side)*AW_UNIT};
 }
 static void aw_bridge_details(AwBuilder*mesh,const AwBridge*b){
-    Color steel={ 60, 70, 70,255};
-    for(int side=-1;side<=1;side+=2)for(int u=0;u<b->length;u++){
-        Vector3 a=aw_bridge_point(b,u,side*1.06f,.05f),c=aw_bridge_point(b,u+1,side*1.06f,.05f);
-        Vector3 top=a,end=c;top.y+=.82f;end.y+=.82f;
-        aw_branch(mesh,a,top,.065f,.065f,steel,AW_CELLS-1,5,4);
-        aw_branch(mesh,top,end,.075f,.075f,steel,AW_CELLS-1,5,4);
-        aw_branch(mesh,a,c,.09f,.09f,steel,AW_CELLS-1,5,4);
-        if(u%2)aw_branch(mesh,top,c,.035f,.035f,steel,AW_CELLS-1,5,4);
-        else aw_branch(mesh,a,end,.035f,.035f,steel,AW_CELLS-1,5,4);
-        /* Transverse expansion seams sit on the actual deck grade. */
-        if(u%2==0){Vector3 left=aw_bridge_point(b,u,-.98f,.018f),right=aw_bridge_point(b,u,.98f,.018f);
-            aw_branch(mesh,left,right,.018f,.018f,(Color){ 70, 70, 70,255},AW_CELLS-1,5,4);}
-    }
-    for(int side=-1;side<=1;side+=2){
-        Vector3 a=aw_bridge_point(b,b->length,side*1.06f,.05f),top=a;top.y+=.82f;
-        aw_branch(mesh,a,top,.065f,.065f,steel,AW_CELLS-1,5,4);
+    /* Transverse expansion seams sit on the actual deck grade. */
+    for(int u=0;u<=b->length;u+=2){
+        Vector3 left=aw_bridge_point(b,u,-.98f,.018f),right=aw_bridge_point(b,u,.98f,.018f);
+        aw_branch(mesh,left,right,.018f,.018f,(Color){ 70, 70, 70,255},AW_CELLS-1,5,4);
     }
 }
 static void aw_build_scene(AwScene*s,const AwMap*m){

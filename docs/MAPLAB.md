@@ -148,8 +148,8 @@ Ground below a low deck is blocked when headroom is insufficient. The original
 water bed and naval depth/connectivity stay unchanged. Bridge air draft is not part of the general naval path API; scripted patrols
 apply their own mast-clearance filter.
 
-Steel edge trusses and expansion seams are decorative and lie outside the
-validated center walking strip. **Cross a bridge** frames a bridge and starts
+Expansion seams are decorative and lie outside the validated center walking
+strip. Bridges have no raised railings. **Cross a bridge** frames a bridge and starts
 the scout along it; click again to visit the next crossing. The automatic
 base-to-base search can also use bridges whenever they lower its route cost.
 Tunnel isolation continues to change visibility without moving the camera.

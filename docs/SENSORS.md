@@ -42,7 +42,7 @@ penalty for terrain obstruction, and a range-dependent receiver budget. It does
 not model multipath, frequency bands, interference or an actual antenna pattern.
 Only active units with an attached RF module transmit. Sonar similarly models
 geometric range, not acoustic propagation. Decorative trees, rocks and bridge
-trusses are not authoritative collision objects and do not occlude sensors.
+seams are not authoritative collision objects and do not occlude sensors.
 Unit detection currently uses spherical body proxies; patrols still do not
 avoid one another.
 
