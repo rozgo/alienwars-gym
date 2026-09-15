@@ -87,6 +87,22 @@
     summary { cursor:pointer; color:var(--ink); min-height:24px; display:list-item; align-content:center; }
     details p { margin:7px 0 0; }
     .provenance { color:var(--muted); font-size:10px; margin:8px 0 0; }
+    .sensor-select { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+    .sensor-select select { margin:0; flex:1; }
+    .sensor-layers { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin:7px 0; }
+    .sensor-chip { display:flex; align-items:center; justify-content:space-between; gap:4px; padding:5px 7px; min-height:30px; background:#222; border:1px solid #414141; border-radius:3px; color:var(--sensor); cursor:pointer; font-size:10px; }
+    .sensor-chip:has(input:checked) { border-color:var(--sensor); background:color-mix(in srgb,var(--sensor) 9%,#222); }
+    .sensor-chip input { width:22px; height:14px; }
+    .sensor-chip input::before { top:2px; left:2px; }
+    .sensor-chip input:checked::before { transform:translateX(8px); }
+    .sensor-flags { display:flex; gap:12px; flex-wrap:wrap; }
+    .sensor-flags .toggle { font-size:10px; flex:1; white-space:nowrap; }
+    .sensor-pose { color:#d5d4ce; font-size:10px; line-height:1.7; padding:7px 8px; margin:7px 0; background:#222; border-left:2px solid #737971; font-variant-numeric:tabular-nums; }
+    .sensor-pose span { color:var(--muted); }
+    .sensor-reading { display:flex; justify-content:space-between; gap:4px; font-size:10px; line-height:1.9; }
+    .sensor-reading output { color:var(--muted); }
+    .depth-preview { display:grid; grid-template-columns:repeat(8,1fr); aspect-ratio:4/3; width:128px; border:1px solid #636057; margin:8px 0 4px; image-rendering:pixelated; }
+    .depth-preview i { display:block; }
     .loading { position:absolute; inset:0; background:#181818f5; display:grid; place-content:center; gap:8px; padding:16px; text-align:center; z-index:5; }
     .loading p { margin:0; } .loading small { color:var(--muted); }
     .loading progress { width:220px; justify-self:center; }
@@ -151,7 +167,33 @@
         <div class="playback" id="playback" hidden><button id="pause">Pause</button><button id="step">Step one tile</button></div>
       </section>
       <section class="panel-section">
-        <h2 class="section-title">Inspect terrain <small>03 / EXPLORE</small></h2>
+        <h2 class="section-title">Unit sensors <small>03 / PERCEPTION</small></h2>
+        <label for="sensor-unit">Selected unit</label>
+        <div class="sensor-select"><select id="sensor-unit"><option value="0">Inspection scout</option><option value="1">Tracked rover</option><option value="2">Cargo hauler</option><option value="3">Skiff</option><option value="4">Patrol boat</option><option value="5">Cutter</option><option value="6">Quadrotor</option><option value="7">Gunship</option><option value="8">Air transport</option></select><button id="sensor-focus">Focus</button></div>
+        <div class="sensor-layers" role="group" aria-label="Sensor range overlays">
+          <label class="sensor-chip" style="--sensor:#68e6b4">LiDAR<input id="sensor-show-0" type="checkbox" aria-label="Show LiDAR ranges" checked></label>
+          <label class="sensor-chip" style="--sensor:#58b8f5">Sonar<input id="sensor-show-1" type="checkbox" aria-label="Show sonar ranges"></label>
+          <label class="sensor-chip" style="--sensor:#c09ef7">RF<input id="sensor-show-2" type="checkbox" aria-label="Show RF ranges"></label>
+          <label class="sensor-chip" style="--sensor:#f2c26b">Camera<input id="sensor-show-3" type="checkbox" aria-label="Show camera ranges"></label>
+        </div>
+        <div class="sensor-flags"><label class="toggle" for="sensor-all">All units<input type="checkbox" id="sensor-all"></label><label class="toggle" for="sensor-xray">See through<input type="checkbox" id="sensor-xray" checked></label></div>
+        <p class="seed-note">Dots are measured returns. Dashed outlines show maximum range. See through reveals sensors behind terrain and water.</p>
+        <div class="sensor-pose"><div id="sensor-pose">Pose —</div><span id="sensor-odometry">Odometry —</span></div>
+        <div class="sensor-reading"><span style="color:#68e6b4">LiDAR</span><output id="sensor-reading-0">—</output></div>
+        <div class="sensor-reading"><span style="color:#58b8f5">Sonar</span><output id="sensor-reading-1">—</output></div>
+        <div class="sensor-reading"><span style="color:#c09ef7">RF</span><output id="sensor-reading-2">—</output></div>
+        <div class="sensor-reading"><span style="color:#f2c26b">Depth camera</span><output id="sensor-reading-3">—</output></div>
+        <div id="depth-panel" hidden><div class="depth-preview" id="depth-preview" role="img" aria-label="8 by 6 depth camera. Bright pixels are near; dark pixels are far. Blue is water and mint is another unit."></div><p class="seed-note">8 × 6 depth · bright = near · blue = water</p></div>
+        <details><summary>Equipment on selected unit</summary><p>Attach independently of the range overlays. Sonar needs a submerged mount; dry mounts return no reading.</p>
+          <label class="toggle" for="sensor-equip-0">LiDAR attached<input id="sensor-equip-0" type="checkbox"></label>
+          <label class="toggle" for="sensor-equip-1">Sonar attached<input id="sensor-equip-1" type="checkbox"></label>
+          <label class="toggle" for="sensor-equip-2">RF attached<input id="sensor-equip-2" type="checkbox"></label>
+          <label class="toggle" for="sensor-equip-3">Camera attached<input id="sensor-equip-3" type="checkbox"></label>
+          <p>Pose is exact simulator truth. Odometry measures ideal local motion. LiDAR and depth use terrain and unit bodies; decorative trees and rocks do not block them yet. RF uses a simple terrain-loss model.</p>
+        </details>
+      </section>
+      <section class="panel-section">
+        <h2 class="section-title">Inspect terrain <small>04 / EXPLORE</small></h2>
         <label class="toggle" for="isolate-tunnels">Isolate tunnels<input type="checkbox" id="isolate-tunnels"></label>
         <div id="isolation-options" hidden>
           <label class="toggle" for="tunnel-ceilings">Show tunnel ceilings<input type="checkbox" id="tunnel-ceilings"></label>
@@ -187,7 +229,7 @@
         </div><p>Lower cost is easier travel. Climbing adds cost. Trees and rocks are decorative.</p></details>
       </section>
       <section class="panel-section">
-        <h2 class="section-title">Map checks <small>04 / VALIDATE</small></h2>
+        <h2 class="section-title">Map checks <small>05 / VALIDATE</small></h2>
         <p class="nav-status" id="nav-status" role="status">Checking routes…</p>
         <dl>
           <div><dt>Walkable spans</dt><dd id="walk-count">—</dd></div>
@@ -217,6 +259,11 @@
     $('baked-occlusion').checked=params.get('ao')!=='0';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const sensorLayerMask=Number(params.get('sensors')??1)&15;
+    for(let t=0;t<4;t++)$('sensor-show-'+t).checked=!!(sensorLayerMask&(1<<t));
+    $('sensor-unit').value=String(Math.max(0,Math.min(8,Number(params.get('unit'))||0)));
+    $('sensor-all').checked=params.get('sensorsAll')==='1';
+    $('sensor-xray').checked=params.get('sensorXray')!=='0';
     if($('scout-pause').checked)$('patrol-mode').value='1';
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
     const bounded = (name,fallback,min,max) => {const raw=params.get(name);const n=Number(raw);return raw!==null && Number.isInteger(n) && n>=min && n<=max?n:fallback;};
@@ -258,6 +305,11 @@
       if (!$('path').checked) url.searchParams.set('path','0'); else url.searchParams.delete('path');
       for(const [key,value] of Object.entries({sym:$('symmetry').value,a:$('floor-a').value,b:$('floor-b').value,biome:$('biome').value,tunnels:Number($('tunnels').checked),cut:$('cutaway').value}))url.searchParams.set(key,String(value));
       if($('tile-boundaries').checked)url.searchParams.set('tiles','1');else url.searchParams.delete('tiles');
+      const mask=[0,1,2,3].reduce((n,t)=>n|($('sensor-show-'+t).checked?1<<t:0),0);
+      if(mask!==1)url.searchParams.set('sensors',String(mask));else url.searchParams.delete('sensors');
+      if($('sensor-unit').value!=='0')url.searchParams.set('unit',$('sensor-unit').value);else url.searchParams.delete('unit');
+      if($('sensor-all').checked)url.searchParams.set('sensorsAll','1');else url.searchParams.delete('sensorsAll');
+      if(!$('sensor-xray').checked)url.searchParams.set('sensorXray','0');else url.searchParams.delete('sensorXray');
       for(const [id,key] of [['isolate-tunnels','isolate'],['tunnel-ceilings','ceilings'],['ocean-access','ocean']]){if($(id).checked)url.searchParams.set(key,'1');else url.searchParams.delete(key);}
       history.replaceState(null, '', url);
     }
@@ -282,6 +334,7 @@
       const progressChanged=!lastReport || lastReport.resolved!==report.resolved || lastReport.paused!==report.paused;
       lastReport=report; playbackPaused=report.paused;
       if (!ready) {
+        const selectedSensor=$('sensor-unit').value;
         ready=true; $('loading').hidden=true;
         document.querySelectorAll('button,input,select').forEach(el => el.disabled=false);
         requestAnimationFrame(() => {
@@ -297,6 +350,7 @@
           Module._aw_option(11,Number($('surface-detail').checked));
           Module._aw_option(8,Number($('tunnel-ceilings').checked));
           Module._aw_option(7,Number($('isolate-tunnels').checked));
+          $('sensor-unit').value=selectedSensor;applySensorView();
         });
         syncSettings();syncUrl();
       }
@@ -331,6 +385,32 @@
       $('playback').hidden=complete;
       $('pause').textContent=report.paused?'Resume':'Pause';
     };
+    const depthPixels=Array.from({length:48},()=>{const pixel=document.createElement('i');$('depth-preview').appendChild(pixel);return pixel;});
+    window.maplabSensors=(unit,data)=>{
+      if(rebuilding)return;
+      $('sensor-unit').value=String(unit);
+      $('sensor-pose').textContent=`XYZ ${data[0].toFixed(1)} / ${data[1].toFixed(1)} / ${data[2].toFixed(1)} · ${Math.round(data[3])}°`;
+      $('sensor-odometry').textContent=`${data[6].toFixed(1)} u/s · ${data[7].toFixed(1)} u travelled`;
+      for(let t=0;t<4;t++){
+        const i=9+t*6,attached=!!data[i],valid=!!data[i+1];
+        $('sensor-equip-'+t).checked=attached;
+        $('sensor-reading-'+t).textContent=!attached?'Not attached':!valid?(t===1?'Mount outside water':'Awaiting valid sample'):`${data[i+2]}u · ${data[i+3]}Hz · ${data[i+5]} ${t===2?'peers':'hits'}`;
+      }
+      $('depth-panel').hidden=!data[27]||!data[28]||!$('sensor-show-3').checked;
+      if(!$('depth-panel').hidden)depthPixels.forEach((pixel,i)=>{
+        const depth=data[33+2*i],kind=data[34+2*i],light=15+(1-depth)*65;
+        pixel.style.background=kind===0?'#161616':`hsl(${kind===2?153:kind===3?204:38} ${kind===2?52:kind===3?40:15}% ${light}%)`;
+      });
+    };
+    function applySensorView(){
+      if(!ready)return;
+      const unit=Number($('sensor-unit').value),mask=[0,1,2,3].reduce((n,t)=>n|($('sensor-show-'+t).checked?1<<t:0),0);
+      Module._aw_sensor_control(0,unit);Module._aw_sensor_control(1,mask);
+      Module._aw_sensor_control(2,Number($('sensor-all').checked));Module._aw_sensor_control(3,Number($('sensor-xray').checked));syncUrl();
+    }
+    for(const id of ['sensor-unit','sensor-all','sensor-xray','sensor-show-0','sensor-show-1','sensor-show-2','sensor-show-3'])$(id).addEventListener('change',applySensorView);
+    for(let t=0;t<4;t++)$('sensor-equip-'+t).addEventListener('change',()=>Module._aw_sensor_control(5+t,Number($('sensor-equip-'+t).checked)));
+    $('sensor-focus').addEventListener('click',()=>{Module._aw_sensor_control(4,0);$('follow').checked=false;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();});
     var Module = {
       locateFile:(file,prefix)=>`${prefix}${file}?v=__MAPLAB_ASSET_VERSION__`,
       canvas:$('canvas'), arguments:[`--seed=${currentSeed}`,`--symmetry=${$('symmetry').value}`,`--floor-a=${$('floor-a').value}`,`--floor-b=${$('floor-b').value}`,`--biome=${$('biome').value}`,`--tunnels=${Number($('tunnels').checked)}`],

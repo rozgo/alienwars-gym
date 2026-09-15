@@ -206,3 +206,15 @@ Version 10 removes the volcanic palette and lava material from generation,
 rendering and the terrain UI. The four palettes are Mixed, Temperate, Desert
 and Frozen. Retired `biome=4` URLs and out-of-range native palette IDs must fall
 back to Mixed consistently. Keep this fallback covered in native/WASM checks.
+
+Sensor contract v1 is in `sensors.h` / `sensor_rays.h`; see `docs/SENSORS.md`.
+Keep exact pose separate from policy observations and ideal local odometry.
+Any module can attach to any unit; the sonar mount must actually be underwater.
+Use the shared tetrahedral solid, continuous ocean shelf and explicit unit body
+proxies for range measurements. Keep fixed contiguous buffers, cached scheduled
+samples and zero step allocations. Overlay visibility must not affect sensing,
+RNG, navigation, camera framing or terrain shadows. The first camera is 8 × 6
+radial depth, not RGB. Cosmetic props do not occlude sensors yet; do not imply
+otherwise. Run `scripts/check_sensors.py` for sensor changes; retain the
+independent triangle-intersection, reset/cadence, finite-data and native/WASM
+checks. Do not call scripted traffic a trained sensor-driven policy.

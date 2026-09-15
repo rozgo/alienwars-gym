@@ -16,8 +16,14 @@ body clearance, water depth and terrain-aware flight routes. Tunnel isolation
 and automatic cutaways expose the underground structure. These are scripted
 patrols; combat and AlienWars policy training remain future work.
 
+Units now carry ideal odometry and attachable LiDAR, sonar, RF and depth-camera
+modules. Toggle their range overlays, inspect cached returns through terrain
+and water, or view the small live depth image. Sensing runs in shared C without
+rendering, with fixed observation buffers for the future RL environment.
+
 - [Agent instructions](AGENTS.md)
 - [Map Lab specification and validation](docs/MAPLAB.md)
+- [Sensor architecture, observations and benchmarks](docs/SENSORS.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Raylib web build and GitHub Pages](docs/WEB.md)
 - [Generation research](docs/GENERATION_RESEARCH.md)
@@ -43,6 +49,7 @@ For the browser build, install the isolated Emscripten SDK described in
 ```sh
 ./scripts/build_maplab.sh
 python3 scripts/check_maplab.py
+python3 scripts/check_sensors.py
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 

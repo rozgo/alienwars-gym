@@ -1,6 +1,7 @@
 /* Map Lab viewer. The shared map.h also serves the PufferLib environment. */
 #include "render.h"
 #include "patrol_render.h"
+#include "sensor_render.h"
 #include <inttypes.h>
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -20,6 +21,10 @@ EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached
 static AwMap world;
 static AwScene scene;
 static AwPatrols patrols;
+static AwSensors sensors;
+static int sensor_selected=0,sensor_layers=1,sensor_all=0,sensor_xray=1;
+static void aw_sensor_update_poses(void);
+static void aw_publish_sensors(void);
 static int patrol_mode=0; /* Live, paused, hidden. */
 static AwOptions settings={1,6,6,0,1};
 static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,show_tiles=0,scout_tour=0;
@@ -59,6 +64,7 @@ static void aw_set_isolation(int value){
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
         world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS(),world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.ocean_count,world.mountain_count,world.bridge_count);
+    aw_publish_sensors();
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -69,11 +75,18 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
         return;
     }
     aw_patrol_build(&world,&patrols);
+    AwSensorConfig previous[9][4];int equipped=sensors.count==9;
+    if(equipped)for(int i=0;i<9;i++)memcpy(previous[i],sensors.units[i].config,sizeof(previous[i]));
+    aw_sensors_init(&sensors,&world,9);aw_sensor_equip(&sensors,0,0,.65f);
+    static const float radius[8]={1,1.35f,.85f,1.2f,1.6f,.7f,1.5f,1.8f};
+    for(int i=0;i<8;i++)aw_sensor_equip(&sensors,i+1,patrols.units[i].layer,radius[i]);
+    if(equipped)for(int i=0;i<9;i++)for(int t=0;t<4;t++)aw_sensor_attach(&sensors,i,t,previous[i][t]);
     generation_ms=(GetTime()-start)*1000;
     aw_build_scene(&scene,&world);aw_set_occlusion(&scene,baked_occlusion);aw_set_detail(&scene,surface_detail);
     if(isolate_tunnels)aw_set_isolation(world.cave_count>0);
     revealed=watch?0:AW_CELLS;
     unit_progress=0;paused=0;scout_tour=0;
+    aw_sensor_update_poses();aw_sensors_step(&sensors,&world,1.0f/60);
     aw_publish();
 }
 
@@ -99,7 +112,7 @@ AW_EXPORT void aw_option(int option,int value) {
 }
 
 AW_EXPORT void aw_watch(void) {
-    revealed=0;unit_progress=0;paused=0;aw_publish();
+    revealed=0;unit_progress=0;paused=0;aw_sensor_teleport(&sensors,0);aw_publish();
 }
 
 AW_EXPORT void aw_step(void) {
@@ -144,15 +157,15 @@ static void aw_draw_markers(void) {
     }
 }
 
-static Vector3 aw_unit_position(void) {
+static Vector3 aw_scout_position_at(float progress,int report) {
     int length=world.path_length;
     if(length<2)return aw_center(&world,world.spawns[0]);
-    float cycle=fmodf(unit_progress,(float)(length-1)*2);
+    float cycle=fmodf(progress,(float)(length-1)*2);
     float p=cycle>length-1?(length-1)*2-cycle:cycle;
     int segment=(int)p;
     if(segment>=length-1)segment=length-2;
-    scout_layer=world.path[segment]>=AW_CELLS;
-    scout_floor=aw_corner_q(&world,world.path[segment],0)/4.0f;
+    int layer=world.path[segment]>=AW_CELLS;
+    float floor=aw_corner_q(&world,world.path[segment],0)/4.0f;
     Vector3 position=Vector3Lerp(aw_center(&world,world.path[segment]),aw_center(&world,world.path[segment+1]),p-segment);
     float gx=position.x/AW_UNIT,gz=position.z/AW_UNIT;
     if(world.path[segment]>=AW_CELLS||world.path[segment+1]>=AW_CELLS){
@@ -162,10 +175,58 @@ static Vector3 aw_unit_position(void) {
         int node=(int)gz*AW_SIZE+(int)gx;position.y=aw_ground_y(&world,node,gx-(int)gx,gz-(int)gz);
     }
     if(world.path[segment]>=AW_SPAN_START){
-        float q=(position.y+1.2f)/.75f;scout_layer=0;
-        for(float h=q+3;h<aw_height_q(&world,gx,gz)+1;h+=.5f)if(aw_density(&world,gx,h,gz)>0){scout_layer=1;break;}
+        float q=(position.y+1.2f)/.75f;layer=0;
+        for(float h=q+3;h<aw_height_q(&world,gx,gz)+1;h+=.5f)if(aw_density(&world,gx,h,gz)>0){layer=1;break;}
     }
+    if(report){scout_layer=layer;scout_floor=floor;}
     return position;
+}
+
+static Vector3 aw_unit_position(void){return aw_scout_position_at(unit_progress,1);}
+
+static void aw_sensor_update_poses(void){
+    Vector3 a=aw_scout_position_at(unit_progress,1),b=aw_scout_position_at(unit_progress+.03f,0);
+    sensors.units[0].pose=(AwSensorPose){.position={a.x,a.y,a.z},.yaw=atan2f(b.x-a.x,b.z-a.z),.pitch=atan2f(b.y-a.y,fmaxf(.0001f,hypotf(b.x-a.x,b.z-a.z)))};
+    for(int i=0;i<AW_PATROLS;i++){
+        const AwPatrol*p=&patrols.units[i];AwPatrolPoint a=aw_patrol_position(&world,p,p->progress),b=aw_patrol_position(&world,p,p->progress+.05f);
+        sensors.units[i+1].active=p->count>1;
+        sensors.units[i+1].pose=(AwSensorPose){.position={a.x*2,a.q*.75f-1.2f,a.z*2},.yaw=atan2f(b.x-a.x,b.z-a.z),
+            .pitch=p->layer==AW_PATROL_NAVAL?0:atan2f((b.q-a.q)*.75f,fmaxf(.0001f,hypotf(b.x-a.x,b.z-a.z)*2))};
+    }
+}
+#ifdef PLATFORM_WEB
+EM_JS(void,aw_sensor_report,(int unit,const float* values),{
+    if(typeof window!=='undefined'&&window.maplabSensors)window.maplabSensors(unit,Array.from(HEAPF32.subarray(values>>2,(values>>2)+129)));
+});
+#endif
+static void aw_publish_sensors(void){
+#ifdef PLATFORM_WEB
+    if(!world.valid||!sensors.count)return;const AwSensorUnit*u=&sensors.units[sensor_selected];
+    float values[129]={u->pose.position.x,u->pose.position.y,u->pose.position.z,u->pose.yaw*RAD2DEG,u->pose.pitch*RAD2DEG,u->pose.roll*RAD2DEG,
+        aw_sv_length(u->odometry.velocity),u->odometry.distance,(float)sensors.time};
+    for(int t=0;t<4;t++){
+        const AwSensorReading*r=&u->reading[t];const AwSensorConfig*c=&u->config[t];int hits=0;
+        if(t==AW_SENSOR_RF){for(int j=0;j<sensors.count;j++)hits+=r->peers[j].detected;}
+        else for(int j=0;j<r->count;j++)hits+=r->beams[j].hit.kind!=AW_HIT_NONE&&r->beams[j].hit.kind!=AW_HIT_BOUNDARY;
+        float*v=values+9+t*6;v[0]=c->enabled;v[1]=r->valid;v[2]=c->range;v[3]=1/c->period;v[4]=(float)(sensors.time-r->stamp);v[5]=hits;
+    }
+    const AwSensorReading*r=&u->reading[AW_SENSOR_CAMERA];
+    if(r->valid)for(int i=0;i<48;i++){values[33+2*i]=r->beams[i].hit.distance/u->config[AW_SENSOR_CAMERA].range;values[34+2*i]=r->beams[i].hit.kind;}
+    aw_sensor_report(sensor_selected,values);
+#endif
+}
+AW_EXPORT void aw_sensor_control(int action,int value){
+    if(action==0)sensor_selected=aw_clamp(value,0,8);
+    if(action==1)sensor_layers=value&15;
+    if(action==2)sensor_all=!!value;
+    if(action==3)sensor_xray=!!value;
+    if(action==4&&sensors.count){
+        aw_sensor_update_poses();follow_scout=0;aw_set_isolation(0);
+        focus=aw_sensor_v3(sensors.units[sensor_selected].pose.position);zoom=68;pitch=.82f;
+    }
+    if(action>=5&&action<=8&&sensors.count){
+        int t=action-5;AwSensorConfig c=sensors.units[sensor_selected].config[t];c.enabled=!!value;aw_sensor_attach(&sensors,sensor_selected,t,c);
+    }aw_publish_sensors();
 }
 
 static void aw_tour(int entrance){
@@ -174,7 +235,7 @@ static void aw_tour(int entrance){
     if(a<0||b<0)return;
     uint8_t surface[AW_CELLS];memcpy(surface,world.walkable,AW_CELLS);memset(world.walkable,0,AW_CELLS);
     int valid=aw_find_path(&world,AW_CELLS+a,AW_CELLS+b);memcpy(world.walkable,surface,AW_CELLS);if(!valid)return;
-    unit_progress=0;scout_tour=1;
+    unit_progress=0;scout_tour=1;aw_sensor_teleport(&sensors,0);
     if(!entrance){int deepest=0;for(int i=0;i<world.path_length;i++){
         int a=world.path[i],b=world.path[deepest],ca=aw_node_cell(&world,a),cb=aw_node_cell(&world,b);
         int qa=aw_corner_q(&world,a,0),qb=aw_corner_q(&world,b,0);
@@ -196,7 +257,7 @@ AW_EXPORT void aw_inspect_mountain(int bypass){
         if(world.path_length)world.path_cost+=aw_move_cost(&world,world.path[world.path_length-1],node);
         world.path[world.path_length++]=node;
     }
-    aw_set_isolation(0);scout_tour=2+branch;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
+    aw_sensor_teleport(&sensors,0);aw_set_isolation(0);scout_tour=2+branch;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
     focus=(Vector3){(r->x+2*r->step+.5f)*AW_UNIT,aw_y(2),(r->z+2*r->step+.5f)*AW_UNIT};
     zoom=4*r->step*AW_UNIT+22;pitch=.8f;yaw=.75f+r->rotation*1.5707963f;aw_publish();
 }
@@ -211,7 +272,7 @@ AW_EXPORT void aw_inspect_bridge(void){
         if(world.path_length)world.path_cost+=aw_move_cost(&world,world.path[world.path_length-1],n);
         world.path[world.path_length++]=n;
     }
-    aw_set_isolation(0);scout_tour=4;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
+    aw_sensor_teleport(&sensors,0);aw_set_isolation(0);scout_tour=4;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
     focus=aw_bridge_point(b,b->length*.5f,0,0);zoom=b->length*AW_UNIT+16;pitch=.70f;yaw=b->dx?.8f:2.3f;aw_publish();
 }
 
@@ -220,12 +281,13 @@ AW_EXPORT int aw_inspect_patrol(void){
     int i=next++%AW_PATROLS;const AwPatrol*p=&patrols.units[i];if(p->count<2)return -1;
     AwPatrolPoint point=aw_patrol_position(&world,p,p->progress);
     aw_set_isolation(0);follow_scout=0;focus=(Vector3){point.x*AW_UNIT,aw_y(point.q/4),point.z*AW_UNIT};
-    zoom=p->layer==AW_PATROL_AIR?45:24;pitch=.8f;yaw=.75f;aw_publish();return i;
+    sensor_selected=i+1;zoom=p->layer==AW_PATROL_AIR?45:24;pitch=.8f;yaw=.75f;aw_publish();return i;
 }
 
 static void aw_draw_unit(void) {
     Vector3 p=aw_unit_position();
     DrawCylinder((Vector3){p.x,p.y+0.025f,p.z},0.6f,0.6f,0.01f,12,(Color){26,39,38,170});
+    rlPushMatrix();rlTranslatef(p.x,p.y,p.z);rlRotatef(sensors.units[0].pose.yaw*RAD2DEG,0,1,0);rlRotatef(-sensors.units[0].pose.pitch*RAD2DEG,1,0,0);p=(Vector3){0};
     p.y+=0.55f+sinf(animation_time*4)*0.05f;
     DrawCube(p,0.9f,0.28f,0.7f,(Color){214,175,82,255});
     DrawCube((Vector3){p.x,p.y+0.2f,p.z},0.36f,0.17f,0.34f,(Color){83,220,230,255});
@@ -233,6 +295,7 @@ static void aw_draw_unit(void) {
         Vector3 leg={p.x+(i&1?0.58f:-0.58f),p.y-0.12f,p.z+(i&2?0.4f:-0.4f)};
         DrawSphereEx(leg,0.17f,4,6,(Color){46,64,69,255});
     }
+    rlPopMatrix();
 }
 
 static void aw_update(void) {
@@ -275,6 +338,7 @@ static void aw_update(void) {
     if(IsKeyPressed(KEY_SPACE))aw_watch();
 #endif
     Vector3 scout=aw_unit_position();
+    if(world.valid&&revealed>=AW_CELLS){aw_sensor_update_poses();aw_sensors_step(&sensors,&world,dt);}
     if(follow_scout)focus=scout;
     camera.target=focus;
     camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*400,focus.y+sinf(pitch)*400,focus.z+cosf(yaw)*cosf(pitch)*400};
@@ -332,6 +396,7 @@ static void aw_update(void) {
             }
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
             if(!isolate_tunnels&&patrol_mode!=2)aw_patrol_draw(&world,&patrols,animation_time);
+            aw_sensors_draw(&sensors,sensor_selected,sensor_layers,sensor_all,sensor_xray,animation_time,isolate_tunnels,patrol_mode==2);
         }else{
             /* The wire footprint makes the incomplete terrain readable. */
             for(int z=0;z<=AW_SIZE;z+=4)DrawLine3D((Vector3){0,0.02f,z*AW_UNIT},(Vector3){128,0.02f,z*AW_UNIT},(Color){56,100,108,90});

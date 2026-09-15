@@ -4,6 +4,9 @@
 Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
 The site root opens Map Lab; existing `/maplab/` seed links continue to work.
+Units carry attachable LiDAR, sonar, RF and depth cameras, with ideal odometry,
+separate exact pose and optional range overlays. See the [sensor contract and
+performance checks](SENSORS.md). Sensor changes do not change generator v10 seeds.
 
 ## World contract — generator version 10
 
