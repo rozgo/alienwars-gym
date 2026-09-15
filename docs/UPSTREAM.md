@@ -26,7 +26,11 @@ current metadata lives in environment headers. The upstream Mac build used Bash
 This project uses Bash 3-compatible uppercase conversion and enables Mac
 ASan/UBSan. The native log retains loss series (upstream omitted them) and adds
 exact steps, training time and final score in a `[run]` section for finite-metric
-checks and reproducible reports. The native trainer algorithm is unchanged.
+checks and reproducible reports. The PPO learning kernels are unchanged. AlienWars adds streaming JSONL metrics
+and resolved starting configurations. Native training now honors explicit
+`load_model_path` weight initialization and saves `initial.bin` for verification;
+checkpoint loads reject wrong-sized or nonfinite weights. Optimizer state is
+not restored by this flat-weight initialization.
 Upstream example environments remain available as reference code; the project
 bootstrap demo and its dedicated tooling have been retired.
 

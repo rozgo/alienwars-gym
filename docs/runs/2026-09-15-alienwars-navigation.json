@@ -1,0 +1,238 @@
+{
+  "source": "7ad9735900d2ee711601b05848869e3ecaec2dad",
+  "dirty_at_evaluation": false,
+  "checkpoint_sha256": "ec8c3c85f688e79704a585068434c7eb1b8e4d356585ed28ceb8fb43071fcc5a",
+  "machine": {
+    "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+    "cuda": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Wed_Aug_20_01:58:59_PM_PDT_2025\nCuda compilation tools, release 13.0, V13.0.88\nBuild cuda_13.0.r13.0/compiler.36424714_0",
+    "gpu": "NVIDIA GeForce RTX 4090, 580.173.02, 24564 MiB",
+    "architecture": "x86_64"
+  },
+  "training": [
+    {
+      "run": "nav-final-s173-1m",
+      "steps": 1048576,
+      "trainer_seconds": 69.50951362,
+      "completed_episodes": 33525,
+      "weighted_training_success": 1.0,
+      "aborted": false,
+      "jsonl_sha256": "4f123ed633a99c2616781280df2a6dff5789106c4eef064693626b3ccc91b9ce",
+      "config_sha256": "075cd7e9216347d5359eb91ead36935aa556c988398a5215a9cc3015b176827e"
+    },
+    {
+      "run": "nav-mixed-s173-4m",
+      "steps": 802816,
+      "trainer_seconds": 52.08043575,
+      "completed_episodes": 1513,
+      "weighted_training_success": 0.3027098520086914,
+      "aborted": true,
+      "jsonl_sha256": "5636ece42b175fc8990351f739eef5919e166da48496384f8ff2a13cd63ee0f7",
+      "config_sha256": "52c290ec494e147b458262573a7e193287edfe8a976070ddcd9d3e138cad7ac4"
+    },
+    {
+      "run": "nav-mixed-warm-s173-4m",
+      "steps": 4194304,
+      "trainer_seconds": 285.2520657,
+      "completed_episodes": 128658,
+      "weighted_training_success": 0.9997979139029263,
+      "aborted": false,
+      "jsonl_sha256": "f8f39228aaa56443a5d179df1cbd3d5d37e755a493a058b59b0775d4cbd96055",
+      "config_sha256": "aefde922266c3303b34775c733c56c8e815cc066b14b7cc989d6bf5253d49780"
+    },
+    {
+      "run": "nav-pilot-s173",
+      "steps": 1048576,
+      "trainer_seconds": 44.46854258,
+      "completed_episodes": 1757,
+      "weighted_training_success": 0.17757541541830904,
+      "aborted": false,
+      "jsonl_sha256": "28e6d0f18555e0bde63b47da0288e1d91f58b6343002790604ec362021d27ba2",
+      "config_sha256": "fd286d7f7244070d3f64250aba0e1dc1ea5f67aad1607b0f827db1de301b8721"
+    },
+    {
+      "run": "nav-surface-s173-8m",
+      "steps": 8388608,
+      "trainer_seconds": 414.6872473,
+      "completed_episodes": 204474,
+      "weighted_training_success": 0.9956864931420019,
+      "aborted": false,
+      "jsonl_sha256": "4dd40d69d9e0cd59127d0ec29d908389b36006277aa429613d7abe39c3458ce5",
+      "config_sha256": "f711cf8cc240d27d03426f7577e7fe5a5aafa7ec3dddf1068f48c7a995f0b0c7"
+    }
+  ],
+  "evaluation_settings": {
+    "map_seed": 10001,
+    "maps": 8,
+    "episode_seed": 9001,
+    "sampling_seed": 9002,
+    "episodes_per_category": 64,
+    "sampling": "categorical CPU float32"
+  },
+  "evaluation": [
+    {
+      "controller": "policy",
+      "terrain": "surface",
+      "episodes": 64,
+      "successes": 64,
+      "falls": 0,
+      "timeouts": 0,
+      "mean_contacts": 0.4375,
+      "mean_steps": 33.34375,
+      "process_seconds": 21.73886883398518,
+      "artifact_sha256": "fab1f6466cdb5016bdeac8c191817af51888a095c794f398a91d4164b5d7ea9b"
+    },
+    {
+      "controller": "policy",
+      "terrain": "bridge",
+      "episodes": 64,
+      "successes": 64,
+      "falls": 0,
+      "timeouts": 0,
+      "mean_contacts": 0.015625,
+      "mean_steps": 96.6875,
+      "process_seconds": 22.316318874945864,
+      "artifact_sha256": "74020d84d1847e952a9d38d2138143bcea26b0a60be95f43324ebf15156f18b4"
+    },
+    {
+      "controller": "policy",
+      "terrain": "tunnel",
+      "episodes": 64,
+      "successes": 64,
+      "falls": 0,
+      "timeouts": 0,
+      "mean_contacts": 0.421875,
+      "mean_steps": 22.5625,
+      "process_seconds": 21.799368166946806,
+      "artifact_sha256": "2bc3be35386be7501350df2bfe3c70cf4f13c373eb3513fd669a3965588a0795"
+    },
+    {
+      "controller": "random",
+      "terrain": "surface",
+      "episodes": 64,
+      "successes": 8,
+      "falls": 0,
+      "timeouts": 56,
+      "mean_contacts": 8.75,
+      "mean_steps": 560.15625,
+      "process_seconds": 27.248550083953887,
+      "artifact_sha256": "86949f79b7b4c934e34340f998daa48776220343b499dfe562b9bef6b581ad64"
+    },
+    {
+      "controller": "random",
+      "terrain": "bridge",
+      "episodes": 64,
+      "successes": 0,
+      "falls": 0,
+      "timeouts": 64,
+      "mean_contacts": 10.921875,
+      "mean_steps": 600.0,
+      "process_seconds": 28.764901916030794,
+      "artifact_sha256": "632af89589e639fd9f24fa857afaf0f0f64d64ccdbf980fd0469651204770fbc"
+    },
+    {
+      "controller": "random",
+      "terrain": "tunnel",
+      "episodes": 64,
+      "successes": 16,
+      "falls": 0,
+      "timeouts": 48,
+      "mean_contacts": 17.109375,
+      "mean_steps": 509.125,
+      "process_seconds": 37.259542332962155,
+      "artifact_sha256": "ebff29df5fbab8c76298b9df58aa8c416e72181b8d8b4fd11387bcb50acbb007"
+    },
+    {
+      "controller": "greedy",
+      "terrain": "surface",
+      "episodes": 64,
+      "successes": 62,
+      "falls": 0,
+      "timeouts": 2,
+      "mean_contacts": 18.09375,
+      "mean_steps": 50.171875,
+      "process_seconds": 21.542029457981698,
+      "artifact_sha256": "a18aa53052c98cb895cbdb31f93885f94bf45ff276ebbc4af2c6b46501aa8f7a"
+    },
+    {
+      "controller": "greedy",
+      "terrain": "bridge",
+      "episodes": 64,
+      "successes": 64,
+      "falls": 0,
+      "timeouts": 0,
+      "mean_contacts": 0.0,
+      "mean_steps": 93.34375,
+      "process_seconds": 21.710026500048116,
+      "artifact_sha256": "72c4e42e4cc6f5e7960e9f7f1ad3b6445dab9bab6ff5443ba01681b249ad82fc"
+    },
+    {
+      "controller": "greedy",
+      "terrain": "tunnel",
+      "episodes": 64,
+      "successes": 58,
+      "falls": 0,
+      "timeouts": 6,
+      "mean_contacts": 55.0,
+      "mean_steps": 75.921875,
+      "process_seconds": 23.3086435419973,
+      "artifact_sha256": "d3e17bf82cd2d973398193c1b409aac727661d5692459bab8dae9dd1e4240ef9"
+    },
+    {
+      "controller": "reference",
+      "terrain": "surface",
+      "episodes": 64,
+      "successes": 64,
+      "falls": 0,
+      "timeouts": 0,
+      "mean_contacts": 0.0,
+      "mean_steps": 43.59375,
+      "process_seconds": 21.005426541902125,
+      "artifact_sha256": "0fac980ef6f658d1da16db5f3982afc79acb72a2979ee54b0650887d1be42231"
+    },
+    {
+      "controller": "reference",
+      "terrain": "bridge",
+      "episodes": 64,
+      "successes": 64,
+      "falls": 0,
+      "timeouts": 0,
+      "mean_contacts": 0.0,
+      "mean_steps": 95.859375,
+      "process_seconds": 21.6496089999564,
+      "artifact_sha256": "caf46b52d0f355b30f9a80faab04fe8be38b391caf134ceb8b50b7678e1cccc7"
+    },
+    {
+      "controller": "reference",
+      "terrain": "tunnel",
+      "episodes": 64,
+      "successes": 63,
+      "falls": 0,
+      "timeouts": 1,
+      "mean_contacts": 8.703125,
+      "mean_steps": 38.296875,
+      "process_seconds": 21.953042584005743,
+      "artifact_sha256": "d0924d9dd6f7969effedc26475bb70a19572c15d22d41b79b93dc3d466dc53f6"
+    }
+  ],
+  "videos": {
+    "capture": "Actual Chrome tab frames, timestamp-resampled; H.264, 1920x1080, 30 fps, no audio",
+    "clips": [
+      {
+        "file": "training-observatory.mp4",
+        "seconds": 8,
+        "frames": 240,
+        "bytes": 1857542,
+        "sha256": "f4803dd6a2ce1f5a5af014a2595646a8d489b01bb0014344657f80d6b37bbbfa",
+        "description": "Recorded native training metrics from nav-surface-s173-8m, labeled 55x replay in the UI."
+      },
+      {
+        "file": "nav-lab.mp4",
+        "seconds": 8,
+        "frames": 240,
+        "bytes": 5801157,
+        "sha256": "257220aa3a5398477eabb6f546a2eba7f05f08466b6adc2198371e40eb4a489b",
+        "description": "Final trained checkpoint running at normal simulation speed on map 10001, bridge tasks; sensor rays and privileged reference overlay."
+      }
+    ]
+  }
+}

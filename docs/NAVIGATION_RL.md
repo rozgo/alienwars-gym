@@ -14,6 +14,8 @@ must run the same action-driven simulation. Map Lab remains the world inspector.
    against random and greedy controllers on separate seeds, then inspect playback.
 5. Record exact commands, configuration, timings, checkpoint hashes and failures.
 
+Measured MVP result: [September 15 run report](runs/2026-09-15-alienwars-navigation.md).
+
 ## Task contract v1
 
 - One small ground scout per independent episode. No inter-unit dynamics.
@@ -105,6 +107,8 @@ entropy, KL/clipping, SPS and whole-device GPU load. Early arrival rates only
 include episodes that have already ended; wait for timeout episodes before
 interpreting them. The existing final `.ini` logs still work with PufferLib's
 Constellation dashboard. `.config.ini` records the resolved starting settings.
+For a demo, `?run=RUN.jsonl&replay=55` replays actual saved metrics at 55×
+with a visible RECORDED REPLAY label; the default dashboard remains live.
 
 On a GPU machine, serve the dashboard there and forward its loopback port through
 the user's SSH alias. Alternatively, copy the JSONL/config files to the local
