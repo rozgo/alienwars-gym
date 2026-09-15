@@ -2,11 +2,15 @@
 
 The public experience is **AlienWars Map Lab**, built with Raylib and
 Emscripten. Generation, simulation and scripted patrols execute locally in
-WebAssembly; Raylib renders through WebGL 2. AlienWars training is not yet
-implemented, and future CUDA training runs on the GPU machine.
+WebAssembly; Raylib renders through WebGL 2. The separate Navigation Lab runs
+the trained scout checkpoint in the browser. Native CUDA training runs on the
+GPU machine; the public Training Observatory serves recorded runs and evaluations.
 
 - Public repository: <https://github.com/rozgo/alienwars-gym>
 - Site: <https://rozgo.github.io/alienwars-gym/>
+- Trained navigation: <https://rozgo.github.io/alienwars-gym/navigation/?kind=1>
+- Recorded training: <https://rozgo.github.io/alienwars-gym/training/>
+- Showcase: <https://rozgo.github.io/alienwars-gym/demo/>
 - Pages source: **Deploy from a branch → `main` → `/docs`**
 - Authored interface: `web/maplab/shell.html`
 - Authored entry point: `docs/index.html`
@@ -20,6 +24,34 @@ Existing `/maplab/` seed URLs remain valid. The former bootstrap demo, its
 packaged weights and its dedicated build/playback/training helpers are retired.
 Share links also preserve patrol traffic with `patrol=0` (live, the default),
 `patrol=1` (paused), or `patrol=2` (hidden).
+
+## Navigation and training release
+
+`scripts/build_navigation_site.py` packages the exact evaluated checkpoint from
+`web/navigation/release.json`, builds the Raylib/WASM Navigation Lab, and exports
+the listed training logs and held-out summaries as static JSON. It rejects a
+checkpoint whose SHA-256 differs from the release selection. Place the released
+`final-s173.bin` in ignored `outputs/navigation/checkpoints/`; keep the listed
+training JSONL under `logs/alienwars/` and final evaluation JSONL under
+`outputs/navigation/evaluations/final-s173/` when rebuilding recorded data.
+
+```sh
+python3 scripts/build_navigation_site.py
+```
+
+Generated `docs/navigation/` includes the small evaluated policy in the
+Emscripten data bundle. `docs/training/` contains the recorded metrics and
+evaluation summaries, with local checkpoint paths reduced to filenames.
+Both directories and their manifests are deliberate Pages release artifacts.
+The live local dashboard still uses its Python API; the public dashboard uses
+relative static data URLs and identifies its recorded runs. Optional replay
+queries remain available. Navigation runtime URLs carry their artifact digests.
+
+`docs/demo/` is an authored video page with a small poster. Its MP4 is a GitHub
+Release asset, alongside the selected checkpoint, configuration and training
+data bundle. Raw videos, logs and checkpoints remain outside Git history.
+Commit authored source before rebuilding, check browser inference and static
+data on a project subpath, then commit the generated release artifacts.
 
 ## Install the compiler once
 

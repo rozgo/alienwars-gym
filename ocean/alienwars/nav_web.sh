@@ -26,7 +26,9 @@ manifest={'contract':1,'checkpoint':Path(model).name if model else None,
           'hidden':int(os.environ.get('AW_NAV_HIDDEN','128')),
           'layers':int(os.environ.get('AW_NAV_LAYERS','2')),
           'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-          'dirty':bool(subprocess.check_output(['git','status','--porcelain']))}
+          'dirty':bool(subprocess.check_output(['git','status','--porcelain','--','build.sh','ocean/alienwars','src','vendor','config','web/navigation']))}
+if os.environ.get('AW_NAV_PUBLIC')=='1':
+    manifest['site_links']={'maplab':'../maplab/','training':'../training/','demo':'../demo/'}
 manifest['files']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.suffix in ('.html','.css','.js','.wasm','.data')}
 (root/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 PY

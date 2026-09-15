@@ -1,5 +1,6 @@
-/* Record the published Map Lab through Chrome's DevTools screencast API.
- * No simulation, terrain, sensor or rendering code is replaced. */
+/* Record the local filming build through Chrome's DevTools screencast API.
+ * Generation, simulation and sensor measurements are the production code.
+ * Capture-only camera tracks and overlay weights are recorded in build.json. */
 const puppeteer=require('../../.local/demo-tools/node_modules/puppeteer-core');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -7,7 +8,8 @@ const {spawn}=require('node:child_process');
 const {once}=require('node:events');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const ROOT=path.resolve(__dirname,'../..');process.chdir(ROOT);
-const OUT=path.join(ROOT,'outputs/demo');fs.mkdirSync(path.join(OUT,'raw'),{recursive:true});
+const OUT=path.resolve(ROOT,process.env.DEMO_OUT||'outputs/demo-v3');fs.mkdirSync(path.join(OUT,'raw'),{recursive:true});
+const BASE=process.env.DEMO_BASE||'http://127.0.0.1:8769/';
 const START='https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=2&tunnels=1&cut=1&sensors=15&unit=7&sensorsAll=1';
 
 async function record(page,name,seconds,action){
@@ -51,7 +53,9 @@ async function main(){
   const errors=[],worlds=[];page.on('pageerror',e=>errors.push(e.message));
   console.log('BROWSER',await browser.version());
   async function load(url){
-    await page.goto(url);await page.waitForFunction(()=>document.querySelector('#loading').hidden);await wait(3000);
+    const captureURL=BASE+new URL(url).search;
+    await page.goto(captureURL);await page.waitForFunction(()=>document.querySelector('#loading').hidden);await wait(3000);
+    await page.waitForFunction(()=>typeof Module._aw_demo_orbit==='function');
     await page.addStyleTag({content:`
       .map-heading,.viewport-footer{display:none!important}
       canvas:focus-visible{outline:none!important}
@@ -74,7 +78,7 @@ async function main(){
     await page.evaluate(()=>{for(const id of ['film-shade','film-caption']){const e=document.createElement('div');e.id=id;document.body.append(e);}});
     const hash=await page.$eval('#map-hash',e=>e.textContent);
     const build=await page.evaluate(async()=>await (await fetch('build.json',{cache:'no-store'})).json());
-    worlds.push({url,hash,build});console.log('WORLD',hash);
+    worlds.push({url,captureURL,hash,build});console.log('WORLD',hash);
   }
   async function caption(kicker,title,body=''){await page.evaluate(({kicker,title,body})=>{document.querySelector('#film-caption').innerHTML=`<small>${kicker}</small><strong>${title}</strong>${body?`<p>${body}</p>`:''}`;},{kicker,title,body});}
   async function clean(value){await page.evaluate(v=>document.body.classList.toggle('film-clean',v),value);await wait(650);}
@@ -88,43 +92,114 @@ async function main(){
   async function mask(value,visible=false){for(let i=0;i<4;i++)await checkbox('sensor-show-'+i,!!(value&(1<<i)),visible);}
   async function focus(unit,zoomDelta=0){await select('sensor-unit',unit);await click('sensor-focus');if(zoomDelta)await page.evaluate(d=>Module._aw_camera_zoom(d),zoomDelta);await wait(650);}
   async function orbit(duration,dx=-50,dy=0){
-    await page.keyboard.down('Shift');await page.mouse.move(900,460);await page.mouse.down();
-    const start=performance.now(),steps=Math.round(duration*30);
-    for(let i=1;i<=steps;i++){await page.mouse.move(900+dx*i/steps,460+dy*i/steps);await wait(Math.max(0,start+i*duration*1000/steps-performance.now()));}
-    await page.mouse.up();await page.keyboard.up('Shift');
+    await page.evaluate(({duration,dx,dy})=>Module._aw_demo_orbit(duration,dx,dy),{duration,dx,dy});
+    await wait(duration*1000);
+  }
+  async function frame(scale=145,yaw=.65,pitch=1.02){
+    await checkbox('follow',false);
+    await page.evaluate(({scale,yaw,pitch})=>Module._aw_demo_frame(yaw,pitch,scale,64,7,64),{scale,yaw,pitch});
   }
   const results=[];
   const only=process.argv.find(a=>a.startsWith('--shot='))?.split('=')[1];
-  const shot=async(name,seconds,setup,action)=>{if(only&&only!==name)return;await setup();await page.screenshot({path:path.join(OUT,name+'.png')});results.push(await record(page,name,seconds,action));};
-  await load(START);
-  if(process.argv.includes('--probe')){
-    await caption('ALIENWARS / DEVELOPMENT SHOWCASE','A world of possibilities');
-    results.push(await record(page,'probe2',3,()=>orbit(3,-24)));await page.screenshot({path:path.join(OUT,'probe2.png')});
-  }else{
-    await shot('01-opening',4,async()=>{await caption('PROCEDURAL ENVIRONMENTS','ALIENWARS GYM');},()=>orbit(4,-24));
-    await shot('02-terrain',6,async()=>{await caption('01 / WORLD GENERATION','Procedural worlds · WFC terrain');await page.$eval('#sensor-unit',e=>e.scrollIntoView({block:'center'}));},async()=>{await mask(0,true);await orbit(4.5,-36,-8);});
-    await shot('03-lidar',3,async()=>{await checkbox('sensor-all',false);await mask(1);await focus(7,-.35);await caption('02 / UNIT PERCEPTION','LiDAR','Measured returns across the terrain');},()=>orbit(3,-12));
-    await shot('04-rf',3,async()=>{await mask(4);await focus(7,-.15);await caption('02 / UNIT PERCEPTION','RF sensing','Connections between units');},()=>orbit(3,12));
-    await shot('05-depth',4,async()=>{await mask(8);await focus(7,-.35);await caption('02 / UNIT PERCEPTION','Depth camera','Live range image + 3D field of view');},()=>orbit(4,-15));
-    await shot('06-ground',3,async()=>{await clean(true);await mask(0);await focus(1,-.7);await caption('03 / MULTI-DOMAIN UNITS','Ground · Sea · Air','Ground traversal');},()=>orbit(3,-18,-5));
-    await shot('07-naval',4,async()=>{await mask(2);await focus(4,-.7);await caption('03 / MULTI-DOMAIN UNITS','Ground · Sea · Air','Naval patrol + sonar');},()=>orbit(4,20));
-    await shot('08-entrance',4,async()=>{await mask(1);await select('sensor-unit',0);await click('inspect-entrance');await checkbox('scout-pause',false);await checkbox('follow',true);await caption('04 / UNDERGROUND TRAVERSAL','Into the terrain');},()=>wait(4000));
-    await shot('09-tunnel',7,async()=>{await click('inspect-tunnel');await checkbox('scout-pause',false);await checkbox('follow',true);await select('cutaway',0);await caption('04 / UNDERGROUND TRAVERSAL','Traversal above and below ground');},async()=>{await wait(1200);await select('cutaway',1);await wait(5800);});
-    await shot('10-isolation',7,async()=>{await checkbox('follow',false);await mask(0);await clean(false);await page.evaluate(()=>Module._aw_camera_control(0));await page.$eval('#isolate-tunnels',e=>e.scrollIntoView({block:'center'}));await caption('05 / CONNECTED SPACES','Explore the underground network');await wait(650);},async()=>{await wait(1300);await checkbox('isolate-tunnels',true,true);await wait(2800);await checkbox('isolate-tunnels',false,true);await wait(2200);});
-    if(!only||only==='11-bridge'){
-      await load('https://rozgo.github.io/alienwars-gym/maplab/?seed=2438762858&sym=1&a=6&b=6&biome=2&tunnels=1&sensors=0&cut=1');
-      await shot('11-bridge',3,async()=>{await clean(true);await click('inspect-bridge');await checkbox('follow',true);await caption('06 / WORLD VARIETY · SEED 2438762858','Different seeds. Different challenges.');},()=>orbit(3,-12));
-    }
-    if(!only||only==='12-variety'){
-      await load('https://rozgo.github.io/alienwars-gym/maplab/?seed=2026&sym=0&a=2&b=9&biome=1&tunnels=1&sensors=0&cut=1');
-      await shot('12-variety',3,async()=>{await clean(true);await caption('06 / WORLD VARIETY · SEED 2026','Different seeds. Different challenges.','Asymmetric terrain · Independent base heights');},()=>orbit(3,-24));
-    }
-    if(!only||only==='13-closing'){
-      await load(START);
-      await shot('13-closing',6,async()=>{await clean(true);await mask(5);await page.evaluate(()=>document.body.classList.add('film-end'));await caption('ALIEN WARS / TRAINING ENVIRONMENTS','ALIENWARS GYM','A procedural world for training Alien Wars agents.<span class="credit">Built on PufferLib 5<br>Rendered with Raylib · WebAssembly Runtime</span><span class="url">rozgo.github.io/alienwars-gym</span>');},()=>orbit(6,-28));
-    }
+  const world=(seed,sym,a,b,biome)=>`https://rozgo.github.io/alienwars-gym/maplab/?seed=${seed}&sym=${sym}&a=${a}&b=${b}&biome=${biome}&tunnels=1&cut=1&sensors=0`;
+  const worldsByName={
+    temperate:world(1952225827,1,9,9,1),
+    desert:world(175847449,0,2,9,2),
+    frozen:world(2279248715,1,6,6,3),
+    forest:world(3416066543,0,2,9,1),
+    asymmetric:world(326278506,0,8,3,0),
+  };
+  // Adjacent takes can share a world; every setup also works as an independent retake.
+  let currentURL=null;
+  async function shot(name,seconds,url,setup,action){
+    if(only&&only!==name)return;
+    if(currentURL!==url){await load(url);currentURL=url;}
+    await setup();await wait(500);
+    await page.screenshot({path:path.join(OUT,name+'.png')});
+    const controls=await page.evaluate(()=>({allUnits:document.querySelector('#sensor-all').checked,
+      sensorMask:[0,1,2,3].reduce((mask,i)=>mask|(document.querySelector('#sensor-show-'+i).checked?1<<i:0),0)}));
+    results.push({...await record(page,name,seconds,action),url,controls});
   }
-  fs.writeFileSync(path.join(OUT,only?only+'-capture.json':'capture.json'),JSON.stringify({sourceURL:START,browser:await browser.version(),worlds,errors,shots:results},null,2)+'\n');
+  function gallery(name,index){
+    if(only&&only!==name)return;
+    const examples=JSON.parse(fs.readFileSync(path.join(OUT,'gallery.json'))).slice(index*6,index*6+6);
+    worlds.push(...examples);
+    results.push({name,seconds:4,frames:120,kind:'gallery',worlds:examples.map(w=>w.hash)});
+  }
+  async function landscape(kicker,title,body,dx=0,dy=0){
+    await clean(true);await checkbox('sensor-all',false);await mask(0);
+    await page.evaluate(()=>Module._aw_camera_control(0));
+    if(dx||dy)await orbit(.4,dx,dy);
+    await caption(kicker,title,body);
+  }
+  async function isolation(title,body,frame=false){
+    await clean(true);await checkbox('sensor-all',false);await mask(0);
+    await checkbox('follow',false);
+    if(frame){
+      await checkbox('isolate-tunnels',true);
+      await page.evaluate(()=>{Module._aw_camera_control(0);Module._aw_camera_zoom(-.28);});
+    }else await page.evaluate(()=>Module._aw_camera_control(0));
+    await orbit(.4,100,55);
+    await caption('PROCEDURAL TUNNEL NETWORKS',title,body);
+  }
+  if(process.argv.includes('--probe')){
+    await load(START);await caption('ALIENWARS / DEVELOPMENT SHOWCASE','A world of possibilities');
+    results.push(await record(page,'probe',3,()=>orbit(3,-24)));
+  }else{
+    await shot('01-opening',4,START,async()=>{
+      await caption('PROCEDURAL ENVIRONMENTS','ALIENWARS GYM');
+    },()=>orbit(4,-32));
+    gallery('02-world-generation',0);
+    gallery('03-world-variety',1);
+    await shot('04-lidar',4,worldsByName.forest,async()=>{
+      await clean(false);await checkbox('sensor-all',true);await mask(1);await select('sensor-unit',7);await frame(132);
+      await page.$eval('#sensor-unit',e=>e.scrollIntoView({block:'center'}));
+      await caption('UNIT PERCEPTION / ALL UNITS','Laser range sensing','Live measurements across the terrain');
+    },()=>orbit(4,-16));
+    await shot('05-radio',4,worldsByName.forest,async()=>{
+      await clean(false);await checkbox('sensor-all',true);await mask(4);await select('sensor-unit',7);
+      if(only)await frame(132,.73);
+      await page.$eval('#sensor-unit',e=>e.scrollIntoView({block:'center'}));
+      await caption('UNIT PERCEPTION / ALL UNITS','Radio sensing','Range + bearing between nearby units');
+    },()=>orbit(4,-16));
+    await shot('06-depth',4,worldsByName.forest,async()=>{
+      await clean(false);await checkbox('sensor-all',true);await mask(8);await focus(7,.10);
+      await page.$eval('#sensor-unit',e=>e.scrollIntoView({block:'center'}));
+      await caption('AIR / UNIT PERCEPTION','Depth camera','Live range image + 3D field of view');
+    },()=>orbit(4,-16));
+    await shot('07-ground',4,worldsByName.temperate,async()=>{
+      await clean(true);await mask(0);await click('inspect-bridge');await checkbox('follow',true);
+      await caption('GROUND / BRIDGE CROSSING','Ground · Sea · Air','Navigate crossings and changing elevations');
+    },()=>orbit(4,-25));
+    await shot('08-naval',4,worldsByName.desert,async()=>{
+      await clean(true);await checkbox('sensor-all',true);await mask(2);await focus(4,-.10);
+      await caption('SEA / SONAR','Ground · Sea · Air','Naval patrol · Live range returns');
+    },()=>orbit(4,24));
+    await shot('09-entrance',4,worldsByName.frozen,async()=>{
+      await clean(true);await checkbox('sensor-all',true);await select('sensor-unit',0);await mask(1);
+      await click('inspect-entrance');await checkbox('scout-pause',false);await checkbox('follow',true);
+      await caption('UNDERGROUND TRAVERSAL','Into the terrain','Ramp entrances · Continuous terrain');
+    },()=>wait(4000));
+    await shot('10-tunnel',6,worldsByName.frozen,async()=>{
+      await clean(true);await checkbox('sensor-all',true);await select('sensor-unit',0);await mask(1);
+      await click('inspect-tunnel');await checkbox('scout-pause',false);await checkbox('follow',true);await select('cutaway',0);
+      await caption('UNDERGROUND TRAVERSAL','See through the terrain','Automatic cutaway · Live sensor returns');
+    },async()=>{await wait(900);await select('cutaway',1);await wait(5100);});
+    await shot('11-network-symmetric',5,worldsByName.frozen,async()=>{
+      await isolation('Explore the underground network','Symmetric · Four chambers + mountain passages');
+    },async()=>{await wait(800);await checkbox('isolate-tunnels',true);await wait(3200);await checkbox('isolate-tunnels',false);await wait(1000);});
+    await shot('12-network-asymmetric',4,worldsByName.asymmetric,async()=>{
+      await isolation('Different routes. Different depths.','Asymmetric · Four chambers + mountain passage',true);
+    },async()=>{await orbit(3,36);await checkbox('isolate-tunnels',false);await wait(1000);});
+    await shot('13-closing',6,worldsByName.forest,async()=>{
+      await clean(true);await mask(5);await checkbox('sensor-all',true);
+      await page.evaluate(()=>document.body.classList.add('film-end'));
+      await caption('ALIENWARS / TRAINING ENVIRONMENTS','ALIENWARS GYM','A procedural world for training AlienWars agents.<span class="credit">Built on PufferLib 5<br>Rendered with Raylib · WebAssembly Runtime</span><span class="url">rozgo.github.io/alienwars-gym</span>');
+    },()=>orbit(6,-40));
+
+  }
+  const captureName=only?only+'-capture.json':process.argv.includes('--probe')?'probe-capture.json':'capture.json';
+  fs.writeFileSync(path.join(OUT,captureName),JSON.stringify({revision:3,sourceURL:START,browser:await browser.version(),worlds,errors,shots:results},null,2)+'\n');
   if(errors.length)throw Error('Browser errors: '+errors.join('; '));
   } finally { await browser.close(); }
 }

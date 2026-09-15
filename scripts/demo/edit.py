@@ -1,61 +1,23 @@
 #!/usr/bin/env python3
-"""Assemble the 57-second showcase and its original ambient soundtrack."""
+"""Assemble and verify the silent showcase for local review."""
 import hashlib
 import json
+import math
+import os
 from pathlib import Path
 import subprocess
-import wave
 
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'outputs/demo'
-SHOTS = [('01-opening',4),('02-terrain',6),('03-lidar',3),('04-rf',3),
-         ('05-depth',4),('06-ground',3),('07-naval',4),('08-entrance',4),
-         ('09-tunnel',7),('10-isolation',7),('11-bridge',3),('12-variety',3),('13-closing',6)]
+OUT = ROOT / os.environ.get('DEMO_OUT', 'outputs/demo-v4')
+CAPTURE = json.loads((OUT/'capture.json').read_text())
+SHOTS = [(s['name'],s['seconds']) for s in CAPTURE['shots']]
+DURATION = sum(duration for _,duration in SHOTS)
+REVISION = CAPTURE['revision']
+assert 0 < DURATION < 60, 'Keep the complete revision under one minute'
 def run(args):
     return subprocess.check_output(args, cwd=ROOT, text=True).strip()
-
-def soundtrack():
-    # Original, seeded synthesis; no sampled recording or licensed music.
-    rate=48000;duration=57;mix=np.zeros((rate*duration,2),dtype=np.float64)
-    rng=np.random.default_rng(73)
-    def tone(start,length,hz,amp,pan=0,pluck=False):
-        lo=max(0,round(start*rate));hi=min(len(mix),lo+round(length*rate))
-        if hi<=lo:return
-        t=np.arange(hi-lo)/rate
-        env=(1-np.exp(-t/(.006 if pluck else .9)))*np.minimum(1,(length-t)/(.22 if pluck else 2))
-        if pluck:env*=np.exp(-t*3.6)
-        env=np.maximum(0,env)
-        phase=2*np.pi*hz*t
-        sound=(np.sin(phase)+.18*np.sin(phase*2)+.04*np.sin(phase*3))*amp*env
-        mix[lo:hi,0]+=sound*np.sqrt((1-pan)/2)
-        mix[lo:hi,1]+=sound*np.sqrt((1+pan)/2)
-    midi=lambda n:440*2**((n-69)/12)
-    beat=60/84;bar=beat*4
-    chords=[[52,55,59,66],[48,55,59,62],[45,52,55,59],[50,57,62,64],[52,55,59,66]]
-    for section,notes in enumerate(chords):
-        start=section*bar*4
-        for j,n in enumerate(notes):tone(start,bar*4+2,midi(n),.035,(j-1.5)/2)
-        for b in range(16):
-            time=start+b*beat
-            if time>53:continue
-            if b%2==0:tone(time,.6,midi(notes[0]-12),.11,0,True)
-            if b%2==1:tone(time,1.4,midi(notes[(b//2)%4]+12),.028,float(rng.uniform(-.6,.6)),True)
-    # A quiet filtered-noise pulse gives movement without competing with the visuals.
-    for i in range(4,75,2):
-        lo=round(i*beat*rate);n=round(.075*rate)
-        if lo+n>len(mix):break
-        noise=rng.normal(0,1,n);noise=np.convolve(noise,np.ones(9)/9,mode='same')
-        sound=noise*np.exp(-np.arange(n)/rate*70)*.018
-        mix[lo:lo+n]+=sound[:,None]
-    fade=np.minimum(1,np.arange(len(mix))/(rate*1.4))*np.minimum(1,(len(mix)-np.arange(len(mix)))/(rate*3.0))
-    mix*=fade[:,None];mix=np.tanh(mix)
-    target=OUT/'soundtrack.wav'
-    with wave.open(str(target),'wb') as f:
-        f.setnchannels(2);f.setsampwidth(2);f.setframerate(rate);f.writeframes((mix*32767).astype('<i2').tobytes())
-    return target
 
 def main():
     for name,duration in SHOTS:
@@ -65,30 +27,42 @@ def main():
         assert abs(float(data['format']['duration'])-duration)<.05,(name,data)
         assert data['streams'][0]['width']==1920 and data['streams'][0]['height']==1080
         assert data['streams'][0]['avg_frame_rate']=='30/1'
-    audio=soundtrack()
     playlist=OUT/'concat.txt';playlist.write_text(''.join(f"file 'raw/{name}.mp4'\n" for name,_ in SHOTS))
-    final=OUT/'AlienWars-Gym-Demo.mp4'
-    subprocess.run(['ffmpeg','-hide_banner','-loglevel','warning','-y','-f','concat','-safe','0','-i',str(playlist),'-i',str(audio),
-        '-map','0:v:0','-map','1:a:0','-vf','fade=t=in:st=0:d=0.3,fade=t=out:st=56.4:d=0.6',
+    final=OUT/f'AlienWars-Gym-Demo-v{REVISION}.mp4'
+    subprocess.run(['ffmpeg','-hide_banner','-loglevel','warning','-y','-f','concat','-safe','0','-i',str(playlist),
+        '-map','0:v:0','-an','-vf',f'fade=t=in:st=0:d=0.3,fade=t=out:st={DURATION-.6}:d=0.6',
         '-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','-r','30',
-        '-af','loudnorm=I=-20:TP=-2:LRA=8','-c:a','aac','-b:a','192k','-ar','48000','-t','57','-movflags','+faststart',
-        '-metadata','title=AlienWars Gym — Procedural Worlds',
-        '-metadata','comment=Actual Raylib/WebAssembly Map Lab footage. Original ambient soundtrack. Built on PufferLib 5.',str(final)],check=True,cwd=ROOT)
+        '-t',str(DURATION),'-movflags','+faststart',
+        '-metadata',f'title=AlienWars Gym — Demo v{REVISION}',
+        '-metadata','comment=Actual Map Lab, training metrics and trained Navigation Lab footage. Silent review cut. PufferLib 5 / Raylib.',str(final)],check=True,cwd=ROOT)
     # Contact sheet for editorial QA. Each image comes from the encoded final cut.
     frames=OUT/'review';frames.mkdir(exist_ok=True)
-    times=[2,7,11.5,14.5,18,21.5,25,29,34,40,43.5,46.5,49.5,54]
+    times=[]; cursor=0
+    for _,duration in SHOTS:
+        times.append(cursor+duration/2);cursor+=duration
+    times.extend([22.2,23.2,27.2,30.8,33.7,42.2,45.7,46.2,53.7] if REVISION==4 else [36.4,37.4,42.4,46.4,50.5]);times.sort()
     font=ImageFont.truetype('/System/Library/Fonts/Menlo.ttc',18)
-    sheet=Image.new('RGB',(1280,7*384),(20,24,26));draw=ImageDraw.Draw(sheet)
+    sheet=Image.new('RGB',(1280,math.ceil(len(times)/2)*384),(20,24,26));draw=ImageDraw.Draw(sheet)
     for i,time in enumerate(times):
         dest=frames/f'{time:04.1f}.jpg'
         run(['ffmpeg','-v','error','-y','-ss',str(time),'-i',str(final),'-frames:v','1','-q:v','2',str(dest)])
         im=Image.open(dest);im.thumbnail((640,360));x=(i%2)*640;y=(i//2)*384
         sheet.paste(im,(x,y));draw.text((x+12,y+361),f'{time:04.1f}s',font=font,fill=(165,200,188))
     sheet.save(OUT/'contact-sheet.jpg',quality=92)
-    run(['ffmpeg','-v','error','-y','-ss','54','-i',str(final),'-frames:v','1',str(OUT/'poster.png')])
+    run(['ffmpeg','-v','error','-y','-ss',str(DURATION-3),'-i',str(final),'-frames:v','1',str(OUT/'poster.png')])
     probe=json.loads(run(['ffprobe','-v','error','-show_entries','format=duration,size:stream=codec_name,codec_type,width,height,avg_frame_rate,sample_rate','-of','json',str(final)]))
     probe['sha256']=hashlib.sha256(final.read_bytes()).hexdigest()
-    probe['soundtrack']='Original deterministic ambient synthesis; no third-party samples.'
+    probe['revision']=REVISION
+    probe['world_count']=len({w['hash'] for w in CAPTURE['worlds']})
+    probe['capture_source_commits']=sorted({w['build']['source_commit'] for w in CAPTURE['worlds']})
+    probe['audio']='None: silent video, no audio stream.'
+    probe['gallery']={'worlds':12,'palettes':4,'seconds':8}
+    probe['presentation']='Frame-synchronous camera tracks; stronger cached sensor overlays; production terrain and sensor measurements.'
+    if 'supplied_clips' in CAPTURE:
+        probe['supplied_clips']=CAPTURE['supplied_clips']
+        probe['notes']=CAPTURE['notes']
+    assert abs(float(probe['format']['duration'])-DURATION)<.01
+    assert all(s['codec_type']!='audio' for s in probe['streams'])
     probe['source_url']='https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=2&tunnels=1&cut=1&sensors=15&unit=7&sensorsAll=1'
     (OUT/'video-manifest.json').write_text(json.dumps(probe,indent=2)+'\n')
     print(json.dumps(probe,indent=2))

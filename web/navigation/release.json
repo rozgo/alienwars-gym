@@ -1,0 +1,8 @@
+{
+  "checkpoint": "final-s173.bin",
+  "checkpoint_sha256": "ec8c3c85f688e79704a585068434c7eb1b8e4d356585ed28ceb8fb43071fcc5a",
+  "hidden": 128,
+  "layers": 2,
+  "runs": ["nav-final-s173-1m", "nav-mixed-warm-s173-4m", "nav-surface-s173-8m", "nav-pilot-s173", "nav-mixed-s173-4m"],
+  "evaluations": "final-s173"
+}

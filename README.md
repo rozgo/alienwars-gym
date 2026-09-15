@@ -5,8 +5,12 @@ with native C, Raylib and WebAssembly.
 
 **[Open AlienWars Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)**
 
-[Watch the 57-second showcase](https://github.com/rozgo/alienwars-gym/releases/tag/demo-2026-09-15)
-— terrain, sensors, ground/sea/air units, tunnels and bridges.
+[Watch the 59-second showcase](https://rozgo.github.io/alienwars-gym/demo/)
+· [Navigation Lab](https://rozgo.github.io/alienwars-gym/navigation/?kind=1)
+· [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
+
+Explore terrain, sensors, ground/sea/air units, tunnels and bridges, then watch
+the trained scout and inspect recorded native training metrics.
 
 Map Lab generates symmetric or asymmetric worlds with continuous WFC terrain,
 rolling hills, cliffs, beaches, lakes and an extended ocean. Roads reach bases

@@ -12,6 +12,14 @@ Do not describe
 scripted patrols as trained policies. The Breakout bootstrap experiment was
 retired on September 15, 2026; do not restore its demo or project tooling.
 
+The public Navigation Lab packages the evaluated checkpoint selected by
+`web/navigation/release.json`. Build with `scripts/build_navigation_site.py`.
+`docs/navigation/` (including the small policy data bundle) and `docs/training/`
+(recorded metrics and evaluation summaries) are deliberate Pages artifacts.
+Keep raw checkpoints, logs and video masters in ignored directories or Release
+assets. The static Observatory must identify recorded data and preserve numeric
+metrics; local live training still uses `scripts/nav_dashboard.py`.
+
 User direction, September 14, 2026: the repository is public and the first
 browser release uses the existing **Raylib web path**, published through
 GitHub Pages from **`main:/docs`**. See `docs/WEB.md`. Map Lab is the site entry point;
