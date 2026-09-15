@@ -345,9 +345,12 @@ features; this is restrained static AO, not a global illumination solution.
 
 A static 2,048-square shadow map captures the terrain and decorative props;
 nine filtered depth comparisons soften the edges. The shaded key light retains
-40% of its intensity. Cast shadows are suppressed during
-assembly and cutaway/isolated inspection so removed surfaces do not obscure the
-view.
+40% of its intensity. Auto cutaway and horizontal sections retain the intact
+world's cast shadows: revealing the scout is a camera visibility change, so it
+must not switch off sunlight occlusion across the landscape. The retained rock
+also keeps shading the revealed tunnel floor. Cast shadows are suppressed only
+during assembly and isolated tunnel inspection, where the surrounding world is
+deliberately absent.
 
 `props.h` builds seeded cosmetic meshes: tapered trunks, roots, branches,
 twigs and two-sided leaves, broadleaf trees and conifers, irregular smooth

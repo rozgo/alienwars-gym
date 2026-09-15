@@ -104,7 +104,9 @@ static const char *aw_land_fragment = AW_GLSL
     " float D=a2/(3.14159*den*den+0.0001),k=(roughness+1.0)*(roughness+1.0)/8.0;\n"
     " float G=nl/(nl*(1.0-k)+k)*nv/(nv*(1.0-k)+k);\n"
     " vec3 f0=mix(vec3(.035),linear,metal),F=f0+(1.0-f0)*pow(1.0-vh,5.0);\n"
-    " float visibility=tunnelView>0||cutMode>0||reveal<4095.0?1.0:shadow(position,n);\n"
+    /* Camera cutaways only hide fragments. Keep the intact world's sunlight
+     * occlusion so revealing a scout cannot switch off every terrain/prop shadow. */
+    " float visibility=tunnelView>0||reveal<4095.0?1.0:shadow(position,n);\n"
     " float ao=aoEnabled>0?clamp(color.a,0.0,1.0):1.0;\n"
     /* Broad overcast fill carries the scene. Weak key light and restrained AO
      * preserve shape without deep black cliffs or high-contrast prop shadows. */
