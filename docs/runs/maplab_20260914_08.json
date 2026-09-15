@@ -1,0 +1,305 @@
+{
+  "milestone": "Procedural global layouts, lakes, tunnel chamber networks, completed coastlines and naval ocean groundwork",
+  "generator_version": 6,
+  "source_commit": "0aef9051bc9664ef995944551a8e688bd44a71e4",
+  "source_dirty": false,
+  "checks": {
+    "generator_version": 6,
+    "native": "MAP_TEST version=6 seeds=256 digest=5fcf7320 terrains=12 max_structure=106 geometry_choices=106496 entrance_sites=84 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=6 seeds=256 digest=5fcf7320 terrains=12 max_structure=106 geometry_choices=106496 entrance_sites=84 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "diversity_native": "DIVERSITY sym=0 worlds=24 bases=22 entrances=22 outline_bits_x100=1393 height_q_x100=358 road_change_permille=752 cave_change_permille=969 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=942 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=6 digest=6a26b7d0 PASS",
+    "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=22 entrances=22 outline_bits_x100=1393 height_q_x100=358 road_change_permille=752 cave_change_permille=969 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=942 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=6 digest=6a26b7d0 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "6",
+        "hash": "98a1c112",
+        "walk": "1812",
+        "reached": "1662",
+        "path": "175",
+        "decisions": "2188",
+        "attempts": "14",
+        "structure": "17",
+        "tunnels": "85",
+        "cost": "1941",
+        "shapes": "798",
+        "entrance_ne": "1201",
+        "entrance_sw": "3339",
+        "depth_ne": "-6",
+        "depth_sw": "-8",
+        "lakes": "2",
+        "rooms": "2",
+        "base_a": "774",
+        "base_b": "2990",
+        "landforms": "12",
+        "plans": "1",
+        "ocean": "6067"
+      },
+      {
+        "seed": "1",
+        "version": "6",
+        "hash": "bbf234ef",
+        "walk": "1731",
+        "reached": "1609",
+        "path": "174",
+        "decisions": "2078",
+        "attempts": "8",
+        "structure": "35",
+        "tunnels": "102",
+        "cost": "1906",
+        "shapes": "711",
+        "entrance_ne": "620",
+        "entrance_sw": "2629",
+        "depth_ne": "-10",
+        "depth_sw": "-9",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6301"
+      },
+      {
+        "seed": "73",
+        "version": "6",
+        "hash": "8c937a4a",
+        "walk": "1927",
+        "reached": "1803",
+        "path": "159",
+        "decisions": "2105",
+        "attempts": "6",
+        "structure": "24",
+        "tunnels": "82",
+        "cost": "1756",
+        "shapes": "539",
+        "entrance_ne": "1067",
+        "entrance_sw": "3472",
+        "depth_ne": "-4",
+        "depth_sw": "-7",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "775",
+        "base_b": "2745",
+        "landforms": "10",
+        "plans": "1",
+        "ocean": "6230"
+      },
+      {
+        "seed": "4294967295",
+        "version": "6",
+        "hash": "565a0f2d",
+        "walk": "1586",
+        "reached": "1566",
+        "path": "160",
+        "decisions": "1750",
+        "attempts": "4",
+        "structure": "48",
+        "tunnels": "45",
+        "cost": "1833",
+        "shapes": "531",
+        "entrance_ne": "1638",
+        "entrance_sw": "2323",
+        "depth_ne": "-7",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "782",
+        "base_b": "2995",
+        "landforms": "12",
+        "plans": "2",
+        "ocean": "6670"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "baseline_breakout_unchanged": true,
+  "generation": {
+    "land_region": [
+      64,
+      64
+    ],
+    "ocean_domain": [
+      96,
+      96
+    ],
+    "ocean_belt_tiles": 16,
+    "plan": "Variable warped landforms, seeded base sites and self-avoiding regional road walks; lowland A* routes around lakes and graded roads; shape/material/road/passage WFC preserves local sockets.",
+    "lakes": "1-3 independent basins; symmetric plans mirror to 2-6. Dry rims and an eight-neighbor flood keep lake centers separate from the sea.",
+    "tunnels": "Opposite diagonal to bases, seeded entrances and depths, two or four wide chambers, dry 3D route search with optional multi-leg connections.",
+    "coastline": "Two-tile submerged boundary sockets applied after shoulder blending. An extended seabed shelf meets those sockets and reaches quarter-floor -12 six tiles offshore.",
+    "naval": "Separate 96-square depth/connectivity grid, sea-only flood and draft-sensitive route query. Conservative tile-sized footprint; lakes do not connect through tunnels.",
+    "bounded_search": {
+      "global_plans": 12,
+      "cave_alternatives_per_surface": 16,
+      "fixed_layout_fallback": false
+    }
+  },
+  "diversity": {
+    "baseline_v5": {
+      "worlds": 8,
+      "settings": {
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "tunnels": 1
+      },
+      "unique_base_a_sites": 1,
+      "mean_changed_8x8_silhouette_blocks": 0.79
+    },
+    "release_v6": "24 seeds per fixed-settings cohort (symmetric and asymmetric), floor 6/6, temperate, tunnels enabled. Reported metrics compare every pair; no material or prop differences enter these measurements.",
+    "symmetric": {
+      "unique_base_a_sites": 21,
+      "unique_ne_entrances": 23,
+      "mean_changed_8x8_silhouette_blocks": 11.92,
+      "mean_height_difference_quarter_floors": 3.71,
+      "road_occupancy_difference": 0.738,
+      "cave_occupancy_difference": 0.942,
+      "lake_occupancy_difference": 0.939
+    },
+    "asymmetric": {
+      "unique_base_a_sites": 22,
+      "unique_ne_entrances": 22,
+      "mean_changed_8x8_silhouette_blocks": 13.93,
+      "mean_height_difference_quarter_floors": 3.58,
+      "road_occupancy_difference": 0.752,
+      "cave_occupancy_difference": 0.969,
+      "lake_occupancy_difference": 0.95
+    },
+    "metric_note": "Occupancy difference is symmetric difference divided by union (1 minus Jaccard overlap). Coarse silhouettes contain 64 majority-land blocks. Baseline and release cohorts have different sizes."
+  },
+  "rendering": {
+    "terrain_lighting_exposure": 0.62,
+    "emission_preserved": true,
+    "water_brightness_multiplier": 0.8,
+    "shore_texture": [
+      384,
+      384
+    ],
+    "camera": "Extended pan/zoom bounds and distant orthographic eye prevent near-plane clipping when viewing the ocean. Ocean extent button frames the naval area.",
+    "assets": "Existing procedural detailed trees/props, material shaders, shadows and planar water reflections retained."
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2 on development desktop",
+    "examples": [
+      {
+        "seed": 143381177,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "hash": "71d38cff",
+        "lakes": 6,
+        "chambers": 4,
+        "cave_waypoints": 162,
+        "base_sites": [
+          [
+            13,
+            18
+          ],
+          [
+            50,
+            45
+          ]
+        ],
+        "base_path_steps": 180,
+        "cave_tour_steps": 156,
+        "ocean_tiles": 5880
+      },
+      {
+        "seed": 3629596817,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "hash": "f2ae9f0e",
+        "lakes": 2,
+        "chambers": 2,
+        "cave_waypoints": 94,
+        "base_sites": [
+          [
+            13,
+            18
+          ],
+          [
+            50,
+            45
+          ]
+        ],
+        "base_path_steps": 212,
+        "ocean_tiles": 6154
+      },
+      {
+        "seed": 1,
+        "symmetry": 0,
+        "floors": [
+          10,
+          3
+        ],
+        "biome": 4,
+        "hash": "46a0b976",
+        "lakes": 1,
+        "chambers": 2,
+        "cave_waypoints": 67,
+        "base_sites": [
+          [
+            5,
+            14
+          ],
+          [
+            50,
+            57
+          ]
+        ],
+        "base_path_steps": 176,
+        "ocean_tiles": 6377
+      }
+    ],
+    "verified": [
+      "In-page New world produces visibly different landforms and lake arrangements at identical settings",
+      "Finished beaches and cliffs around the land region",
+      "Ocean access overlay covers sea-connected water and excludes inland lakes",
+      "Wide ocean framing without exposed mesh/near-plane clipping",
+      "Two- and four-chamber tunnel isolation with ceilings hidden/shown",
+      "Entrance, auto cutaway, horizontal section and solid terrain",
+      "Unchanged world hash through inspection toggles",
+      "Continuous tile boundaries and readable navigation overlays",
+      "Volcanic emission remains distinct under darker lighting",
+      "Recorded tile assembly playback"
+    ],
+    "settled_frame_rate_observed": 60,
+    "performance_scope": "UI samples, not a sustained benchmark. Browser loading and regeneration still perform synchronous meshing and GPU preparation; temporary low FPS occurs. Mobile not measured.",
+    "console": "No warn/error entries in packaged page."
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 28043,
+      "sha256": "127e7e1a005fb22373dc763a1216e1533334cedf6b65f47ec6ae7edc13ef787a"
+    },
+    "maplab.js": {
+      "bytes": 231822,
+      "sha256": "4eae233672ab1a41fde6e2f655b192d28a5969b351fac5951ee9cbd46f3bd5e7"
+    },
+    "maplab.wasm": {
+      "bytes": 279423,
+      "sha256": "8496ce4469147310ff758f18337434edc951d73425644b544adc9549f9a33d63"
+    }
+  },
+  "limitations": [
+    "Generator v6 changes worlds produced by older seed URLs.",
+    "Lakes currently share one ocean water datum; no elevated lakes, hydrology or flooded tunnels.",
+    "Naval navigation groundwork only: ships, naval combat and dynamic water are not implemented.",
+    "Regional road search is bounded to jittered 4x4 lattices; complete search exhaustion reports failure.",
+    "Terrain and props are static; this remains a map/navigation study, not an AlienWars combat or RL policy."
+  ]
+}
