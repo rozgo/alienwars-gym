@@ -1743,8 +1743,13 @@ void puf_load_weights_into(Float dst, Prec params,
     assert(fp && "failed to open weights for reading");
     char* buf = (char*)malloc(nbytes);
     size_t nread = fread(buf, 1, nbytes, fp);
+    int extra = fgetc(fp);
     fclose(fp);
-    assert((int64_t)nread == nbytes && "failed to read weights");
+    assert((int64_t)nread == nbytes && extra == EOF && "checkpoint size does not match policy architecture");
+    const float* floats = (const float*)buf;
+    for (int64_t j = 0; j < nbytes / (int64_t)sizeof(float); j++) {
+        assert(isfinite(floats[j]) && "checkpoint contains nonfinite weights");
+    }
     cudaMemcpy(dst.data, buf, nbytes, cudaMemcpyHostToDevice);
     free(buf);
     if (USE_BF16) {
@@ -3045,6 +3050,28 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     }
 
     PuffeRL* pufferl = create_pufferl(ini, ctx);
+    // Explicit weight initialization for curriculum stages. Optimizer, recurrent
+    // state, RNG and step counters intentionally start fresh (not a resume).
+    char initial_model_buf[4096];
+    const char* initial_model = puf_checkpoint_path_key(ini,
+        "load_model_path", initial_model_buf, sizeof(initial_model_buf));
+    if (initial_model) {
+        pufferl_load_policy(pufferl, 0, initial_model);
+        if (pufferl->hypers.async) {
+            puf_copy(&pufferl->actor_param, &pufferl->policies[0].param,
+                pufferl->default_stream);
+            cudaStreamSynchronize(pufferl->default_stream);
+        }
+        if (live_log) {
+            // Save the exact fp32 initial parameters as auditable evidence.
+            char initial_path[4096];
+            snprintf(initial_path, sizeof(initial_path), "%s/initial.bin", checkpoint_dir);
+            puf_save_weights(pufferl, initial_path);
+            fputs("{\"type\":\"initialization\",\"checkpoint\":", live_log);
+            puf_json_string(live_log, initial_model);
+            fputs(",\"optimizer_reset\":true}\n", live_log); fflush(live_log);
+        }
+    }
     Selfplay selfplay = {0};
     if (use_selfplay) {
         char initial_checkpoint[4096];
