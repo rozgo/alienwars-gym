@@ -14,6 +14,8 @@ Euler-angle increments, linear/angular velocity and distance travelled. It is
 currently noiseless; it is not a simulated wheel encoder, IMU or drifting SLAM
 estimate. Teleporting or changing the inspection tour resets odometry and
 invalidates the old measurements.
+The viewer's `motion.h` steering state supplies the same smoothly changing
+yaw/pitch to rendered bodies and sensor mounts; odometry observes those changes.
 
 Each unit has four independent module slots. Any of the four types can be
 attached to any ground, naval or air unit. Each mount has local translation,

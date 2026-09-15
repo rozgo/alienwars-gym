@@ -218,3 +218,9 @@ radial depth, not RGB. Cosmetic props do not occlude sensors yet; do not imply
 otherwise. Run `scripts/check_sensors.py` for sensor changes; retain the
 independent triangle-intersection, reset/cadence, finite-data and native/WASM
 checks. Do not call scripted traffic a trained sensor-driven policy.
+
+`motion.h` owns eased body yaw/pitch for both rendering and sensors. Keep its
+rate/acceleration bounds, shortest-angle turning, pause/reset behavior and
+30/60/120 Hz tests (`scripts/check_motion.py`). Retain validated support paths
+through tunnels and bridges when changing motion. The quadrotor's cruise pace
+is deliberately much lower than either fixed-wing variant; preserve that order.

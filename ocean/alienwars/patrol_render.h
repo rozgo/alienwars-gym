@@ -1,6 +1,7 @@
 #ifndef ALIENWARS_PATROL_RENDER_H
 #define ALIENWARS_PATROL_RENDER_H
 #include "patrols.h"
+#include "motion.h"
 /* Compact procedural silhouettes, scaled to tile-sized actors. Unit rendering
  * stays distinct from the subdued terrain material and its baked lighting. */
 static void aw_patrol_model(int layer,int variant,float time){
@@ -55,10 +56,10 @@ static void aw_patrol_model(int layer,int variant,float time){
         }
     }
 }
-static void aw_patrol_draw(const AwMap*m,const AwPatrols*f,float time){
+static void aw_patrol_draw(const AwMap*m,const AwPatrols*f,const AwMotion*motion,float time){
     for(int i=0;i<AW_PATROLS;i++){
         const AwPatrol*p=&f->units[i];if(p->count<2)continue;
-        AwPatrolPoint a=aw_patrol_position(m,p,p->progress),b=aw_patrol_position(m,p,p->progress+.05f);
+        AwPatrolPoint a=aw_patrol_position(m,p,p->progress);
         Vector3 position={a.x*AW_UNIT,aw_y(a.q/4),a.z*AW_UNIT};
         if(p->layer==AW_PATROL_NAVAL)position.y+=sinf(time*1.7f+i)*.018f;
         if(p->layer==AW_PATROL_AIR){
@@ -66,9 +67,8 @@ static void aw_patrol_draw(const AwMap*m,const AwPatrols*f,float time){
             DrawCylinder((Vector3){position.x,ground,position.z},.38f,.38f,.005f,12,(Color){20,30,38,60});
         }
         rlPushMatrix();rlTranslatef(position.x,position.y,position.z);
-        rlRotatef(atan2f(b.x-a.x,b.z-a.z)*RAD2DEG,0,1,0);
-        if(p->layer!=AW_PATROL_NAVAL){float horizontal=hypotf(b.x-a.x,b.z-a.z)*AW_UNIT;
-            rlRotatef(-atan2f((b.q-a.q)*.75f,fmaxf(.0001f,horizontal))*RAD2DEG,1,0,0);}
+        rlRotatef(motion[i].yaw*RAD2DEG,0,1,0);
+        rlRotatef(-motion[i].pitch*RAD2DEG,1,0,0);
         aw_patrol_model(p->layer,p->variant,time);rlPopMatrix();
     }
 }

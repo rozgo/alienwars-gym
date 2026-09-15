@@ -171,6 +171,20 @@ vehicle in turn without changing its route. **Pause scout** and the route inspec
 still operate the original scout independently. Reduced-motion preference starts
 both the scout and background patrols paused. Isolation hides background traffic.
 
+`motion.h` eases body yaw and pitch with bounded angular speed and acceleration.
+Heavier boats and aircraft turn more gradually. Ground units and boats slow
+through sharp turns; aircraft retain forward progress. Motion remains on the
+validated route, including tunnel floors and bridge decks. Models, sensor mounts
+and odometry consume the same orientation. Pausing freezes steering; new worlds
+and inspection-route changes reset it. `python3 scripts/check_motion.py` checks
+rate/acceleration limits, reversals, angle wrapping and 30/60/120 Hz agreement in
+native C and WASM.
+
+Aircraft cruise settings are 0.65 route segments/second for the quadrotor, 2.55
+for the fixed-wing gunship and 1.9 for the transport. The quadrotor is therefore
+about a quarter of the gunship's pace and a third of the transport's. Actual
+world speed varies with diagonal segments, climbs and turn easing.
+
 Heavy ground patrols use the large-body surface/span graph and validate the
 space between waypoints. A rover crosses the first accepted bridge when one
 exists; the hauler patrols from Base B. Naval routes require sea connectivity,

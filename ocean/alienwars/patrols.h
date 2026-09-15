@@ -126,7 +126,11 @@ static int aw_patrol_build(AwMap*m,AwPatrols*f){
     memset(f,0,sizeof(*f));m->density_cache=calloc(AW_DENSITY_CACHE,sizeof(AwDensitySample));
     for(int i=0;i<AW_PATROLS;i++){
         AwPatrol*p=&f->units[i];p->layer=i<2?AW_PATROL_GROUND:i<5?AW_PATROL_NAVAL:AW_PATROL_AIR;
-        p->variant=i<2?i+1:i<5?i-2:i-5;p->speed=i<2?(i?.65f:1.1f):i<5?(1.6f-p->variant*.35f):(3.2f-p->variant*.65f);
+        p->variant=i<2?i+1:i<5?i-2:i-5;
+        /* Route segments/second: the quadrotor deliberately cruises at a
+         * third of the transport's pace, about a quarter of the gunship's. */
+        static const float air_speed[3]={.65f,2.55f,1.9f};
+        p->speed=i<2?(i?.65f:1.1f):i<5?(1.6f-p->variant*.35f):air_speed[p->variant];
         uint32_t salt=aw_hash(m->seed^(uint32_t)(i+1)*7193u);
         int ok=p->layer==AW_PATROL_GROUND?aw_patrol_ground(m,p,salt):p->layer==AW_PATROL_NAVAL?aw_patrol_naval(m,p,salt):aw_patrol_air(m,p,salt);
         if(ok){f->count++;p->progress=(salt%1000)/1000.0f*(p->count-1);}

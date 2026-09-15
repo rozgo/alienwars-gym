@@ -9,6 +9,7 @@ int main(void){
   assert(aw_generate_options(&map,seed,(AwOptions){sym,6,6,1,1}));
   int path[AW_NODES],length=map.path_length,cost=map.path_cost;memcpy(path,map.path,sizeof(path));uint32_t hash=map.hash;
   assert(aw_patrol_build(&map,&fleet)==8);
+  assert(fleet.units[5].speed<=fleet.units[6].speed*.26f&&fleet.units[5].speed<=fleet.units[7].speed*.35f);
   assert(map.hash==hash&&aw_fingerprint(&map)==hash&&map.path_length==length&&map.path_cost==cost&&!memcmp(path,map.path,sizeof(path)));
   assert(aw_patrol_build(&map,&repeat)==8);
   for(int unit=0;unit<8;unit++){

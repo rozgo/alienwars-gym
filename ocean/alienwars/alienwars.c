@@ -22,8 +22,9 @@ static AwMap world;
 static AwScene scene;
 static AwPatrols patrols;
 static AwSensors sensors;
+static AwMotion unit_motion[9];
 static int sensor_selected=0,sensor_layers=1,sensor_all=0,sensor_xray=1;
-static void aw_sensor_update_poses(void);
+static void aw_sensor_update_poses(float dt);
 static void aw_publish_sensors(void);
 static int patrol_mode=0; /* Live, paused, hidden. */
 static AwOptions settings={1,6,6,0,1};
@@ -74,7 +75,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
         aw_publish();
         return;
     }
-    aw_patrol_build(&world,&patrols);
+    aw_patrol_build(&world,&patrols);memset(unit_motion,0,sizeof(unit_motion));
     AwSensorConfig previous[9][4];int equipped=sensors.count==9;
     if(equipped)for(int i=0;i<9;i++)memcpy(previous[i],sensors.units[i].config,sizeof(previous[i]));
     aw_sensors_init(&sensors,&world,9);aw_sensor_equip(&sensors,0,0,.65f);
@@ -86,7 +87,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
     if(isolate_tunnels)aw_set_isolation(world.cave_count>0);
     revealed=watch?0:AW_CELLS;
     unit_progress=0;paused=0;scout_tour=0;
-    aw_sensor_update_poses();aw_sensors_step(&sensors,&world,1.0f/60);
+    aw_sensor_update_poses(0);aw_sensors_step(&sensors,&world,1.0f/60);
     aw_publish();
 }
 
@@ -112,7 +113,7 @@ AW_EXPORT void aw_option(int option,int value) {
 }
 
 AW_EXPORT void aw_watch(void) {
-    revealed=0;unit_progress=0;paused=0;aw_sensor_teleport(&sensors,0);aw_publish();
+    revealed=0;unit_progress=0;paused=0;aw_sensor_teleport(&sensors,0);unit_motion[0]=(AwMotion){0};aw_publish();
 }
 
 AW_EXPORT void aw_step(void) {
@@ -184,14 +185,16 @@ static Vector3 aw_scout_position_at(float progress,int report) {
 
 static Vector3 aw_unit_position(void){return aw_scout_position_at(unit_progress,1);}
 
-static void aw_sensor_update_poses(void){
+static void aw_sensor_update_poses(float dt){
     Vector3 a=aw_scout_position_at(unit_progress,1),b=aw_scout_position_at(unit_progress+.03f,0);
-    sensors.units[0].pose=(AwSensorPose){.position={a.x,a.y,a.z},.yaw=atan2f(b.x-a.x,b.z-a.z),.pitch=atan2f(b.y-a.y,fmaxf(.0001f,hypotf(b.x-a.x,b.z-a.z)))};
+    aw_motion_follow(&unit_motion[0],b.x-a.x,b.y-a.y,b.z-a.z,aw_motion_tuning(0,0),unit_paused?0:dt);
+    sensors.units[0].pose=(AwSensorPose){.position={a.x,a.y,a.z},.yaw=unit_motion[0].yaw,.pitch=unit_motion[0].pitch};
     for(int i=0;i<AW_PATROLS;i++){
         const AwPatrol*p=&patrols.units[i];AwPatrolPoint a=aw_patrol_position(&world,p,p->progress),b=aw_patrol_position(&world,p,p->progress+.05f);
         sensors.units[i+1].active=p->count>1;
-        sensors.units[i+1].pose=(AwSensorPose){.position={a.x*2,a.q*.75f-1.2f,a.z*2},.yaw=atan2f(b.x-a.x,b.z-a.z),
-            .pitch=p->layer==AW_PATROL_NAVAL?0:atan2f((b.q-a.q)*.75f,fmaxf(.0001f,hypotf(b.x-a.x,b.z-a.z)*2))};
+        aw_motion_follow(&unit_motion[i+1],(b.x-a.x)*2,p->layer==AW_PATROL_NAVAL?0:(b.q-a.q)*.75f,(b.z-a.z)*2,
+            aw_motion_tuning(p->layer,p->variant),patrol_mode==0&&!isolate_tunnels?dt:0);
+        sensors.units[i+1].pose=(AwSensorPose){.position={a.x*2,a.q*.75f-1.2f,a.z*2},.yaw=unit_motion[i+1].yaw,.pitch=unit_motion[i+1].pitch};
     }
 }
 #ifdef PLATFORM_WEB
@@ -221,7 +224,7 @@ AW_EXPORT void aw_sensor_control(int action,int value){
     if(action==2)sensor_all=!!value;
     if(action==3)sensor_xray=!!value;
     if(action==4&&sensors.count){
-        aw_sensor_update_poses();follow_scout=0;aw_set_isolation(0);
+        aw_sensor_update_poses(0);follow_scout=0;aw_set_isolation(0);
         focus=aw_sensor_v3(sensors.units[sensor_selected].pose.position);zoom=68;pitch=.82f;
     }
     if(action>=5&&action<=8&&sensors.count){
@@ -235,7 +238,7 @@ static void aw_tour(int entrance){
     if(a<0||b<0)return;
     uint8_t surface[AW_CELLS];memcpy(surface,world.walkable,AW_CELLS);memset(world.walkable,0,AW_CELLS);
     int valid=aw_find_path(&world,AW_CELLS+a,AW_CELLS+b);memcpy(world.walkable,surface,AW_CELLS);if(!valid)return;
-    unit_progress=0;scout_tour=1;aw_sensor_teleport(&sensors,0);
+    unit_progress=0;scout_tour=1;aw_sensor_teleport(&sensors,0);unit_motion[0]=(AwMotion){0};
     if(!entrance){int deepest=0;for(int i=0;i<world.path_length;i++){
         int a=world.path[i],b=world.path[deepest],ca=aw_node_cell(&world,a),cb=aw_node_cell(&world,b);
         int qa=aw_corner_q(&world,a,0),qb=aw_corner_q(&world,b,0);
@@ -257,7 +260,7 @@ AW_EXPORT void aw_inspect_mountain(int bypass){
         if(world.path_length)world.path_cost+=aw_move_cost(&world,world.path[world.path_length-1],node);
         world.path[world.path_length++]=node;
     }
-    aw_sensor_teleport(&sensors,0);aw_set_isolation(0);scout_tour=2+branch;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
+    aw_sensor_teleport(&sensors,0);unit_motion[0]=(AwMotion){0};aw_set_isolation(0);scout_tour=2+branch;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
     focus=(Vector3){(r->x+2*r->step+.5f)*AW_UNIT,aw_y(2),(r->z+2*r->step+.5f)*AW_UNIT};
     zoom=4*r->step*AW_UNIT+22;pitch=.8f;yaw=.75f+r->rotation*1.5707963f;aw_publish();
 }
@@ -272,7 +275,7 @@ AW_EXPORT void aw_inspect_bridge(void){
         if(world.path_length)world.path_cost+=aw_move_cost(&world,world.path[world.path_length-1],n);
         world.path[world.path_length++]=n;
     }
-    aw_sensor_teleport(&sensors,0);aw_set_isolation(0);scout_tour=4;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
+    aw_sensor_teleport(&sensors,0);unit_motion[0]=(AwMotion){0};aw_set_isolation(0);scout_tour=4;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
     focus=aw_bridge_point(b,b->length*.5f,0,0);zoom=b->length*AW_UNIT+16;pitch=.70f;yaw=b->dx?.8f:2.3f;aw_publish();
 }
 
@@ -307,6 +310,8 @@ static void aw_update(void) {
             int n=aw_clamp((int)step,0,p->count-2);
             speed*=10.0f/fmaxf(10,aw_move_cost(&world,p->route[n],p->route[n+1]));
         }
+        AwPatrolPoint a=aw_patrol_position(&world,p,p->progress),b=aw_patrol_position(&world,p,p->progress+.05f);
+        speed*=aw_motion_pace(&unit_motion[i+1],b.x-a.x,b.z-a.z,p->layer);
         p->progress+=dt*speed;
     }
     animation_time+=dt;
@@ -316,7 +321,8 @@ static void aw_update(void) {
         float p=cycle>world.path_length-1?(world.path_length-1)*2-cycle:cycle;
         int i=aw_clamp((int)p,0,world.path_length-2);
         int cost=aw_move_cost(&world,world.path[i],world.path[i+1]);
-        unit_progress+=dt*2.3f*10.0f/fmaxf(10,(float)cost);
+        Vector3 a=aw_scout_position_at(unit_progress,0),b=aw_scout_position_at(unit_progress+.03f,0);
+        unit_progress+=dt*2.3f*10.0f/fmaxf(10,(float)cost)*aw_motion_pace(&unit_motion[0],b.x-a.x,b.z-a.z,0);
     }
     Vector2 mouse=GetMouseDelta();
     if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&IsKeyDown(KEY_LEFT_SHIFT))){
@@ -338,7 +344,7 @@ static void aw_update(void) {
     if(IsKeyPressed(KEY_SPACE))aw_watch();
 #endif
     Vector3 scout=aw_unit_position();
-    if(world.valid&&revealed>=AW_CELLS){aw_sensor_update_poses();aw_sensors_step(&sensors,&world,dt);}
+    if(world.valid&&revealed>=AW_CELLS){aw_sensor_update_poses(dt);aw_sensors_step(&sensors,&world,dt);}
     if(follow_scout)focus=scout;
     camera.target=focus;
     camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*400,focus.y+sinf(pitch)*400,focus.z+cosf(yaw)*cosf(pitch)*400};
@@ -395,7 +401,7 @@ static void aw_update(void) {
                 }
             }
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
-            if(!isolate_tunnels&&patrol_mode!=2)aw_patrol_draw(&world,&patrols,animation_time);
+            if(!isolate_tunnels&&patrol_mode!=2)aw_patrol_draw(&world,&patrols,unit_motion+1,animation_time);
             aw_sensors_draw(&sensors,sensor_selected,sensor_layers,sensor_all,sensor_xray,animation_time,isolate_tunnels,patrol_mode==2);
         }else{
             /* The wire footprint makes the incomplete terrain readable. */
