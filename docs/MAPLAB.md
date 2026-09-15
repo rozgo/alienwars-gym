@@ -226,6 +226,29 @@ The renderer uses a neutral daylight treatment with physically based material
 response (GGX specular, roughness, Fresnel and filmic tone mapping). World-space
 stone grain, weathering, soil variation and wet shore tint continue across tile
 boundaries. Volcanic regions use cooled crust with narrow emissive fissures.
+`detail.h` synthesizes a seamless 512-square RGBA height texture: granular
+soil/pebbles, fractured stone, grass/litter and fine snow crust. A 65-square
+material mask follows the same shared-corner neighborhoods as terrain colors;
+roads use finer aggregate and less relief. Excavated triangles carry a dedicated
+rock material kind so underground floors cannot inherit grass, snow or lava
+from the surface above. This changes materials only, not excavation or navigation.
+
+Two world-space scales of [triplanar sampling](https://developer.nvidia.com/gpugems/gpugems3/part-i-geometry/chapter-1-generating-complex-procedural-terrains-using-gpu)
+keep the detail continuous across tiles, slopes, cliff walls and ceilings.
+The height channels drive low-amplitude albedo variation, roughness and
+[surface-gradient bump shading](https://mmikk.github.io/papers3d/mm_sfgrad_bump.pdf).
+Hardware mipmaps and trilinear filtering soften detail at distant views;
+there is no extra mesh displacement or collision geometry. **Surface detail**
+provides an immediate comparison, also shareable with `detail=0`; toggling it
+refreshes the cached reflection. Texture synthesis is local and adds no download.
+
+An environment color grade preserves linear luminance while reducing chroma
+more strongly for saturated colors: retention ranges from 82% down to 58%.
+It covers terrain, foliage, props, water and environmental fog. Emissive surfaces
+retain 88% at full emission; navigation overlays and separate scout/UI passes
+keep their signal colors. The broad fill, 40% retained shadowed key light and
+baked-occlusion strength are unchanged.
+
 `occlusion.h` bakes static accessibility into opaque vertex alpha at world
 creation. A normal-aware horizon integral samples eight directions and eight
 radii out to 18 world units using the shared terrain height lattice. It shades
@@ -269,8 +292,8 @@ view.
 twigs and two-sided leaves, broadleaf trees and conifers, irregular smooth
 boulders, pebbles, grass tufts, mineral clusters and industrial outposts. These
 use a separate hash stream and do not change WFC, navigation or collision.
-All geometry and materials are authored in C/GLSL; there are no external model,
-texture, CDN or asset-license dependencies.
+All geometry, detail textures and materials are authored in C/GLSL; there are no
+external model, texture, CDN or asset-license dependencies.
 
 The ocean has animated wave normals, Fresnel reflection, deep/shallow color,
 subtle caustics, restrained sun highlights and moving shoreline foam. It samples

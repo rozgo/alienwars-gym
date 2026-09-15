@@ -64,6 +64,15 @@ occlusion_wasm = run(['node','build/occlusion-test.js'])
 assert occlusion_native == occlusion_wasm, 'Native/WASM occlusion fixtures disagree'
 print(occlusion_native)
 
+detail_source = 'tests/alienwars/detail_test.c'
+run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',detail_source,'-lm','-o','build/detail-test'])
+detail_native = run(['build/detail-test'])
+run([emcc,'-std=c11','-O3','-I.',detail_source,'-lm','-o','build/detail-test.js',
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+detail_wasm = run(['node','build/detail-test.js'])
+assert detail_native == detail_wasm, 'Native/WASM detail map fixtures disagree'
+print(detail_native)
+
 manifest = json.loads((PAGES / 'build.json').read_text())
 for name, expected in manifest['artifacts'].items():
     blob = (PAGES / name).read_bytes()
@@ -109,9 +118,10 @@ for seed in [0, 1, 73, 4294967295]:
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
 report = {'generator_version':6,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+          'detail_native':detail_native,'detail_wasm':detail_wasm,
           'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
           'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,
           'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
           'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, closed lakes/ocean boundary, cave clearance, manifold meshing, baked occlusion, deliberate failures, viewer parity, artifacts and JavaScript')
+print('PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, closed lakes/ocean boundary, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')

@@ -5,6 +5,7 @@
 #include "rlgl.h"
 #include "volume.h"
 #include "occlusion.h"
+#include "detail.h"
 #include <math.h>
 
 #define AW_UNIT 2.0f
@@ -20,7 +21,7 @@ typedef struct {
     Mesh terrain, scenery, overlay, ocean_overlay, water, tunnels, tunnel_lights;
     Material land_material, water_material;
     Shader land_shader, water_shader;
-    Texture2D coast;
+    Texture2D coast, detail, surface_mask;
     RenderTexture2D shadow, reflection;
     Shader shadow_shader;
     Material shadow_material;
@@ -30,7 +31,7 @@ typedef struct {
     int reflection_valid;
     int land_view, water_view, render_pass, light_matrix, reflection_matrix;
     int land_reveal, water_time, cut_eye, cut_target, cut_mode, tunnel_view;
-    int ao_enabled, ao_location;
+    int ao_enabled, ao_location, detail_enabled, detail_location;
     int built;
 } AwScene;
 
@@ -180,6 +181,7 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
     if(excavated){
         AwBuilder*t=r->tunnels;aw_reserve(t,3);
         for(int k=r->b->count-3;k<r->b->count;k++){
+            r->b->uv[k].y=12; /* Excavated rock: never inherit surface grass or snow detail. */
             int n=t->count++;t->positions[n]=r->b->positions[k];t->normals[n]=r->b->normals[k];
             t->colors[n]=r->b->colors[k];t->uv[n]=r->b->uv[k];
         }
@@ -192,7 +194,7 @@ static void aw_destroy_scene(AwScene*s){
     UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->ocean_overlay);UnloadMesh(s->water);
     MemFree(s->land_material.maps);MemFree(s->water_material.maps);MemFree(s->shadow_material.maps);
     UnloadRenderTexture(s->shadow);if(s->reflection.id)UnloadRenderTexture(s->reflection);UnloadShader(s->shadow_shader);
-    UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);
+    UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);UnloadTexture(s->detail);UnloadTexture(s->surface_mask);
     memset(s,0,sizeof(*s));
 }
 typedef struct {int first,last;Vector3 base;} AwTreeBake;
@@ -233,6 +235,29 @@ static void aw_set_occlusion(AwScene*s,int enabled){
     if(!s->built||s->ao_enabled==enabled)return;
     s->ao_enabled=enabled;s->reflection_valid=0;
     SetShaderValue(s->land_shader,s->ao_location,&enabled,SHADER_UNIFORM_INT);
+}
+static void aw_set_detail(AwScene*s,int enabled){
+    if(!s->built||s->detail_enabled==enabled)return;
+    s->detail_enabled=enabled;s->reflection_valid=0;
+    SetShaderValue(s->land_shader,s->detail_location,&enabled,SHADER_UNIFORM_INT);
+}
+static void aw_build_detail(AwScene*s,const AwMap*m){
+    enum {RES=512};Image detail=GenImageColor(RES,RES,WHITE);Color*pixels=detail.data;
+    for(int y=0;y<RES;y++)for(int x=0;x<RES;x++){
+        float h[4];aw_detail_sample((x+.5f)/RES,(y+.5f)/RES,h);
+        pixels[y*RES+x]=(Color){(uint8_t)lroundf(h[0]*255),(uint8_t)lroundf(h[1]*255),(uint8_t)lroundf(h[2]*255),(uint8_t)lroundf(h[3]*255)};
+    }
+    s->detail=LoadTextureFromImage(detail);UnloadImage(detail);GenTextureMipmaps(&s->detail);
+    SetTextureFilter(s->detail,TEXTURE_FILTER_TRILINEAR);SetTextureWrap(s->detail,TEXTURE_WRAP_REPEAT);
+    Image mask=GenImageColor(AW_VERT,AW_VERT,BLANK);pixels=mask.data;
+    for(int z=0;z<AW_VERT;z++)for(int x=0;x<AW_VERT;x++){
+        float w[4];aw_detail_weights(m,x,z,w);
+        pixels[z*AW_VERT+x]=(Color){(uint8_t)lroundf(w[0]*255),(uint8_t)lroundf(w[1]*255),(uint8_t)lroundf(w[2]*255),(uint8_t)lroundf(w[3]*255)};
+    }
+    s->surface_mask=LoadTextureFromImage(mask);UnloadImage(mask);
+    SetTextureFilter(s->surface_mask,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->surface_mask,TEXTURE_WRAP_CLAMP);
+    s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->surface_mask;
+    s->land_material.maps[MATERIAL_MAP_ROUGHNESS].texture=s->detail;
 }
 static void aw_build_scene(AwScene*s,const AwMap*m){
     aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},ocean_overlay={0},water={0},tunnels={0},tunnel_lights={0};
@@ -323,6 +348,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->ocean_overlay=aw_upload(&ocean_overlay);s->water=aw_upload(&water);
     s->land_shader=LoadShaderFromMemory(aw_vertex_shader,aw_land_fragment);
     s->water_shader=LoadShaderFromMemory(aw_vertex_shader,aw_water_fragment);
+    s->detail_location=GetShaderLocation(s->land_shader,"detailEnabled");s->detail_enabled=1;
+    SetShaderValue(s->land_shader,s->detail_location,&s->detail_enabled,SHADER_UNIFORM_INT);
     s->ao_location=GetShaderLocation(s->land_shader,"aoEnabled");s->ao_enabled=1;
     SetShaderValue(s->land_shader,s->ao_location,&s->ao_enabled,SHADER_UNIFORM_INT);
     s->land_reveal=GetShaderLocation(s->land_shader,"reveal");s->water_time=GetShaderLocation(s->water_shader,"time");
@@ -332,11 +359,12 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->render_pass=GetShaderLocation(s->land_shader,"renderPass");s->light_matrix=GetShaderLocation(s->land_shader,"lightVP");
     s->reflection_matrix=GetShaderLocation(s->water_shader,"reflectionVP");
     s->land_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->land_shader,"texture0");
+    s->land_shader.locs[SHADER_LOC_MAP_ROUGHNESS]=GetShaderLocation(s->land_shader,"texture2");
     s->land_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->land_shader,"texture1");
     s->water_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->water_shader,"texture0");
     s->water_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->water_shader,"texture1");
     s->shadow_shader=LoadShaderFromMemory(aw_vertex_shader,aw_shadow_fragment);
-    if(s->ao_location<0||s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0||s->light_matrix<0||s->reflection_matrix<0||s->land_view<0||s->water_view<0||s->render_pass<0||s->water_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||s->shadow_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||!IsShaderValid(s->shadow_shader)){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
+    if(s->detail_location<0||s->land_shader.locs[SHADER_LOC_MAP_ROUGHNESS]<0||s->ao_location<0||s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0||s->light_matrix<0||s->reflection_matrix<0||s->land_view<0||s->water_view<0||s->render_pass<0||s->water_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||s->shadow_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||!IsShaderValid(s->shadow_shader)){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
     s->land_material=LoadMaterialDefault();s->land_material.shader=s->land_shader;
     s->water_material=LoadMaterialDefault();s->water_material.shader=s->water_shader;
     s->shadow_material=LoadMaterialDefault();s->shadow_material.shader=s->shadow_shader;
@@ -361,7 +389,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     }
     free(height);free(distance);
     s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);
-    s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->coast;
+    aw_build_detail(s,m);
     s->water_material.maps[MATERIAL_MAP_ALBEDO].texture=s->coast;
     s->shadow=LoadRenderTexture(2048,2048);
     if(!IsRenderTextureValid(s->shadow)){fprintf(stderr,"Shadow framebuffer unavailable\n");exit(2);}

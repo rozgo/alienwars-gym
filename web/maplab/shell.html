@@ -151,6 +151,7 @@
           <label class="toggle" for="tunnel-ceilings">Show tunnel ceilings<input type="checkbox" id="tunnel-ceilings"></label>
           <p class="seed-note">Landscape hidden. Drag to orbit around the full passage network.</p>
         </div>
+        <label class="toggle" for="surface-detail">Surface detail<input type="checkbox" id="surface-detail" checked></label>
         <label class="toggle" for="baked-occlusion">Baked occlusion<input type="checkbox" id="baked-occlusion" checked></label>
         <label class="toggle" for="tile-boundaries">Tile boundaries<input type="checkbox" id="tile-boundaries"></label>
         <label class="toggle" for="ocean-access">Ocean access<input type="checkbox" id="ocean-access"></label>
@@ -200,6 +201,7 @@
     $('tile-boundaries').checked=params.get('tiles')==='1';
     $('isolate-tunnels').checked=params.get('isolate')==='1';
     $('tunnel-ceilings').checked=params.get('ceilings')==='1';
+    $('surface-detail').checked=params.get('detail')!=='0';
     $('baked-occlusion').checked=params.get('ao')!=='0';
     $('path').checked = params.get('path') !== '0';
     $('scout-pause').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -238,6 +240,7 @@
       const url = new URL(location.href);
       url.searchParams.set('seed', String(currentSeed));
       if ($('walkability').checked) url.searchParams.set('grid','1'); else url.searchParams.delete('grid');
+      if (!$('surface-detail').checked) url.searchParams.set('detail','0'); else url.searchParams.delete('detail');
       if (!$('baked-occlusion').checked) url.searchParams.set('ao','0'); else url.searchParams.delete('ao');
       if (!$('path').checked) url.searchParams.set('path','0'); else url.searchParams.delete('path');
       for(const [key,value] of Object.entries({sym:$('symmetry').value,a:$('floor-a').value,b:$('floor-b').value,biome:$('biome').value,tunnels:Number($('tunnels').checked),cut:$('cutaway').value}))url.searchParams.set(key,String(value));
@@ -277,6 +280,7 @@
           Module._aw_option(6,Number($('tile-boundaries').checked));
           Module._aw_option(9,Number($('ocean-access').checked));
           Module._aw_option(10,Number($('baked-occlusion').checked));
+          Module._aw_option(11,Number($('surface-detail').checked));
           Module._aw_option(8,Number($('tunnel-ceilings').checked));
           Module._aw_option(7,Number($('isolate-tunnels').checked));
         });
@@ -341,6 +345,7 @@
       if(!$('floor-a').checkValidity()||!$('floor-b').checkValidity()){$('seed-form').reportValidity();return;}
       loadSeed(currentSeed);
     });
+    $('surface-detail').addEventListener('change',()=>{Module._aw_option(11,Number($('surface-detail').checked));syncUrl();});
     $('baked-occlusion').addEventListener('change',()=>{Module._aw_option(10,Number($('baked-occlusion').checked));syncUrl();});
     $('isolate-tunnels').addEventListener('change',()=>{Module._aw_option(7,Number($('isolate-tunnels').checked));syncIsolation();syncUrl();});
     $('tunnel-ceilings').addEventListener('change',()=>{Module._aw_option(8,Number($('tunnel-ceilings').checked));syncUrl();});

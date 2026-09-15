@@ -21,7 +21,7 @@ static AwScene scene;
 static AwOptions settings={1,6,6,0,1};
 static int cut_mode=1,cut_active=0,follow_scout=0,scout_layer=0,show_tiles=0,scout_tour=0;
 static float scout_floor=1;
-static int baked_occlusion=1;
+static int baked_occlusion=1,surface_detail=1;
 static int isolate_tunnels=0,show_tunnel_ceilings=0;
 static struct {Vector3 focus;float yaw,pitch,zoom;} landscape_camera;
 static Camera3D camera;
@@ -63,7 +63,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
         return;
     }
     generation_ms=(GetTime()-start)*1000;
-    aw_build_scene(&scene,&world);aw_set_occlusion(&scene,baked_occlusion);
+    aw_build_scene(&scene,&world);aw_set_occlusion(&scene,baked_occlusion);aw_set_detail(&scene,surface_detail);
     if(isolate_tunnels)aw_set_isolation(world.cave_count>0);
     revealed=watch?0:AW_CELLS;
     unit_progress=0;paused=0;scout_tour=0;
@@ -86,6 +86,7 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==8)show_tunnel_ceilings=!!value;
     if(option==9)show_ocean=!!value;
     if(option==10){baked_occlusion=!!value;aw_set_occlusion(&scene,baked_occlusion);}
+    if(option==11){surface_detail=!!value;aw_set_detail(&scene,surface_detail);}
     aw_publish();
 }
 
