@@ -1,0 +1,178 @@
+{
+  "milestone": "Softer environment lighting to prioritize units, effects and overlays",
+  "generator_version": 6,
+  "source_commit": "68399dce0ef76ec726552a01d23bd7ec151a4491",
+  "source_dirty": false,
+  "generator_results_unchanged": true,
+  "breakout_artifacts_unchanged": true,
+  "changes": {
+    "ambient_fill": "Broad hemispheric fill with a smaller top-to-bottom range",
+    "directional_light_rgb": [
+      0.48,
+      0.46,
+      0.42
+    ],
+    "shadowed_key_retained": 0.65,
+    "maximum_ambient_occlusion_attenuation": 0.18,
+    "exposure_before_emission": 0.62,
+    "material_detail": "Reduced rock/soil/leaf/bark variation, normal perturbation and wet-surface specular contrast",
+    "water": "Reduced wave-normal amplitude, caustics, sun highlights and shoreline foam intensity",
+    "visual_priority": "Stable unlit navigation overlays; original emissive contribution retained. Scout, markers and UI use unchanged passes."
+  },
+  "checks": {
+    "generator_version": 6,
+    "native": "MAP_TEST version=6 seeds=256 digest=5fcf7320 terrains=12 max_structure=106 geometry_choices=106496 entrance_sites=84 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=6 seeds=256 digest=5fcf7320 terrains=12 max_structure=106 geometry_choices=106496 entrance_sites=84 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "diversity_native": "DIVERSITY sym=0 worlds=24 bases=22 entrances=22 outline_bits_x100=1393 height_q_x100=358 road_change_permille=752 cave_change_permille=969 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=942 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=6 digest=6a26b7d0 PASS",
+    "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=22 entrances=22 outline_bits_x100=1393 height_q_x100=358 road_change_permille=752 cave_change_permille=969 lake_change_permille=950 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1192 height_q_x100=371 road_change_permille=738 cave_change_permille=942 lake_change_permille=939 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=6 digest=6a26b7d0 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "6",
+        "hash": "98a1c112",
+        "walk": "1812",
+        "reached": "1662",
+        "path": "175",
+        "decisions": "2188",
+        "attempts": "14",
+        "structure": "17",
+        "tunnels": "85",
+        "cost": "1941",
+        "shapes": "798",
+        "entrance_ne": "1201",
+        "entrance_sw": "3339",
+        "depth_ne": "-6",
+        "depth_sw": "-8",
+        "lakes": "2",
+        "rooms": "2",
+        "base_a": "774",
+        "base_b": "2990",
+        "landforms": "12",
+        "plans": "1",
+        "ocean": "6067"
+      },
+      {
+        "seed": "1",
+        "version": "6",
+        "hash": "bbf234ef",
+        "walk": "1731",
+        "reached": "1609",
+        "path": "174",
+        "decisions": "2078",
+        "attempts": "8",
+        "structure": "35",
+        "tunnels": "102",
+        "cost": "1906",
+        "shapes": "711",
+        "entrance_ne": "620",
+        "entrance_sw": "2629",
+        "depth_ne": "-10",
+        "depth_sw": "-9",
+        "lakes": "1",
+        "rooms": "4",
+        "base_a": "843",
+        "base_b": "3320",
+        "landforms": "10",
+        "plans": "2",
+        "ocean": "6301"
+      },
+      {
+        "seed": "73",
+        "version": "6",
+        "hash": "8c937a4a",
+        "walk": "1927",
+        "reached": "1803",
+        "path": "159",
+        "decisions": "2105",
+        "attempts": "6",
+        "structure": "24",
+        "tunnels": "82",
+        "cost": "1756",
+        "shapes": "539",
+        "entrance_ne": "1067",
+        "entrance_sw": "3472",
+        "depth_ne": "-4",
+        "depth_sw": "-7",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "775",
+        "base_b": "2745",
+        "landforms": "10",
+        "plans": "1",
+        "ocean": "6230"
+      },
+      {
+        "seed": "4294967295",
+        "version": "6",
+        "hash": "565a0f2d",
+        "walk": "1586",
+        "reached": "1566",
+        "path": "160",
+        "decisions": "1750",
+        "attempts": "4",
+        "structure": "48",
+        "tunnels": "45",
+        "cost": "1833",
+        "shapes": "531",
+        "entrance_ne": "1638",
+        "entrance_sw": "2323",
+        "depth_ne": "-7",
+        "depth_sw": "-10",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "782",
+        "base_b": "2995",
+        "landforms": "12",
+        "plans": "2",
+        "ocean": "6670"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "world": {
+      "seed": 143381177,
+      "symmetry": 1,
+      "floors": [
+        6,
+        6
+      ],
+      "biome": 1,
+      "tunnels": 1,
+      "hash": "71d38cff"
+    },
+    "verified": [
+      "Overview compared with previous release",
+      "Cliff and tree shadows in the entrance close-up",
+      "Scout and route contrast",
+      "Auto cutaway, horizontal section and opaque terrain",
+      "Tunnel isolation with and without ceilings",
+      "Surface and ocean navigation overlays",
+      "No warn/error console entries"
+    ],
+    "settled_fps_observed": 60,
+    "performance_scope": "UI observation, not a sustained benchmark. Rebuild and camera changes can temporarily reduce frame rate."
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 28043,
+      "sha256": "127e7e1a005fb22373dc763a1216e1533334cedf6b65f47ec6ae7edc13ef787a"
+    },
+    "maplab.js": {
+      "bytes": 231822,
+      "sha256": "3f918faa0e11f17d36809766af6c2d8765ec6b4120971655cfebd24ff635f643"
+    },
+    "maplab.wasm": {
+      "bytes": 279478,
+      "sha256": "bd4c2bf6b407afe01f1abb93f291ec3a2cd06be59ea23ef61ed989ab1ded7910"
+    }
+  },
+  "limitations": [
+    "No new unit/effect simulation; this is an environment rendering adjustment.",
+    "Visual review used the development desktop; mobile performance was not measured."
+  ]
+}
