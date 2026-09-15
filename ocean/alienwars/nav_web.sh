@@ -1,5 +1,6 @@
 # Sourced by build.sh alienwars --web --rl. Explicit policy; no fallback weights.
 mkdir -p build/web/alienwars-nav
+cp web/navigation/theme.css build/web/alienwars-nav/theme.css
 NAV_PRELOAD=(--preload-file config/default.ini@config/default.ini
              --preload-file config/alienwars.ini@config/alienwars.ini)
 if [ -n "${AW_NAV_MODEL:-}" ]; then

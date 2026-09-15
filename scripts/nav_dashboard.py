@@ -50,11 +50,11 @@ class Dashboard(SimpleHTTPRequestHandler):
                 return self.send_json({'records':[r for r in records if r.get('type')!='metrics']+plotted,
                                        'modified':path.stat().st_mtime,'samples':len(metrics),'errors':errors})
             results=[]
-            for path in sorted(self.evaluations.glob('*.jsonl')):
+            for path in sorted(self.evaluations.rglob('*.jsonl')):
                 records, errors=read_records(path)
                 summaries=[r for r in records if r.get('type')=='summary']
                 if summaries:
-                    results.append({'name':path.name,'metadata':next((r for r in records if r.get('type')=='evaluation'),{}),
+                    results.append({'name':str(path.relative_to(self.evaluations)),'metadata':next((r for r in records if r.get('type')=='evaluation'),{}),
                                     'summary':summaries[-1],'errors':errors})
             return self.send_json(results)
         if parsed.path.startswith('/viewer/'):

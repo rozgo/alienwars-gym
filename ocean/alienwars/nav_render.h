@@ -14,10 +14,37 @@ typedef struct {
 static AwNavView nav_view;
 #ifdef PLATFORM_WEB
 #include <emscripten.h>
+EM_JS(void,aw_nav_js_status,(const char *json),{window.awNavStatus?.(UTF8ToString(json));});
+EM_JS(void,aw_nav_js_ready,(void),{window.awNavReady?.();});
 EMSCRIPTEN_KEEPALIVE void aw_nav_orbit(float dx,float dy){
     nav_view.yaw-=dx*.005f;nav_view.pitch=Clamp(nav_view.pitch+dy*.004f,.25f,1.45f);
 }
 EMSCRIPTEN_KEEPALIVE void aw_nav_zoom(float delta){aw_zoom_push(&nav_view.zoom,delta);}
+EMSCRIPTEN_KEEPALIVE void aw_nav_resize(int width,int height){
+    if(IsWindowReady()&&width>=240&&height>=200&&width<=3840&&height<=2400)SetWindowSize(width,height);
+}
+EMSCRIPTEN_KEEPALIVE void aw_nav_option(int key,int value){
+    if(key==0)nav_view.paused=!!value;
+    if(key==1)nav_view.reset=1;
+    if(key==2)nav_view.heat=!!value;
+    if(key==3)nav_view.walk=!!value;
+    if(key==4)nav_view.sensors=!!value;
+    if(key==5)nav_view.reference=!!value;
+    if(key==6)nav_view.cut=!!value;
+    if(key==7)nav_view.follow=!!value;
+}
+static void aw_nav_web_publish(const AwNav *nav){
+    const AwNavEpisode *e=&nav->episode;const AwNavView *v=&nav_view;
+    char json[4096];int n=snprintf(json,sizeof(json),
+        "{\"seed\":%u,\"hash\":\"%08x\",\"kind\":%d,\"ticks\":%d,\"limit\":%d,\"distance\":%.3f,\"reward\":%.5f,\"return\":%.4f,\"progress\":%.5f,\"event\":%.1f,\"contacts\":%d,\"invalid\":%d,\"episodes\":%u,\"successes\":%u,\"last\":%d,\"value\":%.4f,\"mode\":%d,\"throttle\":%d,\"steer\":%d,\"flags\":[%d,0,%d,%d,%d,%d,%d,%d],\"probabilities\":[",
+        e->world->map.seed,e->world->map.hash,e->task->kind,e->ticks,e->limit,e->distance,e->reward,e->total_reward,e->progress_reward,e->event_reward,e->contacts,e->invalid_actions,nav->episodes,nav->successes,nav->last.success?1:nav->last.fall?2:3,nav->value,nav->controller,e->throttle,e->steer,v->paused,v->heat,v->walk,v->sensors,v->reference,v->cut,v->follow);
+    for(int j=0;j<6;j++)n+=snprintf(json+n,sizeof(json)-n,"%s%.5f",j?",":"",nav->probabilities[j]);
+    n+=snprintf(json+n,sizeof(json)-n,"],\"depth\":[");
+    const AwSensorReading *depth=&e->sensors.units[0].reading[AW_SENSOR_CAMERA];
+    for(int j=0;j<48;j++)n+=snprintf(json+n,sizeof(json)-n,"%s%.4f",j?",":"",depth->valid?depth->beams[j].hit.distance/36:1);
+    snprintf(json+n,sizeof(json)-n,"]}");
+    aw_nav_js_status(json);
+}
 #endif
 static void aw_nav_manual(float actions[2]){
     actions[0]=1;actions[1]=1;if(!IsWindowReady())return;
@@ -40,6 +67,11 @@ void aw_nav_render(AwNav *nav){
         InitWindow(1440,900,"AlienWars | Navigation Training");SetTargetFPS(60);
         v->yaw=.75f;v->pitch=.95f;v->cut=1;v->follow=1;v->sensors=1;v->reference=0;
         aw_zoom_reset(&v->zoom,48);
+#ifdef PLATFORM_WEB
+        int *default_locs=rlGetShaderLocsDefault();
+        if(default_locs[SHADER_LOC_VERTEX_NORMAL]<0)default_locs[SHADER_LOC_VERTEX_NORMAL]=RL_DEFAULT_SHADER_ATTRIB_LOCATION_NORMAL;
+        aw_nav_js_ready();
+#endif
     }
     if(v->world!=e->world){aw_build_scene(&v->scene,&e->world->map);v->world=e->world;}
     if(IsKeyPressed(KEY_SPACE))v->paused=!v->paused;
@@ -93,6 +125,7 @@ void aw_nav_render(AwNav *nav){
     DrawCube((Vector3){0,.43f,.44f},.4f,.10f,.02f,RAYWHITE);rlPopMatrix();
     if(v->sensors)aw_sensors_draw(&e->sensors,0,1|8,0,1,(float)GetTime(),0,0);
     EndMode3D();
+#ifndef PLATFORM_WEB
     int x=GetScreenWidth()-330;DrawRectangle(x,0,330,GetScreenHeight(),(Color){26,29,31,248});x+=18;
     DrawText("ALIENWARS / NAVIGATION",x,20,18,RAYWHITE);
     const char *mode=nav->controller==0?"POLICY":nav->controller==1?"RANDOM BASELINE":nav->controller==2?"GREEDY BASELINE":nav->controller==3?"GRAPH REFERENCE":"MANUAL";
@@ -131,6 +164,11 @@ void aw_nav_render(AwNav *nav){
     DrawText("Goal uses ideal localization.",x,750,14,GRAY);
     DrawText("Heatmap / reference are diagnostics.",x,772,14,GRAY);
     DrawText(v->paused?"PAUSED":"10 Hz policy / 30 Hz simulation",18,20,18,v->paused?ORANGE:RAYWHITE);
+#endif
     EndDrawing();
+#ifdef PLATFORM_WEB
+    static double last_report;
+    if(GetTime()-last_report>.1){aw_nav_web_publish(nav);last_report=GetTime();}
+#endif
 }
 #endif

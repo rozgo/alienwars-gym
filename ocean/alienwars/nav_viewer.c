@@ -5,15 +5,17 @@
 #include "src/live_log.h"
 static int align8(int n){return (n+7)&~7;}
 int main(int argc,char **argv){
-    const char *model=NULL;int headless=0,episodes=0;
+    const char *model=NULL;int headless=0,episodes=0,argmax=0;
     char *overrides[argc];int count=0;
     for(int i=1;i<argc;i++){
         if(!strcmp(argv[i],"--headless")){headless=1;continue;}
+        if(!strcmp(argv[i],"--argmax")){argmax=1;continue;}
         if(!strncmp(argv[i],"--episodes=",11)){episodes=atoi(argv[i]+11);continue;}
         if(argv[i][0]!='-'&&strstr(argv[i],".bin")){model=argv[i];continue;}
         overrides[count++]=argv[i];
     }
     Ini ini={0};puf_ini_load_env(&ini,"alienwars",count,overrides);
+    unsigned sampling_seed=(unsigned)puf_ini_get(&ini,"base","seed");srand(sampling_seed);
     Dict *settings=puf_ini_section(&ini,"env",0);
     int mode=(int)dict_get(settings,"controller");
     if(mode==0&&!model){fprintf(stderr,"Policy mode requires an explicit .bin checkpoint. Use --env.controller=4 for manual, 1 random, 2 greedy, or 3 reference.\n");return 2;}
@@ -37,7 +39,7 @@ int main(int argc,char **argv){
     const char *label=model?model:mode==1?"random":mode==2?"greedy":mode==3?"graph reference":"manual";
     aw_nav_prediction(env.nav,0,NULL,label);
     fputs("{\"type\":\"evaluation\",\"controller\":",stdout);puf_json_string(stdout,label);
-    printf(",\"hidden\":%d,\"layers\":%d,\"episode_seed\":%.0f,\"map_seed\":%.0f,\"maps\":%.0f}\n",hidden,layers,dict_get(settings,"episode_seed"),dict_get(settings,"map_seed"),dict_get(settings,"maps"));
+    printf(",\"hidden\":%d,\"layers\":%d,\"sampling_seed\":%u,\"argmax\":%d,\"episode_seed\":%.0f,\"map_seed\":%.0f,\"maps\":%.0f}\n",hidden,layers,sampling_seed,argmax,dict_get(settings,"episode_seed"),dict_get(settings,"map_seed"),dict_get(settings,"maps"));
     int completed=0,wins[3]={0},totals[3]={0};long steps=0;double accumulator=0,hold=0;
     while(!episodes||completed<episodes){
         if(!headless){
@@ -52,6 +54,7 @@ int main(int argc,char **argv){
         }
         if(net){
             forward_puffernet(net,observations,actions,NULL,&terminal);
+            if(argmax)multidiscrete(net->multidiscrete,net->decoder->output,actions,1,NULL);
             for(int j=0;j<7;j++)if(!isfinite(net->decoder->output[j])){fprintf(stderr,"Nonfinite policy output\n");return 3;}
             aw_nav_prediction(env.nav,net->decoder->output[6],net->decoder->output,label);
         }

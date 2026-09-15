@@ -17,16 +17,18 @@ terrain. Bridges cross suitable water gaps without changing the landscape.
 Three ground, three naval and three air unit types patrol the world using
 body clearance, water depth and terrain-aware flight routes. Tunnel isolation
 and automatic cutaways expose the underground structure. These are scripted
-patrols; combat and AlienWars policy training remain future work.
+patrols. A separate experimental navigation task trains one action-driven scout
+with native PufferLib; combat remains future work.
 
 Units now carry ideal odometry and attachable LiDAR, sonar, RF and depth-camera
 modules. Toggle their range overlays, inspect cached returns through terrain
 and water, or view the small live depth image. Sensing runs in shared C without
-rendering, with fixed observation buffers for the future RL environment.
+rendering, with fixed observation buffers used by the navigation RL task.
 
 - [Agent instructions](AGENTS.md)
 - [Map Lab specification and validation](docs/MAPLAB.md)
 - [Sensor architecture, observations and benchmarks](docs/SENSORS.md)
+- [Navigation RL contract, training statistics and policy viewer](docs/NAVIGATION_RL.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Raylib web build and GitHub Pages](docs/WEB.md)
 - [Demo recording and editing](scripts/demo/README.md)
@@ -60,12 +62,27 @@ python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 Open <http://127.0.0.1:8781/>. The checker covers native/WASM generation parity,
 navigation, terrain and tunnel meshes, world variety, and patrol clearance.
 
-## Toward reinforcement learning
+## Navigation reinforcement learning
 
-Generation, collision and navigation share a renderer-independent C model.
-Define observations, legal actions, rewards, episode boundaries and success
-criteria before adding an AlienWars training environment. The native interface
-lives in `src/pufferenv.h`, with `ocean/minimal/minimal.h` as a reference.
+Generation, collision, navigation, sensors and action-driven scout motion share
+a renderer-independent C model. `ocean/alienwars/alienwars.h` adapts it to the
+native `src/pufferenv.h` interface. The navigation task has two action heads,
+621 observation floats, arrival/contact/failure rewards and explicit episodes.
+
+```sh
+python3 scripts/check_navigation.py
+./build.sh alienwars build/nav-viewer --cpu --rl
+./build/nav-viewer --env.controller=4 --env.maps=1  # manual control
+python3 scripts/nav_dashboard.py                 # live training JSONL charts
+# NVIDIA machine, from this checkout:
+CUDA_HOME=/usr/local/cuda ./build.sh alienwars build/puffer-alienwars
+./build/puffer-alienwars train --base.run_id=nav-pilot-unique
+```
+
+The policy viewer shows sensor returns, goals, trails, reward distances, reference
+routes, action probabilities and value estimates. The default `--cpu` and `--web`
+paths still open Map Lab; add `--rl` for Navigation Lab. See the
+[navigation guide](docs/NAVIGATION_RL.md) for checkpoint playback and evaluation.
 
 Training requires NVIDIA CUDA hardware. Browser simulation runs locally in
 WASM; the project does not use the older Python/Gymnasium training path.

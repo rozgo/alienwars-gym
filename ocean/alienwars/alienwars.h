@@ -32,6 +32,9 @@ void puf_init(Env *env,Dict *kwargs) {
     config.kind=(int)aw_env_option(kwargs,"task_kind",-1);
     config.limit=(int)aw_env_option(kwargs,"episode_steps",600);
     config.controller=(int)aw_env_option(kwargs,"controller",0);
+#ifdef PUFFERLIB_BUILD_MAIN
+    if(config.controller){fprintf(stderr,"Native training requires policy actions (env.controller=0). Baselines belong in the --cpu --rl viewer.\n");exit(2);}
+#endif
     env->nav=aw_nav_create(config,env->rng);
     if(!env->nav){fprintf(stderr,"AlienWars navigation bank could not satisfy task settings\n");exit(2);}
 }

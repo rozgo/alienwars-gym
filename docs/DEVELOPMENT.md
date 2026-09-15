@@ -2,8 +2,9 @@
 
 ## Native development
 
-Map Lab is a standalone C terrain and navigation viewer. It does not yet expose
-an AlienWars reinforcement-learning environment or trained policy.
+Map Lab is the standalone C terrain and scripted-traffic viewer. Navigation Lab
+adds a native PufferLib scout task using the same terrain, support and sensors.
+Its contract and commands are in [NAVIGATION_RL.md](NAVIGATION_RL.md).
 
 macOS uses Apple Clang, the Xcode command-line tools, Homebrew and `libomp`:
 
@@ -21,12 +22,12 @@ native/WASM terrain and navigation checks. See [MAPLAB.md](MAPLAB.md) and
 [WEB.md](WEB.md) for browser validation and publishing.
 
 The native environment interface is `src/pufferenv.h`; `ocean/minimal/minimal.h`
-provides a reference. Specify observations, actions, rewards, resets, terminal
-conditions and evaluation criteria before implementing AlienWars training.
+provides a reference. Run `python3 scripts/check_navigation.py` for action motion,
+terminal/reset contracts, recurrent-state reset and native/WASM route outcomes.
 
 ## GPU prerequisites
 
-Future native training requires a CUDA development toolkit, including `nvcc`,
+Native training requires a CUDA development toolkit, including `nvcc`,
 cuBLAS, cuSOLVER and cuRAND; an NVIDIA driver; NCCL; Clang, ccache, OpenMP,
 a C/C++ host compiler and graphics development libraries. Python tooling here
 uses the standard library, not a Python ML stack.
@@ -46,7 +47,8 @@ nvidia-smi
 For supported upstream environments, `--cu` selects a CUDA simulation backend.
 Native training without `--cu` still uses CUDA learning kernels with a CPU
 environment. `--cpu` builds playback/evaluation, not CPU training. Map Lab has
-its own standalone viewer path. Do not assume it is already a training target.
+its own standalone viewer path. For AlienWars, default native builds train the
+navigation task; `--cpu --rl` and `--web --rl` select its policy viewer.
 
 ## Remote access and source synchronization
 
@@ -68,7 +70,7 @@ Use a committed, clean source revision and an isolated directory. Do not change
 source beneath a running job or stop unrelated GPU processes. Builds share
 intermediate files, so concurrent experiments need separate worktrees.
 
-## Reproducible training when an environment is ready
+## Reproducible training
 
 Start with validated CPU environment behavior and a bounded single-GPU run.
 Record the source revision, compiler/toolkit and GPU versions, backend,

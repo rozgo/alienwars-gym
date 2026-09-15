@@ -1,6 +1,7 @@
 #include "nav_api.h"
 #include "nav_core.h"
 #include <time.h>
+_Static_assert(AW_NAV_INPUTS==AW_NAV_OBS,"Native adapter observation metadata must match the shared task");
 typedef struct AwNavBank {
     AwNavConfig config;
     int refs,choices,world_index[32*AW_NAV_TASKS],task_index[32*AW_NAV_TASKS];

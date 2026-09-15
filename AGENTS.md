@@ -6,7 +6,9 @@ This is a source-based PufferLib 5.0 project. Start with `README.md`,
 `docs/DEVELOPMENT.md`, and `docs/UPSTREAM.md`. Check `git status` before edits and
 preserve unrelated work. Follow explicit user instructions over this guide.
 AlienWars has a procedural 3D Map Lab with scripted ground, naval and air
-patrols; combat and an AlienWars policy are not implemented. Do not describe
+patrols; the separate navigation MVP trains a small scout through the native
+PufferLib interface. Combat is not implemented. See `docs/NAVIGATION_RL.md`.
+Do not describe
 scripted patrols as trained policies. The Breakout bootstrap experiment was
 retired on September 15, 2026; do not restore its demo or project tooling.
 

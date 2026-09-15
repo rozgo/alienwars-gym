@@ -48,7 +48,8 @@ must run the same action-driven simulation. Map Lab remains the world inspector.
 
 ## Evidence required
 
-Contract and failure tests with ASan/UBSan; deterministic native/WASM traces;
+Contract and failure tests with ASan/UBSan; deterministic repeated native traces
+and matching native/WASM task outcomes (small libm steering drift is allowed);
 headless timing excluding bank generation; finite rollout/training metrics;
 held-out success, contacts, support failures, timeout and episode duration by
 task category; random and goal-seeking baselines; checkpoint/config hashes;
@@ -58,3 +59,110 @@ future release target, not a claim made by completing a training run.
 Training visualization must show real samples and identify the run, backend,
 checkpoint and evaluated seed set. Untrained/manual/baseline modes must be named.
 Additional training seeds are required before claims of robustness.
+
+## Build and inspect
+
+Run from the repository root. The default Map Lab builds remain available.
+
+```sh
+python3 scripts/check_navigation.py
+./build.sh alienwars build/nav-viewer --cpu --rl
+./build/nav-viewer --env.controller=4 --env.maps=1 --env.map_seed=72
+# Explicit diagnostic controller, using the same collision/motion:
+./build/nav-viewer --env.controller=3 --env.maps=1 --env.map_seed=72 --env.task_kind=1
+```
+
+WASD or arrows control a manual scout. Space pauses, N starts another episode,
+H toggles reward distance, G walkable terrain, L sensor rays, R the privileged
+reference route, C cutaway, and F camera following. Drag to orbit and scroll to
+zoom. The browser also exposes these options as Map Lab-style controls.
+
+World generation uses the existing defaults with `symmetry=0`; map seeds are
+consecutive from `env.map_seed`. Each map contributes up to 48 cached tasks.
+Mixed episodes sample uniformly from the available tasks, so the distribution
+is **not balanced by terrain category**. A feature-specific bank fails at startup
+if none of its maps supplies that feature; it does not alter the terrain.
+
+## Native GPU training and live statistics
+
+```sh
+CUDA_HOME=/usr/local/cuda ./build.sh alienwars build/puffer-alienwars
+./build/puffer-alienwars train \
+  --base.run_id=nav-surface-unique \
+  --base.checkpoint_dir=outputs/navigation/checkpoints \
+  --env.task_kind=0 --env.maps=8 \
+  --train.total_timesteps=8388608 --train.learning_rate=0.015 \
+  --train.min_lr_ratio=0.2 --train.ent_coef=0.001
+python3 scripts/nav_dashboard.py --port=8767
+```
+
+Open `http://127.0.0.1:8767`. The dashboard reads actual streamed
+`logs/alienwars/RUN.jsonl` records, refreshes every two seconds, and shows missing
+metrics as missing. It plots arrival/outcome rates, contacts, PPO losses,
+entropy, KL/clipping, SPS and whole-device GPU load. Early arrival rates only
+include episodes that have already ended; wait for timeout episodes before
+interpreting them. The existing final `.ini` logs still work with PufferLib's
+Constellation dashboard. `.config.ini` records the resolved starting settings.
+
+On a GPU machine, serve the dashboard there and forward its loopback port through
+the user's SSH alias. Alternatively, copy the JSONL/config files to the local
+checkout's `logs/alienwars/`. The browser does not connect directly to SSH.
+
+The CPU world is shared across vector environments; map construction, ray bounds,
+small-body graph validation and per-goal distance fields run once at startup.
+CUDA handles the native PufferNet/PPO learner. Rollout throughput is not CUDA
+environment throughput, and it excludes map-bank preparation. Training requires
+`env.controller=0`; scripted baselines are restricted to the separate viewer.
+Keep `train.gamma=0.99` to match the task's potential shaping contract.
+
+## Evaluate and view a checkpoint
+
+Supply the exact file and its matching architecture; no `latest` or untrained
+fallback is used. Flat weights are not optimizer-resume snapshots.
+
+```sh
+./build/nav-viewer outputs/navigation/checkpoints/selected.bin \
+  --env.maps=1 --env.map_seed=10001 --env.episode_seed=9001 --base.seed=9002
+python3 scripts/eval_navigation.py \
+  --model outputs/navigation/checkpoints/selected.bin \
+  --output outputs/navigation/evaluations/unique-run \
+  --map-seed=10001 --maps=8 --episode-seed=9001 --sampling-seed=9002 \
+  --episodes=64 --reference
+```
+
+The evaluator runs policy, random and direct-goal controllers on identical
+episode lists for each terrain category. Optional reference results use the
+privileged graph and must not be mistaken for a learned controller. It records
+per-episode world hashes, start/goal IDs, outcomes, contacts, steps and aggregate
+results with checkpoint/artifact hashes. The dashboard includes completed
+evaluations beneath `outputs/navigation/evaluations/`.
+
+Policy actions are sampled from PufferNet's categorical heads by default.
+`--argmax` explicitly selects deterministic maximum-logit actions. CPU `rand()`
+is seeded by `base.seed`; its sequence may differ between C libraries. Episode
+selection has a separate portable per-environment RNG. Evaluation map seeds,
+episode seeds and sampling seeds must be disclosed, and validation/selection
+maps must remain separate from final evaluation maps.
+
+For browser policy playback:
+
+```sh
+source .local/emsdk/emsdk_env.sh
+AW_NAV_MODEL=outputs/navigation/checkpoints/selected.bin \
+  ./build.sh alienwars --web --rl
+python3 scripts/nav_dashboard.py --port=8767
+```
+
+Open `/viewer/?seed=10001&kind=-1&episode_seed=9001&sampling_seed=9002` on that
+server. `kind=-1/0/1/2` selects mixed/surface/bridge/tunnel tasks;
+`controller=0/1/2/3/4` selects checkpoint/random/greedy/reference/manual;
+`argmax=1` selects maximum-logit inference. Checkboxes preserve overlay settings
+in the URL. Missing feature cohorts or invalid checkpoints fail visibly.
+Without `AW_NAV_MODEL`, the web build identifies itself as manual; it does not
+pretend to contain a policy. `AW_NAV_HIDDEN` and `AW_NAV_LAYERS` must match any
+nondefault model architecture. `manifest.json` identifies source and model hashes.
+
+The action loop and cached sensor readings are independent of overlay visibility.
+The web sidebar uses Map Lab's font stack, palette, borders and controls. The
+policy receives sensors and a localized goal; proving that it relies on a
+particular sensor requires a separate ablation study.
