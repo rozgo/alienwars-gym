@@ -13,11 +13,40 @@ int main(int argc,char**argv){
             fprintf(stderr,"FAIL seed=%u sym=%d a=%d b=%d biome=%d tunnels=%d resolved=%d reached=%d\n",seed,o.symmetry,o.floors_a,o.floors_b,o.biome,o.tunnels,map.order_count,map.reached_count);return 1;
         }
         assert(aw_generate_options(&repeat,seed,o));assert(map.hash==repeat.hash);assert(!memcmp(map.cells,repeat.cells,sizeof(map.cells)));
+        assert(map.lake_count>=1&&map.lake_count<=AW_LAKES&&aw_lakes_valid(&map));
+        assert(map.lake_count==repeat.lake_count&&!memcmp(map.lakes,repeat.lakes,sizeof(map.lakes)));
+        for(int l=0;l<map.lake_count;l++){
+            AwLake*a=&map.lakes[l];assert(aw_height_q(&map,a->x,a->z)<1.44f);
+            assert(!map.ocean_connected[(a->z+AW_OCEAN_BELT)*AW_OCEAN_SIZE+a->x+AW_OCEAN_BELT]);
+            if(o.symmetry){int partner=0;for(int j=0;j<map.lake_count;j++){AwLake*b=&map.lakes[j];partner|=a->x+b->x==64&&a->z+b->z==64&&a->rx==b->rx&&a->rz==b->rz;}assert(partner);}
+        }
+        assert(map.ocean_count>=AW_OCEAN_CELLS-AW_CELLS);
+        assert(!memcmp(map.ocean_depth,repeat.ocean_depth,sizeof(map.ocean_depth)));
+        int ocean_count=0;
+        for(int c=0;c<AW_OCEAN_CELLS;c++){
+            ocean_count+=map.ocean_connected[c];
+            if(map.ocean_connected[c])assert(map.ocean_depth[c]>=100);
+            if(o.symmetry){assert(map.ocean_connected[c]==map.ocean_connected[AW_OCEAN_CELLS-1-c]);assert(map.ocean_depth[c]==map.ocean_depth[AW_OCEAN_CELLS-1-c]);}
+        }
+        assert(ocean_count==map.ocean_count);
+        if(i%16==0){
+            int route[AW_OCEAN_CELLS],length=aw_ocean_path(&map,0,AW_OCEAN_CELLS-1,600,route,AW_OCEAN_CELLS);
+            assert(length>=AW_OCEAN_SIZE&&route[0]==0&&route[length-1]==AW_OCEAN_CELLS-1);
+            for(int j=1;j<length;j++){assert(map.ocean_depth[route[j]]>=600);int adjacent=0;for(int d=0;d<4;d++)adjacent|=aw_ocean_neighbor(route[j-1],d)==route[j];assert(adjacent);}
+            assert(!aw_ocean_path(&map,0,AW_OCEAN_CELLS-1,1400,route,AW_OCEAN_CELLS));
+            assert(!aw_ocean_path(&map,-1,0,100,route,AW_OCEAN_CELLS));
+            assert(!aw_ocean_path(&map,0,AW_OCEAN_CELLS-1,100,route,1));
+        }
         assert(map.order_count==AW_CELLS&&map.decisions>0);assert(!memcmp(map.order,repeat.order,sizeof(map.order)));
         geometry_choices+=map.shape_decisions;
         int seen[AW_CELLS]={0};for(int c=0;c<AW_CELLS;c++){
             assert(map.order[c]>=0&&map.order[c]<AW_CELLS&&!seen[map.order[c]]++);
             AwCell*a=&map.cells[c];terrain_seen|=1<<a->material;
+            for(int k=0;k<4;k++){
+                int v=aw_corner_vertex(c,k),x=v%65,z=v/65;
+                if(x<=AW_OCEAN_MARGIN||z<=AW_OCEAN_MARGIN||x>=64-AW_OCEAN_MARGIN||z>=64-AW_OCEAN_MARGIN)assert(a->q[k]==0);
+                if(a->road)assert(!map.lake_mask[v]);
+            }
             if(o.symmetry){AwCell*b=&map.cells[AW_CELLS-1-c];assert(a->material==b->material&&a->road==b->road&&a->tunnel==b->tunnel&&a->portal==b->portal);for(int k=0;k<4;k++)assert(a->q[k]==b->q[(k+2)%4]);}
             for(int d=0;d<4;d++){
                 int next=aw_neighbor(c,d);if(next<0)continue;
@@ -36,10 +65,14 @@ int main(int argc,char**argv){
 
         }
         if(o.tunnels){
+            assert(map.cave_room_count==0||map.cave_room_count==2);
+            for(int r=0;r<map.cave_room_count;r++){
+                int n=map.cave_rooms[r];assert(n>=0&&n<map.cave_count&&map.cave[n].q<0&&map.cave[n].profile==2);
+            }
             int a=map.cave_entrances[0],b=map.cave_entrances[1];
             assert(a>=0&&b>=0&&a!=b);
             AwCaveNode*pa=&map.cave[a],*pb=&map.cave[b];
-            assert(pa->x>=38&&pa->z<=29&&pb->x<=25&&pb->z>=34);
+            assert(pa->x>=35&&pa->z<=29&&pb->x<=28&&pb->z>=34);
             assert(aw_abs(pa->x-pb->x)+aw_abs(pa->z-pb->z)>=20);
             layouts+=!entrance_seen[pa->portal]++;depth_seen|=1<<(-map.cave[map.cave_hubs[0]].q);
             uint8_t surface[AW_CELLS];memcpy(surface,map.walkable,AW_CELLS);memset(map.walkable,0,AW_CELLS);
@@ -80,6 +113,16 @@ int main(int argc,char**argv){
     assert(aw_occluded(&map,x,60,z,x,q+1,z));
     for(int i=0;i<map.cave_edge_count;i++)ramps+=map.cave[map.cave_edges[i].a].q!=map.cave[map.cave_edges[i].b].q;
     assert(ramps>=20);
+    /* Lake interiors must remain enclosed; ocean sockets must survive even
+     * when all copies of an edge vertex are edited consistently. */
+    repeat=map;map.lakes[0].x=4;map.lakes[0].z=4;
+    for(int c=0;c<AW_CELLS;c++)for(int k=0;k<4;k++){
+        int v=aw_corner_vertex(c,k);if(v/65==4&&v%65<=4)map.cells[c].q[k]=0;
+    }
+    assert(!aw_lakes_valid(&map));map=repeat;
+    for(int c=0;c<AW_CELLS;c++)for(int k=0;k<4;k++)if(aw_corner_vertex(c,k)==65)map.cells[c].q[k]=4;
+    assert(!aw_validate(&map));map=repeat;
+    map.cave_room_count=2;map.cave_rooms[0]=AW_CAVE_NODES;assert(!aw_validate(&map));map=repeat;
     /* No malformed ID may reach a palette or movement-cost lookup. */
     map.cells[0].material=255;assert(!aw_validate(&map));assert(aw_generate(&map,73));
     /* Missing entrance references and disconnected graph edges fail. */

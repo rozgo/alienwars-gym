@@ -63,6 +63,12 @@ static int aw_cave_route(AwMap*m,int sx,int sz,int sq,int gx,int gz,int gq,int m
             float h=aw_surface_q(m,nc,0.5f,0.5f);
             int near=aw_abs(nx-sx)+aw_abs(nz-sz);
             if(h<4 || (nq+6>h && near>8))continue;
+            int wet=0;
+            for(int l=0;l<m->lake_count;l++){
+                const AwLake*lake=&m->lakes[l];int dx=2*nx+1-2*lake->x,dz=2*nz+1-2*lake->z,rx=2*(lake->rx+2),rz=2*(lake->rz+2);
+                if(dx*dx*rz*rz+dz*dz*rx*rx<=rx*rx*rz*rz)wet=1;
+            }
+            if(wet)continue;
             if((m->cells[nc].road||m->cave_access[nc])&&nq<h&&nq+6>h)continue;
             int separated=1;
             for(int j=0;j<m->cave_count;j++){
@@ -202,7 +208,11 @@ static float aw_support_q(const AwMap*m,float x,float z,float hint){
  * only at declared entrances; stacked crossings do not gain phantom links. */
 static int aw_cave_validate(const AwMap*m){
     if(m->cave_count<0||m->cave_count>AW_CAVE_NODES||m->cave_edge_count<0||m->cave_edge_count>AW_CAVE_EDGES)return 0;
-    if(!m->options.tunnels)return m->cave_count==0&&m->cave_edge_count==0;
+    if(!m->options.tunnels)return m->cave_count==0&&m->cave_edge_count==0&&m->cave_room_count==0;
+    if(m->cave_room_count!=0&&m->cave_room_count!=2)return 0;
+    for(int i=0;i<m->cave_room_count;i++){
+        int r=m->cave_rooms[i];if(r<0||r>=m->cave_count||m->cave[r].profile!=2||m->cave[r].q>=0)return 0;
+    }
     int portals=0;
     for(int i=0;i<m->cave_count;i++){
         const AwCaveNode*n=&m->cave[i];
@@ -222,7 +232,7 @@ static int aw_cave_validate(const AwMap*m){
         if(p<0||p>=m->cave_count||h<0||h>=m->cave_count)return 0;
         const AwCaveNode*n=&m->cave[p],*hub=&m->cave[h];
         int x=side?63-n->x:n->x,z=side?63-n->z:n->z;
-        if(n->portal<0||n->q!=4||x<38||x>57||z<12||z>29||hub->q>=0||hub->profile!=2)return 0;
+        if(n->portal<0||n->q!=4||x<35||x>58||z<5||z>29||hub->q>=0||hub->profile!=2)return 0;
     }
     uint8_t seen[AW_CAVE_NODES]={0};int queue[AW_CAVE_NODES],head=0,tail=0;
     queue[tail++]=m->cave_entrances[0];seen[queue[0]]=1;
@@ -254,9 +264,10 @@ static int aw_cave_validate(const AwMap*m){
  * and a seeded preference. Retry ranks explore alternatives on the same world. */
 static int aw_cave_site(const AwMap*m,int side,int rank){
     int sites[AW_CELLS],scores[AW_CELLS],count=0;
-    uint32_t salt=aw_hash(m->seed^(side?0x729a51u:0xa13b72u));
-    int tx=44+(salt%9),tz=17+((salt>>8)%9);
-    for(int z=12;z<=29;z++)for(int x=38;x<=57;x++){
+    uint32_t salt=aw_hash(m->layout_seed^(side?0x729a51u:0xa13b72u));
+    int landmark=side?4095-m->landmarks[side]:m->landmarks[side];
+    int tx=landmark%64+(int)(salt%7)-3,tz=landmark/64+(int)((salt>>8)%7)-3;
+    for(int z=5;z<=29;z++)for(int x=35;x<=58;x++){
         int canonical=z*64+x,c=side?AW_CELLS-1-canonical:canonical;
         const AwCell*t=&m->cells[c];
         if(!m->reachable[c]||(t->road&&!m->cave_access[c])||t->material==AW_SHALLOW||t->q[0]!=4)continue;
@@ -271,7 +282,7 @@ static int aw_cave_site(const AwMap*m,int side,int rank){
     return count?sites[rank%count]:-1;
 }
 static void aw_cave_clear(AwMap*m){
-    m->cave_count=m->cave_edge_count=m->cave_decisions=m->cave_expanded=m->cave_backtracks=0;
+    m->cave_count=m->cave_edge_count=m->cave_decisions=m->cave_expanded=m->cave_backtracks=m->cave_room_count=0;
     memset(m->cave_bin_count,0,sizeof(m->cave_bin_count));
     for(int c=0;c<AW_CELLS;c++)m->cells[c].tunnel=m->cells[c].portal=0;
     for(int s=0;s<2;s++)m->cave_entrances[s]=m->cave_hubs[s]=-1;
@@ -285,8 +296,22 @@ static int aw_cave_hub_cell(const AwMap*m,int portal,int side,uint32_t salt){
     int best=-1,score=INT_MAX;
     for(int dz=-4;dz<=4;dz++)for(int dx=-4;dx<=4;dx++){
         int nx=tx+dx,nz=tz+dz;if(nx<5||nx>58||nz<5||nz>58)continue;
-        int c=nz*64+nx;if(aw_surface_q(m,c,.5f,.5f)<4)continue;
+        int c=nz*64+nx;if(!m->reachable[c]||aw_surface_q(m,c,.5f,.5f)<4)continue;
         int cost=8*(aw_abs(dx)+aw_abs(dz))+(aw_hash(salt^(uint32_t)c)%7);
+        if(cost<score){score=cost;best=c;}
+    }
+    return best;
+}
+/* Optional extra chambers turn a crossing into a seeded multi-leg network.
+ * Sites must be dry, connected land, apart from the primary chambers and from
+ * each other. Their depths and arch sockets are still validated by passage WFC. */
+static int aw_cave_room_site(const AwMap*m,int a,int b,int exclude,uint32_t salt){
+    int tx=13+salt%38,tz=13+(salt>>8)%38,best=-1,score=INT_MAX;
+    for(int z=9;z<=54;z++)for(int x=9;x<=54;x++){
+        int c=z*64+x;if(!m->reachable[c]||aw_surface_q(m,c,.5f,.5f)<4)continue;
+        if(aw_abs(x-a%64)+aw_abs(z-a/64)<8||aw_abs(x-b%64)+aw_abs(z-b/64)<8)continue;
+        if(exclude>=0&&aw_abs(x-exclude%64)+aw_abs(z-exclude/64)<8)continue;
+        int cost=8*(aw_abs(x-tx)+aw_abs(z-tz))+(aw_hash(salt^(uint32_t)c)%13);
         if(cost<score){score=cost;best=c;}
     }
     return best;
@@ -294,7 +319,7 @@ static int aw_cave_hub_cell(const AwMap*m,int portal,int side,uint32_t salt){
 static int aw_caves(AwMap*m,int attempt){
     if(!m->options.tunnels)return 1;
     int portals[2],hubs[2],depth[2];
-    uint32_t plan=aw_hash(m->seed^((uint32_t)attempt*0x9e3779b9u)^0x174b39u);
+    uint32_t plan=aw_hash(m->layout_seed^((uint32_t)attempt*0x9e3779b9u)^0x174b39u);
     portals[0]=aw_cave_site(m,0,attempt);
     portals[1]=m->options.symmetry?AW_CELLS-1-portals[0]:aw_cave_site(m,1,attempt*3);
     if(portals[0]<0||portals[1]<0||portals[1]>=AW_CELLS)return 0;
@@ -304,7 +329,16 @@ static int aw_caves(AwMap*m,int attempt){
     depth[0]=-4-(int)(plan%7);depth[1]=m->options.symmetry?depth[0]:-4-(int)((plan>>8)%7);
     if(!aw_cave_route(m,portals[0]%64,portals[0]/64,4,hubs[0]%64,hubs[0]/64,depth[0],m->options.symmetry))return 0;
     if(!m->options.symmetry&&!aw_cave_route(m,portals[1]%64,portals[1]/64,4,hubs[1]%64,hubs[1]/64,depth[1],0))return 0;
-    if(!aw_cave_route(m,hubs[0]%64,hubs[0]/64,depth[0],hubs[1]%64,hubs[1]/64,depth[1],m->options.symmetry))return 0;
+    if((plan>>19)&1){
+        int rooms[2],q=depth[0]<depth[1]?depth[0]:depth[1];
+        rooms[0]=aw_cave_room_site(m,hubs[0],hubs[1],-1,aw_hash(plan^571u));
+        rooms[1]=m->options.symmetry?4095-rooms[0]:aw_cave_room_site(m,hubs[0],hubs[1],rooms[0],aw_hash(plan^919u));
+        if(rooms[0]<0||rooms[1]<0||rooms[1]>=AW_CELLS||rooms[0]==rooms[1])return 0;
+        if(!aw_cave_route(m,hubs[0]%64,hubs[0]/64,depth[0],rooms[0]%64,rooms[0]/64,q,m->options.symmetry))return 0;
+        if(!m->options.symmetry&&!aw_cave_route(m,rooms[1]%64,rooms[1]/64,q,hubs[1]%64,hubs[1]/64,depth[1],0))return 0;
+        if(!aw_cave_route(m,rooms[0]%64,rooms[0]/64,q,rooms[1]%64,rooms[1]/64,q,m->options.symmetry))return 0;
+        for(int i=0;i<2;i++)m->cave_rooms[m->cave_room_count++]=aw_cave_node(m,rooms[i]%64,rooms[i]/64,q);
+    }else if(!aw_cave_route(m,hubs[0]%64,hubs[0]/64,depth[0],hubs[1]%64,hubs[1]/64,depth[1],m->options.symmetry))return 0;
     for(int side=0;side<2;side++){
         int p=aw_cave_node(m,portals[side]%64,portals[side]/64,4),h=aw_cave_node(m,hubs[side]%64,hubs[side]/64,depth[side]);
         if(p<0||h<0)return 0;
@@ -316,6 +350,7 @@ static int aw_caves(AwMap*m,int attempt){
         AwCaveNode*n=&m->cave[i];wave[i]=15;
         if(n->portal>=0)wave[i]=1;
         if(i==m->cave_hubs[0]||i==m->cave_hubs[1])wave[i]=1<<2;
+        for(int r=0;r<m->cave_room_count;r++)if(i==m->cave_rooms[r])wave[i]=1<<2;
         for(int d=0;d<6;d++)if(n->links[d]>=0&&n->q!=m->cave[n->links[d]].q)wave[i]&=3;
         int low=n->q;
         for(int d=0;d<6;d++)if(n->links[d]>=0&&m->cave[n->links[d]].q<low)low=m->cave[n->links[d]].q;

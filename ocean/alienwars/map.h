@@ -15,7 +15,13 @@
 #define AW_BIN_SIZE 48
 #define AW_LINKS 7
 #define AW_NODES (AW_CELLS+AW_CAVE_NODES)
-#define AW_VERSION 5
+#define AW_VERSION 6
+#define AW_LANDFORMS 24
+#define AW_LAKES 6
+#define AW_OCEAN_MARGIN 2
+#define AW_OCEAN_BELT 16
+#define AW_OCEAN_SIZE (AW_SIZE+2*AW_OCEAN_BELT)
+#define AW_OCEAN_CELLS (AW_OCEAN_SIZE*AW_OCEAN_SIZE)
 #define AW_SUBDIV 6
 #define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
@@ -25,14 +31,22 @@ enum {AW_GRASS,AW_FOREST,AW_DIRT,AW_SAND,AW_ROCK,AW_SNOW,AW_ICE,AW_MUD,AW_SHALLO
 static const char *aw_terrain_names[AW_TILES]={"Grass","Forest","Soil","Sand","Rock","Snow","Ice","Mud","Shallow water","Deep water","Lava","Road"};
 static const int aw_cost[AW_TILES]={12,19,13,18,16,20,23,28,34,0,0,10};
 typedef struct {int symmetry,floors_a,floors_b,biome,tunnels;} AwOptions;
+typedef struct {int x2,z2,rx,rz,height,rotation;} AwLandform;
+typedef struct {int x,z,rx,rz;} AwLake;
 typedef struct {uint8_t q[4],material,road,tunnel,portal;} AwCell;
 typedef struct {int16_t x,z,q,portal; uint8_t profile,junction; int16_t links[6];} AwCaveNode;
 typedef struct {int16_t a,b;} AwCaveEdge;
 typedef struct {
+    uint16_t ocean_depth[AW_OCEAN_CELLS]; /* Hundredths of a quarter-floor. */
+    uint8_t ocean_connected[AW_OCEAN_CELLS];int ocean_count;
+    AwLandform landforms[AW_LANDFORMS];AwLake lakes[AW_LAKES];
+    int landform_count,lake_count,road_ends[2],landmarks[2],layout_attempts;
+    uint32_t layout_seed;
+    uint8_t macro_q[AW_VERT*AW_VERT],lake_mask[AW_VERT*AW_VERT];
     AwCaveNode cave[AW_CAVE_NODES]; AwCaveEdge cave_edges[AW_CAVE_EDGES];
     uint16_t cave_bins[AW_CELLS][AW_BIN_SIZE]; uint8_t cave_bin_count[AW_CELLS];
     int cave_count,cave_edge_count,cave_decisions,cave_expanded,cave_backtracks;
-    int cave_entrances[2],cave_hubs[2];
+    int cave_entrances[2],cave_hubs[2],cave_rooms[4],cave_room_count;
     uint8_t cave_access[AW_CELLS];
     uint32_t seed,rng,hash,wave[AW_CELLS],compatible[AW_TILES];
     uint16_t shape_wave[AW_CELLS],shape_compatible[AW_CELLS][4][AW_SHAPES];
@@ -95,87 +109,7 @@ static int aw_road_wfc(AwMap*m,int *height,const int *ramp,int n,int floor){
     }
     for(int i=0;i<n;i++)height[i]=__builtin_ctzll(wave[i]);return 1;
 }
-/* A road is a three-cell-wide sweep with shared vertex elevations. Flatten bends
- * before distributing quarter-floor rises, so the outer lanes are continuous too. */
-static int aw_road(AwMap*m,int side){
-    int pts[8][2]={{13,13},{13,7},{6,7},{6,25},{22,25},{22,7},{28,7},{28,31}};
-    uint32_t route=aw_hash(m->seed ^ (side&&!m->options.symmetry?9187u:0u));
-    int west=5+(route%2),south=25+((route>>4)%2);
-    pts[2][0]=pts[3][0]=west;pts[3][1]=pts[4][1]=south;
-    if(side&&!m->options.symmetry){pts[0][0]=12;pts[0][1]=15;pts[1][0]=12;pts[2][0]=7;pts[3][0]=7;pts[3][1]=26;pts[4][1]=26;}
-    int px[160],pz[160],hq[160],turn[8],n=0;
-    px[n]=pts[0][0];pz[n++]=pts[0][1];turn[0]=0;
-    for(int p=1;p<8;p++){
-        int x=px[n-1],z=pz[n-1];
-        while(x!=pts[p][0]||z!=pts[p][1]){x+=(pts[p][0]>x)-(pts[p][0]<x);z+=(pts[p][1]>z)-(pts[p][1]<z);px[n]=x;pz[n++]=z;}
-        turn[p]=n-1;
-    }
-    int eligible[160]={0},total=0;
-    for(int i=1;i<n;i++){
-        int ok=i>3&&i<n-24;
-        for(int p=1;p<7;p++)if(aw_abs(i-turn[p])<=2)ok=0;
-        total+=eligible[i]=ok;
-    }
-    int floor=side?m->options.floors_b:m->options.floors_a,drop=4*(floor-1);
-    if(total<drop)return 0;
-    /* Share the same structural choices across a rotational pair. */
-    uint32_t saved_rng=m->rng;m->rng=aw_hash(m->seed^(side&&!m->options.symmetry?12357u:0u));
-    if(!aw_road_wfc(m,hq,eligible,n,floor))return 0;
-    m->rng=saved_rng;
-    uint8_t road[AW_CELLS]={0};
-    int vq[AW_VERT*AW_VERT];
-    for(int i=0;i<n;i++)for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++)road[(pz[i]+dz)*AW_SIZE+px[i]+dx]=1;
-    for(int z=pts[0][1]-2;z<=pts[0][1]+2;z++)for(int x=pts[0][0]-2;x<=pts[0][0]+2;x++)road[z*AW_SIZE+x]=1;
-    for(int z=0;z<AW_VERT;z++)for(int x=0;x<AW_VERT;x++){
-        int best=INT_MAX,q=4;
-        for(int i=1;i<n;i++){
-            int ax=px[i-1]*2+1,az=pz[i-1]*2+1,dx=px[i]-px[i-1],dz=pz[i]-pz[i-1];
-            int t=aw_clamp((x*2-ax)*dx+(z*2-az)*dz,0,2);
-            int ex=x*2-ax-dx*t,ez=z*2-az-dz*t,dist=ex*ex+ez*ez;
-            if(dist<best){best=dist;q=(hq[i-1]*(2-t)+hq[i]*t)/2;}
-        }
-        if(aw_abs(x*2-(pts[0][0]*2+1))<=5&&aw_abs(z*2-(pts[0][1]*2+1))<=5)q=floor*4;
-        vq[z*AW_VERT+x]=q;
-    }
-    for(int c=0;c<AW_CELLS;c++)if(road[c]){
-        int x=c%AW_SIZE,z=c/AW_SIZE,dst=side?AW_CELLS-1-c:c;
-        int q[4]={vq[z*AW_VERT+x],vq[z*AW_VERT+x+1],vq[(z+1)*AW_VERT+x+1],vq[(z+1)*AW_VERT+x]};
-        m->cells[dst].road=1;
-        for(int k=0;k<4;k++)m->cells[dst].q[(k+side*2)%4]=q[k];
-    }
-    int spawn=pts[0][1]*AW_SIZE+pts[0][0];m->spawns[side]=side?AW_CELLS-1-spawn:spawn;
-    int resource=pts[0][1]*AW_SIZE+pts[0][0]+2;m->resources[side*2]=side?AW_CELLS-1-resource:resource;
-    resource=pts[3][1]*AW_SIZE+15;m->resources[side*2+1]=side?AW_CELLS-1-resource:resource;
-    /* The asymmetric lane still has its strategic resource on its own road. */
-    if(side&&!m->options.symmetry)m->resources[3]=AW_CELLS-1-(26*AW_SIZE+15);
-    return 1;
-}
-static int aw_layout(AwMap*m){
-    for(int c=0;c<AW_CELLS;c++){
-        int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
-        int noise=aw_noise(m->seed,x,z,9),detail=aw_noise(m->seed^913u,x,z,4);
-        int edge=x<z?x:z;edge=edge<63-x?edge:63-x;edge=edge<63-z?edge:63-z;
-        int floor=edge<3+(noise/60)?0:1+(noise>110)+(noise>155)+(detail>185);
-        int da=aw_abs(x-13)+aw_abs(z-13),db=aw_abs(x-50)+aw_abs(z-50);
-        int hill=m->options.floors_a-da/3;if(m->options.floors_b-db/3>hill)hill=m->options.floors_b-db/3;
-        if(edge>5&&hill>floor)floor=hill;
-        aw_flat(&m->cells[c],aw_clamp(floor,0,10)*4);
-    }
-    if(!aw_road(m,0)||!aw_road(m,1))return 0;
-    for(int z=18;z<=45;z++)for(int x=31;x<=32;x++){
-        AwCell*c=&m->cells[z*AW_SIZE+x];c->road=1;
-        for(int k=0;k<4;k++){int vz=z+(k>=2);c->q[k]=4+aw_clamp(vz-18<46-vz?vz-18:46-vz,0,12);}
-    }
-    for(int side=0;side<2;side++)for(int z=17;z<=17;z++)for(int x=28;x<=32;x++){
-        int i=z*AW_SIZE+x;if(side)i=AW_CELLS-1-i;
-        /* Do not overwrite the sloping cell at the foot of the upper road. */
-        if(z==18&&x>=31)continue;
-        m->cells[i].road=1;aw_flat(&m->cells[i],4);
-    }
-
-    m->center=31*AW_SIZE+31;
-    return 1;
-}
+#include "layout.h"
 /* Surface tiles carry four elevation sockets. The 16 corner patterns use a
  * local low/high elevation domain; propagation matches actual elevations, not
  * paint IDs. Shared edge samples are authoritative for render and visibility. */
@@ -195,28 +129,9 @@ static int aw_shape_domains(AwMap*m){
         if(pin[v]>=0&&pin[v]!=q)return 0;
         pin[v]=q;m->blend[v]=255;
     }
-    const int islands[7][3]={{13,13,15},{51,51,15},{32,32,15},{14,44,12},{50,20,12},{28,13,10},{36,51,10}};
     for(int v=0;v<AW_VERT*AW_VERT;v++){
         int cv=m->options.symmetry&&v>AW_VERT*AW_VERT/2?AW_VERT*AW_VERT-1-v:v;
-        int x=cv%AW_VERT,z=cv/AW_VERT,land=-10000;
-        for(int i=0;i<7;i++){
-            int dx=x-islands[i][0],dz=z-islands[i][1],r=islands[i][2];
-            int value=r*r-dx*dx-dz*dz;if(value>land)land=value;
-        }
-        land+=(aw_noise(m->seed,x,z,5)-128)/2+(aw_noise(m->seed^913u,x,z,2)-128)/5;
-        int target=land<-24?0:land<24?2:4;
-        if(land>24){
-            for(int i=0;i<2;i++){
-                int c=m->spawns[i],dx=x-(c%AW_SIZE),dz=z-(c/AW_SIZE),d=aw_isqrt(dx*dx+dz*dz);
-                int floor=i?m->options.floors_b:m->options.floors_a;
-                int q=floor*4-(d>6?(d-6)*2:0);if(q>target)target=q;
-            }
-            for(int i=0;i<2;i++){
-                int dx=x-(i?50:14),dz=z-(i?20:44),d=aw_isqrt(dx*dx+dz*dz);
-                int q=12-(d>4?(d-4)*2:0);if(q>target)target=q;
-            }
-        }
-        if(x<2||z<2||x>62||z>62)target=0;
+        int x=cv%AW_VERT,z=cv/AW_VERT,target=m->macro_q[cv];
         /* Earth shoulders meet the road socket instead of extruding a road
          * column above an unrelated terrain cell. */
         int nearest=999,roadq=0;
@@ -229,7 +144,15 @@ static int aw_shape_domains(AwMap*m){
         target=aw_clamp(target,0,40);
         lo[v]=target/4*4;hi[v]=lo[v]+(target%4?4:0);
         preferred[v]=target%4>=2?hi[v]:lo[v];
+        if(m->lake_mask[cv])lo[v]=hi[v]=preferred[v]=target;
         if(pin[v]>=0)lo[v]=hi[v]=preferred[v]=pin[v];
+        /* Hard ocean sockets surround the entire mesh. Apply after shoulder
+         * blending so high roads cannot pull the domain boundary above water.
+         * Inland tiles form the beach or cliff through the shared-edge mesher. */
+        if(x<=AW_OCEAN_MARGIN||z<=AW_OCEAN_MARGIN||x>=AW_SIZE-AW_OCEAN_MARGIN||z>=AW_SIZE-AW_OCEAN_MARGIN){
+            if(pin[v]>0)return 0;
+            lo[v]=hi[v]=preferred[v]=0;
+        }
     }
     for(int c=0;c<AW_CELLS;c++){
         uint16_t domain=0;
@@ -398,6 +321,7 @@ static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
 }
 
 #include "caves.h"
+#include "ocean.h"
 static int aw_open(const AwMap*m,int node,int d){
     if(node<0||node>=AW_NODES||!m->walkable[node]||d<0||d>=AW_LINKS)return -1;
     if(node>=AW_CELLS){
@@ -458,10 +382,37 @@ static int aw_find_path(AwMap*m,int from,int to){
     for(int i=0;i<m->path_length/2;i++){int v=m->path[i];m->path[i]=m->path[m->path_length-1-i];m->path[m->path_length-1-i]=v;}
     m->path_cost=dist[to];return 1;
 }
+/* Flood the visible water vertices from the map boundary. Every lake must
+ * retain an interior below the waterline and no connection to the ocean.
+ * Eight-neighbor flooding conservatively rejects diagonal leaks too. */
+static int aw_lakes_valid(const AwMap*m){
+    if(m->lake_count<1||m->lake_count>AW_LAKES)return 0;
+    uint8_t wet[AW_VERT*AW_VERT],sea[AW_VERT*AW_VERT]={0};int queue[AW_VERT*AW_VERT],head=0,tail=0;
+    for(int z=0;z<65;z++)for(int x=0;x<65;x++){
+        int v=z*65+x;wet[v]=aw_height_q(m,(float)x,(float)z)<1.44f;
+        if(wet[v]&&(!x||!z||x==64||z==64)){sea[v]=1;queue[tail++]=v;}
+    }
+    while(head<tail){int c=queue[head++],x=c%65,z=c/65;
+        for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++){
+            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>64||nz>64)continue;
+            int n=nz*65+nx;if(wet[n]&&!sea[n]){sea[n]=1;queue[tail++]=n;}
+        }
+    }
+    for(int i=0;i<m->lake_count;i++){
+        const AwLake*l=&m->lakes[i];if(l->x<4||l->z<4||l->x>60||l->z>60||l->rx<3||l->rz<3||l->rx>7||l->rz>7)return 0;
+        int v=l->z*65+l->x;if(!wet[v]||sea[v])return 0;
+    }
+    return 1;
+}
 static int aw_validate(AwMap*m){
+    if(!aw_lakes_valid(m))return 0;
     for(int c=0;c<AW_CELLS;c++){
         AwCell*t=&m->cells[c];if(t->material>=AW_TILES)return 0;
-        for(int k=0;k<4;k++)if(t->q[k]>40)return 0;
+        for(int k=0;k<4;k++){
+            if(t->q[k]>40)return 0;
+            int v=aw_corner_vertex(c,k),x=v%AW_VERT,z=v/AW_VERT;
+            if((x<=AW_OCEAN_MARGIN||z<=AW_OCEAN_MARGIN||x>=AW_SIZE-AW_OCEAN_MARGIN||z>=AW_SIZE-AW_OCEAN_MARGIN)&&t->q[k]!=0)return 0;
+        }
         if(t->tunnel&&!m->options.tunnels)return 0;
 
     }
@@ -491,9 +442,16 @@ static int aw_validate(AwMap*m){
 }
 static uint32_t aw_fingerprint(const AwMap*m){
     uint32_t h=2166136261u;
+    for(int i=0;i<AW_OCEAN_CELLS;i++){h=(h^m->ocean_depth[i])*16777619u;h=(h^m->ocean_connected[i])*16777619u;}
     for(int c=0;c<AW_CELLS;c++){const AwCell*t=&m->cells[c];for(int k=0;k<4;k++)h=(h^t->q[k])*16777619u;h=(h^t->material)*16777619u;h=(h^t->road)*16777619u;h=(h^t->tunnel)*16777619u;h=(h^t->portal)*16777619u;}
     for(int i=0;i<m->cave_count;i++){const AwCaveNode*n=&m->cave[i];h=(h^(uint16_t)n->x)*16777619u;h=(h^(uint16_t)n->z)*16777619u;h=(h^(uint16_t)n->q)*16777619u;h=(h^n->profile)*16777619u;}
     for(int i=0;i<m->cave_edge_count;i++){h=(h^m->cave_edges[i].a)*16777619u;h=(h^m->cave_edges[i].b)*16777619u;}
+    for(int i=0;i<2;i++)h=(h^(uint32_t)m->spawns[i])*16777619u;
+    for(int i=0;i<4;i++)h=(h^(uint32_t)m->resources[i])*16777619u;
+    for(int i=0;i<m->lake_count;i++){
+        const AwLake*l=&m->lakes[i];h=(h^(uint32_t)l->x)*16777619u;h=(h^(uint32_t)l->z)*16777619u;h=(h^(uint32_t)l->rx)*16777619u;h=(h^(uint32_t)l->rz)*16777619u;
+    }
+    for(int i=0;i<m->cave_room_count;i++)h=(h^(uint32_t)m->cave_rooms[i])*16777619u;
     return h;
 }
 /* Reserve walkable approaches before material WFC can put lava on them.
@@ -525,17 +483,20 @@ static int aw_cave_approaches(AwMap*m){
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
-    memset(m,0,sizeof(*m));m->seed=seed;m->rng=seed;m->options=options;m->attempts=1;
-    if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_cave_approaches(m)||!aw_wfc(m))return 0;
-    uint32_t surface_rng=m->rng;
-    for(int attempt=0;attempt<(options.tunnels?16:1);attempt++){
-        aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;
-        if(!aw_caves(m,attempt))continue;
-        m->valid=aw_validate(m);
-        if(m->valid){m->hash=aw_fingerprint(m);return 1;}
+    for(int layout=0;layout<12;layout++){
+        memset(m,0,sizeof(*m));m->seed=seed;m->layout_seed=aw_hash(seed^(uint32_t)layout*0x9e3779b9u);m->rng=m->layout_seed;m->options=options;m->attempts=1;m->layout_attempts=layout+1;
+        if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_cave_approaches(m)||!aw_wfc(m))continue;
+        uint32_t surface_rng=m->rng;
+        for(int attempt=0;attempt<(options.tunnels?16:1);attempt++){
+            aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;
+            if(!aw_caves(m,attempt))continue;
+            m->valid=aw_validate(m);
+            if(m->valid){aw_ocean_build(m);m->hash=aw_fingerprint(m);return 1;}
+        }
     }
     return 0;
 }
+
 static int aw_generate(AwMap*m,uint32_t seed){return aw_generate_options(m,seed,aw_defaults());}
 static int aw_solid(const AwMap*m,float x,float yq,float z){
     if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE)return 0;

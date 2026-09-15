@@ -16,7 +16,7 @@ typedef struct {
 } AwBuilder;
 
 typedef struct {
-    Mesh terrain, scenery, overlay, water, tunnels, tunnel_lights;
+    Mesh terrain, scenery, overlay, ocean_overlay, water, tunnels, tunnel_lights;
     Material land_material, water_material;
     Shader land_shader, water_shader;
     Texture2D coast;
@@ -187,14 +187,14 @@ static void aw_destroy_scene(AwScene*s){
     if(!s->built)return;
     if(s->tunnels.vertexCount)UnloadMesh(s->tunnels);
     if(s->tunnel_lights.vertexCount)UnloadMesh(s->tunnel_lights);
-    UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->water);
+    UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->ocean_overlay);UnloadMesh(s->water);
     MemFree(s->land_material.maps);MemFree(s->water_material.maps);MemFree(s->shadow_material.maps);
     UnloadRenderTexture(s->shadow);if(s->reflection.id)UnloadRenderTexture(s->reflection);UnloadShader(s->shadow_shader);
     UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);
     memset(s,0,sizeof(*s));
 }
 static void aw_build_scene(AwScene*s,const AwMap*m){
-    aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},water={0},tunnels={0},tunnel_lights={0};
+    aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},ocean_overlay={0},water={0},tunnels={0},tunnel_lights={0};
     for(int index=0;index<AW_CELLS;index++){
         int c=m->order[index],x=c%AW_SIZE,z=c/AW_SIZE;float rank=index;
         const AwCell*t=&m->cells[c];int mat=t->material;Color ground=aw_palette[mat];
@@ -239,11 +239,25 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         }
     }
     for(int side=0;side<2;side++)aw_outpost(&scenery,aw_center(m,m->spawns[side]),side);
-    Vector3 sea[4]={{-60,-0.12f,-60},{188,-0.12f,-60},{188,-0.12f,188},{-60,-0.12f,188}};
+    /* Model the playable ocean shelf; its inner edge is exactly the land
+     * mesher's submerged border. The water sheet continues beyond play bounds. */
+    for(int c=0;c<AW_OCEAN_CELLS;c++){
+        int x=c%AW_OCEAN_SIZE-AW_OCEAN_BELT,z=c/AW_OCEAN_SIZE-AW_OCEAN_BELT;
+        Vector3 v[4]={{x*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,(z+1)*AW_UNIT},{x*AW_UNIT,0,(z+1)*AW_UNIT}};
+        if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE){
+            for(int k=0;k<4;k++)v[k].y=aw_y(aw_ocean_bed_q(m,v[k].x/AW_UNIT,v[k].z/AW_UNIT)/4);
+            aw_top(&terrain,v,4,aw_palette[AW_SAND],0,0);
+        }
+        if(m->ocean_connected[c]){
+            for(int k=0;k<4;k++)v[k].y=-.035f;
+            aw_top(&ocean_overlay,v,4,(Color){74,167,232,115},0,2);
+        }
+    }
+    Vector3 sea[4]={{-96,-0.12f,-96},{224,-0.12f,-96},{224,-0.12f,224},{-96,-0.12f,224}};
     aw_top(&water,sea,4,WHITE,0,0);
     if(tunnels.count)s->tunnels=aw_upload(&tunnels);
     if(tunnel_lights.count)s->tunnel_lights=aw_upload(&tunnel_lights);
-    s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->water=aw_upload(&water);
+    s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->ocean_overlay=aw_upload(&ocean_overlay);s->water=aw_upload(&water);
     s->land_shader=LoadShaderFromMemory(aw_vertex_shader,aw_land_fragment);
     s->water_shader=LoadShaderFromMemory(aw_vertex_shader,aw_water_fragment);
     s->land_reveal=GetShaderLocation(s->land_shader,"reveal");s->water_time=GetShaderLocation(s->water_shader,"time");
@@ -263,10 +277,10 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->shadow_material=LoadMaterialDefault();s->shadow_material.shader=s->shadow_shader;
     /* A high-resolution shoreline distance field also carries local terrain
      * occlusion. Its alpha keeps the water plane out of cave inspection views. */
-    enum {RES=256};float *height=malloc(RES*RES*sizeof(float)),*distance=malloc(RES*RES*sizeof(float));
+    enum {RES=384};float *height=malloc(RES*RES*sizeof(float)),*distance=malloc(RES*RES*sizeof(float));
     if(!height||!distance){fprintf(stderr,"Shore map allocation failed\n");exit(2);}
     for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
-        int i=z*RES+x;height[i]=aw_world_q(m,(x+.5f)*AW_SIZE/RES,(z+.5f)*AW_SIZE/RES);
+        int i=z*RES+x;height[i]=aw_ocean_bed_q(m,(x+.5f)*AW_OCEAN_SIZE/RES-AW_OCEAN_BELT,(z+.5f)*AW_OCEAN_SIZE/RES-AW_OCEAN_BELT);
         distance[i]=height[i]>1.44f?0:1000;
     }
     for(int pass=0;pass<2;pass++)for(int j=0;j<RES*RES;j++){
@@ -330,7 +344,7 @@ static void aw_prepare_reflection(AwScene*s,Camera3D camera,float reveal){
     SetShaderValueMatrix(s->water_shader,s->reflection_matrix,s->reflection_vp);
 }
 
-static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,Vector3 eye,Vector3 target,int cut,int tunnel_view){
+static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,int ocean_overlay,Vector3 eye,Vector3 target,int cut,int tunnel_view){
     if(tunnel_view){reveal=AW_CELLS;cut=0;}
     Vector3 view=Vector3Normalize(Vector3Subtract(eye,target));
     SetShaderValue(s->land_shader,s->land_view,&view,SHADER_UNIFORM_VEC3);SetShaderValue(s->water_shader,s->water_view,&view,SHADER_UNIFORM_VEC3);
@@ -351,5 +365,6 @@ static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,Vector3 
     }
     DrawMesh(s->water,s->water_material,identity);DrawMesh(s->terrain,s->land_material,identity);DrawMesh(s->scenery,s->land_material,identity);
     if(overlay)DrawMesh(s->overlay,s->land_material,identity);
+    if(ocean_overlay)DrawMesh(s->ocean_overlay,s->land_material,identity);
 }
 #endif

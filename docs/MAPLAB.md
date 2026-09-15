@@ -5,11 +5,58 @@ Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
 The [trained Breakout baseline](https://rozgo.github.io/alienwars-gym/) is preserved.
 
-## World contract — generator version 5
+## World contract — generator version 6
 
-The world has 64 × 64 terrain tiles, two world units per tile. A floor is three
+The 64 × 64 land region sits inside a 96 × 96 ocean domain, two world units per tile. A floor is three
 world units; elevations use quarter floors. Bases support floors 1–10. Surface
 shape WFC retains the connected contour terrain introduced in version 3.
+
+The seed now controls the **global plan**: landform count, position, anisotropic
+radii, orientation, warped coastline, hill heights, base sites, road topology,
+lake basins, cave sites and underground chamber routes. There is no fixed set
+of seven island footprints, fixed base coordinate, road zigzag or raised central
+crossing. Bases remain in the northwest/southeast regions; tunnel entrances
+remain on the northeast/southwest diagonal. Those positional constraints do
+not specify an individual layout.
+
+Base roads are self-avoiding walks on independently jittered 4 × 4 regional
+lattices. Seeded, bounded depth-first search chooses start/end sites and route
+length, rejecting walks without enough straight ramp capacity for the requested
+base floor. A three-cell sweep preserves all lane sockets. Road WFC assigns
+quarter-floor grades, with flat base pads, turns and lowland exits. Weighted A*
+then connects exits and seeded entrance districts around graded roads and lakes.
+It can merge flat routes; it cannot cross a graded lane at the wrong elevation.
+Terrain shoulders follow those routes through continuous shape sockets.
+
+Landforms combine seeded ellipses, integer domain warping, coastal falloff and
+variable hill fields. Symmetric maps mirror the complete plan through 180 degrees;
+asymmetric maps choose base roads and regions independently. Shape and material
+WFC resolve the local geometry and terrain domains after the global plan.
+
+A hard, two-tile submerged border is pinned **after** road-shoulder blending.
+All exposed land ends in a beach or ocean cliff through the shared terrain
+mesher, never an unfinished mesh edge. Roads and bases remain inland. A
+continuous seabed shelf descends outside the land grid, reaching quarter-floor
+-12 six tiles offshore. A 16-tile ocean belt surrounds all four sides, spanning
+world tile coordinates [-16,80) in both axes.
+
+`ocean.h` builds a separate 96 × 96 naval grid from sampled bed elevations.
+Each cell stores conservative depth in hundredths of a quarter-floor; the
+sea-connected component requires at least one quarter-floor of clearance across
+a tile footprint. `aw_ocean_path` checks a requested draft and output capacity.
+Naval node IDs are separate from surface/cave IDs. Inland lakes and tunnels do
+not provide phantom access to the sea. **Ocean access** displays that component;
+**View ocean extent** frames the enlarged area. Ships, unit footprints beyond a
+tile, currents and naval combat are not implemented yet.
+
+Each world plans **one to three inland lakes**, mirrored to two to six in a
+symmetric world. These are closed basins with irregular shores and an intact dry
+rim, carved before WFC. Roads avoid their buffered footprints; dry cave routes
+avoid the water and chamber-width margin. A conservative eight-neighbor water
+flood verifies that each basin remains separate from the ocean. All lakes
+currently share the ocean water elevation; elevated reservoirs, hydrology and
+flooded tunnels are outside this milestone. The existing reflective water
+renderer covers the lakes as well as the coast.
 
 Caves are **volumetric Boolean excavations**, with signed elevations, ramps,
 arched sections and junctions. There is no fixed second floor, roof tile, or
@@ -26,7 +73,10 @@ terrain elevation sockets or their curved edge profiles.
 
 Each entrance starts at surface floor 1 and descends toward a wide underground
 chamber. Chamber positions and depths vary by seed, currently from floor -1 to
--2.5. A* connects the chambers through the generated terrain. There is no fixed
+-2.5. A* connects the chambers through the generated terrain. Seeded plans may add
+another pair of wide underground chambers, making a multi-leg crossing or a
+loop. Extra chamber positions, route shape and depth are sampled from connected
+dry terrain; all chambers still obey passage WFC and body/support checks. There is no fixed
 central entrance, shaft, waypoint or ring. Symmetric maps mirror the entire
 entrance/approach/chamber/route plan and its WFC profiles through 180 degrees;
 asymmetric maps choose each side independently, including different depths.
@@ -37,26 +87,33 @@ approach; later passage sockets require rock cover. The surface is never raised
 to hide a tunnel. Where excavation intersects the terrain, it creates an actual
 opening. Roads retain their support above the network.
 
-The planner tries up to 16 seeded alternatives on the same surface. Each must
+The generator tries up to 12 complete seeded world plans. For each surface,
+the cave planner tries up to 16 seeded passage alternatives. Each must
 pass WFC, body/support checks, surface access to each mouth and a cave-only
 crossing between them. Exhaustion reports generation failure; it never silently
 substitutes the old central layout. Seeds, settings and generator version
-identify the world. Version 5 changes cave layouts and approach materials;
-version 4 URLs regenerate using the new generator.
+identify the world. Version 6 changes global terrain, roads, bases, lakes and
+cave layouts. Older seed URLs regenerate using version 6; use the previous
+release revision when an exact older world is required.
 
 This is a bounded, static terrain milestone. It does not yet generate arbitrary
 strategic graphs, mine shafts, elevators, destructible terrain or simulated
 flooding. Navigation is a conservative surface/centerline graph; it is not a
 full free-roaming cave navmesh. Decorative props do not participate in collision.
 
+Lighting is deliberately subdued: terrain lighting uses 0.62 exposure before
+emission and tone mapping, and water is slightly darker. Emissive markers and
+inspection overlays retain contrast against the world. UI colors are unchanged.
+
 ## Why this algorithm
 
 Use different constraints for different jobs:
 
-1. **Strategic plan and road WFC.** Existing seeded road corridors connect base
-   pads and resources. Quarter-floor socket domains propagate pinned endpoints,
+1. **Strategic plan and road WFC.** Seeded self-avoiding walks and weighted
+   lowland route searches connect variable base pads, entrance districts and
+   resources, with lake and graded-road obstacles. Quarter-floor socket domains propagate pinned endpoints,
    flat bends and ramps with at most one quarter-floor rise per tile. Every road
-   lane, both bases, the upper crossing and all resources must remain connected.
+   lane, both bases, the lowland network and all resources must remain connected.
 2. **Terrain shape and material WFC.** Sixteen corner patterns resolve shared
    elevation sockets. Every neighbor must match both corners and its complete
    sampled edge profile, including tiles above caves. Beveled cliff transitions
@@ -153,7 +210,7 @@ the scout's route. Shared URLs retain `isolate=1` and optional `ceilings=1`.
 solid and removes intervening fragments above the scout. **Horizontal section**
 clips geometry above a plane near the scout to expose the network. **Off** shows
 the complete opaque mountain. Cutaways never change collision or the map hash.
-A land mask prevents the decorative ocean from covering underground interiors.
+A land mask prevents the ocean surface from covering underground interiors.
 **Tile boundaries** shows retained shared surface profiles; excavated portions
 are omitted.
 
@@ -182,7 +239,7 @@ a planar reflection of the actual terrain and static props. The reflection is
 1,024 pixels wide, follows the viewport aspect ratio (height bounded to
 256–1,536), and refreshes when the camera, viewport or assembly changes. A still
 view reuses the reflection while waves keep moving. Shore distance and ambient
-occlusion share a 256-square texture. Frame rate is visible under **Map checks**.
+occlusion share a 384-square texture. Frame rate is visible under **Map checks**.
 Regeneration paints a busy state and disables controls before the synchronous
 WASM work runs outside the input event. Shader inputs retain the rank attribute
 required by Raylib 5.5's non-VAO path; the default batch's unused normal slot is
@@ -193,7 +250,8 @@ static, there is no reflection of the moving scout, and the ocean is a visual
 surface rather than a fluid simulation. The single shadow map loses detail at
 extreme zoom. Mesh construction and GPU upload happen at world creation;
 **Generation** reports only the authoritative generator, not these rendering
-costs. Generator version 5 and its seed hashes are unchanged by this pass.
+costs. This rendering pipeline is retained from the first realism pass; the
+version 6 also extends the sea, updates camera bounds and dims world lighting.
 
 ## Validation and release
 
@@ -204,7 +262,10 @@ resources, cave reachability, graph reciprocity, path costs, full boundary
 profiles, field-based body clearance, retained road support, signed depths and
 entrance references. Checks also require entrances on the other diagonal,
 independent surface access to both, cave-only connectivity, mirrored graph edges,
-and variation across seeds in entrance locations and depths.
+and variation across seeds in entrance locations and depths. Tests also require
+an unbroken submerged perimeter, closed lakes, mirrored naval depth/connectivity,
+and draft-sensitive ocean routes around the outer belt with invalid-ID and
+insufficient-output-capacity rejection.
 Deliberate failures cover disconnected passage links, missing portals, invalid
 materials and incompatible road, terrain and passage sockets.
 
@@ -223,6 +284,13 @@ Native ASan/UBSan and actual WebAssembly execute both suites and must agree.
 python3 scripts/check_maplab.py
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
+
+`tests/alienwars/diversity_test.c` holds settings constant across multiple
+seeds and measures coarse land silhouettes, height fields, road occupancy,
+base locations, lake plans and cave networks. It rejects a return to cosmetic
+seed variation around one fixed world. The same measurements must match in
+native and WASM. Lake enclosure, mirrored lake metadata, dry cave clearance and
+extra chamber references are also checked.
 
 The checker also compares four configurations through the packaged viewer,
 verifies artifact hashes and checks JavaScript syntax. Real Chrome review must

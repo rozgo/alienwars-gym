@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps,int lakes,int rooms,int baseA,int baseB,int ocean),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps,lakes,rooms,baseA,baseB,ocean
     });
 });
 #else
@@ -27,7 +27,7 @@ static Camera3D camera;
 static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
 static Vector3 focus={64,10,64};
 static float revealed=AW_CELLS,animation_time=0,unit_progress=0;
-static int show_overlay=0,show_path=1,paused=0,unit_paused=0;
+static int show_overlay=0,show_ocean=0,show_path=1,paused=0,unit_paused=0;
 static double generation_ms=0;
 
 static void aw_frame_tunnels(void){
@@ -51,7 +51,7 @@ static void aw_set_isolation(int value){
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS());
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS(),world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.ocean_count);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -83,6 +83,7 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==6)show_tiles=!!value;
     if(option==7)aw_set_isolation(value);
     if(option==8)show_tunnel_ceilings=!!value;
+    if(option==9)show_ocean=!!value;
     aw_publish();
 }
 
@@ -98,8 +99,9 @@ AW_EXPORT void aw_step(void) {
 
 AW_EXPORT void aw_camera_control(int action) {
     if(action==0){if(isolate_tunnels)aw_frame_tunnels();else{yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};follow_scout=0;}}
+    if(action==9){aw_set_isolation(0);yaw=.75f;pitch=.9f;zoom=235;focus=(Vector3){64,0,64};follow_scout=0;}
     if(action==1)zoom=fmaxf(16,zoom*0.84f);
-    if(action==2)zoom=fminf(210,zoom/0.84f);
+    if(action==2)zoom=fminf(280,zoom/0.84f);
     if(action==3)yaw-=0.22f;
     if(action==4)yaw+=0.22f;
     if(action>=5&&action<=8){
@@ -107,7 +109,7 @@ AW_EXPORT void aw_camera_control(int action) {
         Vector3 shift=action<7?right:forward;
         float amount=(action==5||action==7)?-3.0f:3.0f;
         focus=Vector3Add(focus,Vector3Scale(shift,amount));
-        focus.x=Clamp(focus.x,0,128);focus.z=Clamp(focus.z,0,128);
+        focus.x=Clamp(focus.x,-32,160);focus.z=Clamp(focus.z,-32,160);
     }
 }
 
@@ -198,11 +200,11 @@ static void aw_update(void) {
         Vector3 right={cosf(yaw),0,-sinf(yaw)},forward={sinf(yaw),0,cosf(yaw)};
         focus=Vector3Add(focus,Vector3Scale(right,-mouse.x*zoom/GetScreenHeight()));
         focus=Vector3Add(focus,Vector3Scale(forward,-mouse.y*zoom/GetScreenHeight()));
-        focus.x=Clamp(focus.x,0,128);focus.z=Clamp(focus.z,0,128);
+        focus.x=Clamp(focus.x,-32,160);focus.z=Clamp(focus.z,-32,160);
     }else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
         yaw-=mouse.x*0.005f;pitch=Clamp(pitch+mouse.y*0.004f,0.42f,1.35f);
     }
-    zoom=Clamp(zoom*(1-GetMouseWheelMove()*0.09f),16,210);
+    zoom=Clamp(zoom*(1-GetMouseWheelMove()*0.09f),16,280);
     if(IsKeyDown(KEY_Q))yaw-=dt;
     if(IsKeyDown(KEY_E))yaw+=dt;
     if(IsKeyPressed(KEY_HOME))aw_camera_control(0);
@@ -215,7 +217,7 @@ static void aw_update(void) {
     Vector3 scout=aw_unit_position();
     if(follow_scout&&!isolate_tunnels)focus=scout;
     camera.target=focus;
-    camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*100,focus.y+sinf(pitch)*100,focus.z+cosf(yaw)*cosf(pitch)*100};
+    camera.position=(Vector3){focus.x+sinf(yaw)*cosf(pitch)*400,focus.y+sinf(pitch)*400,focus.z+cosf(yaw)*cosf(pitch)*400};
     float aspect=(float)GetScreenWidth()/(float)GetScreenHeight();
     camera.up=(Vector3){0,1,0};camera.fovy=zoom*fmaxf(1.0f,1.35f/aspect);camera.projection=CAMERA_ORTHOGRAPHIC;
     if(world.valid&&!isolate_tunnels)aw_prepare_reflection(&scene,camera,revealed-1);
@@ -227,7 +229,7 @@ static void aw_update(void) {
         Vector3 eye=Vector3Add(target,Vector3Scale(Vector3Normalize(Vector3Subtract(camera.position,camera.target)),190));
         int blocked=aw_occluded(&world,eye.x/AW_UNIT,(eye.y+1.2f)/0.75f,eye.z/AW_UNIT,target.x/AW_UNIT,(target.y+1.2f)/0.75f,target.z/AW_UNIT);
         cut_active=!isolate_tunnels&&(cut_mode==2||(cut_mode==1&&blocked));
-        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,eye,target,cut_active?cut_mode:0,isolate_tunnels?(show_tunnel_ceilings?2:1):0);
+        aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,show_ocean,eye,target,cut_active?cut_mode:0,isolate_tunnels?(show_tunnel_ceilings?2:1):0);
         if(revealed>=AW_CELLS||isolate_tunnels){
             if(show_tiles&&!isolate_tunnels){
                 for(int c=0;c<AW_CELLS;c++)for(int d=0;d<2;d++)for(int i=0;i<AW_SUBDIV;i++){
@@ -295,8 +297,8 @@ int main(int argc,char **argv) {
     }
     if(headless){
         if(!aw_generate_options(&world,seed,settings))return 1;
-        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d entrance_ne=%d entrance_sw=%d depth_ne=%d depth_sw=%d\n",
-            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions,world.cave_entrances[0]>=0?world.cave[world.cave_entrances[0]].portal:-1,world.cave_entrances[1]>=0?world.cave[world.cave_entrances[1]].portal:-1,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0);
+        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d entrance_ne=%d entrance_sw=%d depth_ne=%d depth_sw=%d lakes=%d rooms=%d base_a=%d base_b=%d landforms=%d plans=%d ocean=%d\n",
+            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions,world.cave_entrances[0]>=0?world.cave[world.cave_entrances[0]].portal:-1,world.cave_entrances[1]>=0?world.cave[world.cave_entrances[1]].portal:-1,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.landform_count,world.layout_attempts,world.ocean_count);
         return 0;
     }
     SetTraceLogLevel(LOG_WARNING);

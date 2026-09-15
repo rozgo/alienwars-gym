@@ -37,7 +37,8 @@ current minimal template. Inspect headers before following an older tutorial.
 - `outputs/`, `build/`, `checkpoints/`, `logs/`: ignored generated artifacts.
 - `docs/runs/`: concise checked-in measurements and artifact hashes.
 - `web/shell.html`: authored browser presentation for the Raylib web build.
-- `ocean/alienwars/map.h`: deterministic, renderer-independent WFC and navigation.
+- `ocean/alienwars/map.h`, `layout.h`: deterministic global planning, WFC and
+  navigation; independent of rendering.
 - `ocean/alienwars/render.h`, `props.h`, `shaders.h`, `alienwars.c`: Raylib
   Map Lab rendering, cosmetic meshes, materials and viewer.
 - `web/maplab/shell.html`, `docs/maplab/`: Map Lab source and compiled Pages output.
@@ -160,3 +161,13 @@ WFC owns compatible arch sockets. Collision and support queries must sample the
 same tetrahedra as rendering. Preserve ramp entrances and allow intentional
 surface breaches. Validate stacked passages, body clearance, support, portal
 references and internal mesh-edge pairing in both native and WASM builds.
+
+Global world variety is part of correctness. Preserve seeded landform count and
+shape, variable base sites, generated road walks, enclosed lake basins and
+procedural chamber routes. Keep the same-settings diversity regression in the
+native/WASM release checks; unique hashes or prop/material changes alone do not
+prove world variety. Respect the two diagonals and rotational symmetry.
+
+The ocean grid in `ocean.h` spans 96 × 96 cells around the 64 × 64 land region.
+Preserve the submerged outer land sockets, continuous shelf, draft-aware naval
+routing and separation from enclosed lakes. Naval IDs are not surface/cave IDs.
