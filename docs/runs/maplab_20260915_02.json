@@ -1,0 +1,39 @@
+{
+  "milestone": "Retire the Breakout bootstrap and make Map Lab the public entry point",
+  "generator_version": 9,
+  "source_commit": "7432664a5e2cf4281656e80c93e30dbeb82aea06",
+  "source_dirty": false,
+  "changes": [
+    "Root homepage opens maplab/ and preserves query strings and fragments.",
+    "Removed Breakout navigation, website shell, runtime, data package, manifest, dedicated training/playback/build/check helpers and bootstrap run reports.",
+    "README, development, web and agent instructions now center on AlienWars Map Lab.",
+    "Native smoke check covers Map Lab and the Minimal interface example."
+  ],
+  "scope": "Upstream PufferLib environment sources and Git history remain reference material. This retires the project experiment rather than rewriting upstream history.",
+  "checks": {
+    "native_smoke": "Map Lab ASan/UBSan headless generation and Minimal 1024-step rollout passed.",
+    "runtime_unchanged": "JS and WASM bytes exactly match release 2f194de0.",
+    "artifact_hashes_match": true,
+    "javascript_syntax": "Map Lab runtime, page script and root redirect passed.",
+    "browser": "Chrome root URL reached maplab/, retaining seed/settings and fragment, hash f0f5a8fa for seed 2479804123, symmetric floors 6/6, desert, tunnels enabled. Header contains brand and Source only. No warning/error console entries."
+  },
+  "validation_scope": "No generator or renderer logic changed. Native smoke check, compiled-runtime byte equality, artifact and syntax validation, and real browser entry-point review were run; full generation suites were not repeated.",
+  "homepage": {
+    "bytes": 971,
+    "sha256": "9d799928515addfa9e7f1d788f990fe5ea271700eb8a0094a236bad07b3156ef"
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 32793,
+      "sha256": "d653619167a2f9aab2a0102a1992fcc8590cff731229ad08d78bf58e55e0f7eb"
+    },
+    "maplab.js": {
+      "bytes": 232931,
+      "sha256": "d078b51ec95de8a1a3216c58851e8e41c0621a2924b2d6a4410cdd99a9052e89"
+    },
+    "maplab.wasm": {
+      "bytes": 365893,
+      "sha256": "206dc0cbaf00508ddc040241ebda04d9fe3320e27b1219fa49335fdf41c31f47"
+    }
+  }
+}
