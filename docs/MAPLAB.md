@@ -103,7 +103,7 @@ full free-roaming cave navmesh. Decorative props do not participate in collision
 
 Lighting is deliberately subdued and has a narrow contrast range. Broad
 hemispheric fill carries the environment, with a weaker directional key and
-limited ambient occlusion. Cast shadows attenuate only 35% of the key light;
+restrained baked ambient occlusion. Cast shadows attenuate 60% of the key light;
 cliffs and tree shadows retain readable detail. Terrain lighting uses 0.62
 exposure before emission and tone mapping. Fine material variation, wet-surface
 specular response, leaf backlighting and water highlights are restrained.
@@ -226,10 +226,42 @@ The renderer uses a neutral daylight treatment with physically based material
 response (GGX specular, roughness, Fresnel and filmic tone mapping). World-space
 stone grain, weathering, soil variation and wet shore tint continue across tile
 boundaries. Volcanic regions use cooled crust with narrow emissive fissures.
-A terrain-derived ambient occlusion texture adds contact depth.
+`occlusion.h` bakes static accessibility into opaque vertex alpha at world
+creation. A normal-aware horizon integral samples eight directions and eight
+radii out to 18 world units using the shared terrain height lattice. It shades
+cliff feet, valleys and nearby shelves while leaving exposed tops open.
+Underground receivers use cosine-weighted hemisphere samples against the same
+Freudenthal tetrahedral field as collision and meshing: 0.25-unit steps out to
+six world units, with origin bias and distance falloff. Cached lattice values
+avoid repeated cave-field evaluations. Walls, ceilings, stacked passages and
+surface breaches affect the bake at their actual elevations.
+
+Soft elliptical contact footprints are registered at placed tree roots,
+boulders, resource clusters and outposts. These are cosmetic approximations,
+with vertical falloff to avoid projecting through shelves into lower floors;
+they are not ray tracing of individual leaves or prop triangles. Spatial bins
+limit contact queries, and bounded position/normal and density caches are freed
+after baking. Dense tree meshes interpolate six directional sky probes at
+root, middle and crown height, with contact applied near the root; they do not
+repeat the horizon integral for every leaf corner. No AO rays run each frame and no map RNG or navigation data changes.
+The accessibility approach follows [GPU Gems, Ambient Occlusion](https://developer.nvidia.com/gpugems/gpugems/part-iii-materials/chapter-17-ambient-occlusion).
+
+**Baked occlusion** toggles the ambient contribution without rebuilding (also
+shareable as `ao=0`). The shader retains at least 68% of the ambient fill;
+actual darkening is usually much smaller. Direct light, emission, scout and
+navigation overlays keep their response. Opaque alpha carries accessibility;
+transparent kind-2 overlays retain real alpha. Reflections refresh on a toggle.
+Isolated tunnels copy the world geometry and its same baked accessibility.
+Cutaway and isolation retain the full cavity bake even with ceilings hidden,
+so the shading still describes the complete underground space.
+
+Finite angular/ray sampling and vertex interpolation can miss sub-lattice
+features; this is restrained static AO, not a global illumination solution.
+`AO_BAKE` in the developer console reports the bake time and sample/contact counts.
+
 A static 2,048-square shadow map captures the terrain and decorative props;
 nine filtered depth comparisons soften the edges. The shaded key light retains
-65% of its intensity, and ambient occlusion reduces fill by at most 18%. Shadows are suppressed during
+40% of its intensity. Cast shadows are suppressed during
 assembly and cutaway/isolated inspection so removed surfaces do not obscure the
 view.
 
@@ -245,8 +277,8 @@ subtle caustics, restrained sun highlights and moving shoreline foam. It samples
 a planar reflection of the actual terrain and static props. The reflection is
 1,024 pixels wide, follows the viewport aspect ratio (height bounded to
 256–1,536), and refreshes when the camera, viewport or assembly changes. A still
-view reuses the reflection while waves keep moving. Shore distance and ambient
-occlusion share a 384-square texture. Frame rate is visible under **Map checks**.
+view reuses the reflection while waves keep moving. Shore distance and the
+water mask share a 384-square texture. Frame rate is visible under **Map checks**.
 Regeneration paints a busy state and disables controls before the synchronous
 WASM work runs outside the input event. Shader inputs retain the rank attribute
 required by Raylib 5.5's non-VAO path; the default batch's unused normal slot is

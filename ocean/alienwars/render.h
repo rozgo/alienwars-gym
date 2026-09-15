@@ -4,6 +4,7 @@
 #include "raymath.h"
 #include "rlgl.h"
 #include "volume.h"
+#include "occlusion.h"
 #include <math.h>
 
 #define AW_UNIT 2.0f
@@ -29,6 +30,7 @@ typedef struct {
     int reflection_valid;
     int land_view, water_view, render_pass, light_matrix, reflection_matrix;
     int land_reveal, water_time, cut_eye, cut_target, cut_mode, tunnel_view;
+    int ao_enabled, ao_location;
     int built;
 } AwScene;
 
@@ -193,8 +195,49 @@ static void aw_destroy_scene(AwScene*s){
     UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);
     memset(s,0,sizeof(*s));
 }
+typedef struct {int first,last;Vector3 base;} AwTreeBake;
+static void aw_bake_vertex(AwOcclusion*a,AwBuilder*b,int i){
+    /* Kind 2 owns real transparency/emission. Opaque alpha stores AO. */
+    if(b->uv[i].y>1.5f&&b->uv[i].y<2.5f)return;
+    Vector3 p=b->positions[i],n=b->normals[i];
+    b->colors[i].a=(unsigned char)lroundf(255*aw_ao_sample(a,p.x,p.y,p.z,n.x,n.y,n.z));
+}
+static void aw_bake_vertices(AwOcclusion*a,AwBuilder*b){
+    for(int i=0;i<b->count;i++)aw_bake_vertex(a,b,i);
+}
+/* Tree foliage has many tiny triangles but low-frequency ambient lighting.
+ * Interpolate six directional probes at root/mid/crown height instead of
+ * repeating a horizon integral on every leaf corner. Contact remains local. */
+static void aw_bake_tree(AwOcclusion*a,AwBuilder*b,AwTreeBake tree){
+    Vector3 base=tree.base;float top=base.y;
+    for(int i=tree.first;i<tree.last;i++)top=fmaxf(top,b->positions[i].y);
+    float height=fmaxf(.1f,top-base.y),probes[3][6];
+    for(int h=0;h<3;h++)for(int d=0;d<6;d++){
+        float n[3]={0};n[d/2]=d%2?-1:1;
+        probes[h][d]=aw_ao_horizon(a,base.x,base.y+.1f+height*h*.5f,base.z,n[0],n[1],n[2]);
+    }
+    for(int i=tree.first;i<tree.last;i++){
+        Vector3 p=b->positions[i],n=b->normals[i];
+        float t=Clamp((p.y-base.y)/height*2,0,1.9999f);int h=(int)t;t-=h;
+        float axis[3]={n.x,n.y,n.z},occlusion=0,weight=0;
+        for(int d=0;d<3;d++){
+            int side=d*2+(axis[d]<0);float w=fabsf(axis[d]);
+            occlusion+=w*aw_lerp(probes[h][side],probes[h+1][side],t);weight+=w;
+        }
+        occlusion/=fmaxf(.001f,weight);
+        float contact=p.y<base.y+1.5f?aw_ao_contact(a,p.x,p.y,p.z):0;
+        b->colors[i].a=(unsigned char)lroundf(255*(1-occlusion)*(1-contact));
+    }
+}
+static void aw_set_occlusion(AwScene*s,int enabled){
+    if(!s->built||s->ao_enabled==enabled)return;
+    s->ao_enabled=enabled;s->reflection_valid=0;
+    SetShaderValue(s->land_shader,s->ao_location,&enabled,SHADER_UNIFORM_INT);
+}
 static void aw_build_scene(AwScene*s,const AwMap*m){
     aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},ocean_overlay={0},water={0},tunnels={0},tunnel_lights={0};
+    AwOcclusion*ao=aw_ao_alloc(1,sizeof(*ao));aw_ao_init(ao,m);
+    AwTreeBake*trees=aw_ao_alloc(AW_CELLS,sizeof(*trees));int tree_count=0;
     for(int index=0;index<AW_CELLS;index++){
         int c=m->order[index],x=c%AW_SIZE,z=c/AW_SIZE;float rank=index;
         const AwCell*t=&m->cells[c];int mat=t->material;Color ground=aw_palette[mat];
@@ -208,17 +251,23 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
             float jitter=(aw_prop_random(h)-.5f)*.65f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;
             p.x+=jitter;p.z-=jitter;
             p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);
+            int first=scenery.count;
+            int tree=mat==AW_FOREST||(mat==AW_SNOW&&h%19==0)||(mat==AW_GRASS&&h%31==0);
+            if(tree)aw_ao_contact_add(ao,p.x,p.y,p.z,1.15f,1.15f,1.1f,.65f);
             if(mat==AW_FOREST)aw_tree(&scenery,p,h,rank,h%4==0,0);
             else if(mat==AW_SNOW&&h%19==0)aw_tree(&scenery,p,h,rank,1,1);
             else if(mat==AW_GRASS&&h%31==0)aw_tree(&scenery,p,h,rank,0,0);
             else if((mat==AW_ROCK||mat==AW_SNOW||mat==AW_DIRT||mat==AW_SAND)&&h%5==0){
-                aw_boulder(&scenery,p,.3f+aw_prop_random(h+1)*.38f,.35f+aw_prop_random(h+2)*.45f,h,ground,rank);
+                float radius=.3f+aw_prop_random(h+1)*.38f,height=.35f+aw_prop_random(h+2)*.45f;
+                aw_boulder(&scenery,p,radius,height,h,ground,rank);
+                aw_ao_contact_add(ao,p.x,p.y,p.z,radius+.4f,radius+.4f,height+.3f,.78f);
                 for(int i=0;i<3;i++){
                     Vector3 q=p;q.x+=cosf(i*2.1f)*.42f;q.z+=sinf(i*2.1f)*.42f;
                     q.y=aw_ground_y(m,c,(q.x/AW_UNIT-c%64),(q.z/AW_UNIT-c/64));
                     aw_boulder(&scenery,q,.09f,.1f,h+i,ground,rank);
                 }
             }else if((mat==AW_GRASS||mat==AW_DIRT||mat==AW_SAND)&&h%4==0)aw_grass(&scenery,p,h,rank,mat!=AW_GRASS);
+            if(tree)trees[tree_count++]=(AwTreeBake){first,scenery.count,p};
         }
         if(m->walkable[c]){
             for(int k=0;k<4;k++){v[k].y=aw_y(t->q[k]/4.0f)+0.04f;}
@@ -232,13 +281,17 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     }
     for(int r=0;r<4;r++){
         Vector3 p=aw_center(m,m->resources[r]);
+        aw_ao_contact_add(ao,p.x,p.y,p.z,1.15f,1.15f,1,.78f);
         aw_boulder(&scenery,p,.72f,.62f,m->seed+r,(Color){95,109,107,255},0);
         for(int i=0;i<7;i++){
             Vector3 q=p;q.x+=cosf(i*2.399f)*.58f;q.z+=sinf(i*2.399f)*.58f;
             aw_rock(&scenery,q,.12f,.32f+(i%3)*.12f,i,(Color){83,143,155,255},0,6);
         }
     }
-    for(int side=0;side<2;side++)aw_outpost(&scenery,aw_center(m,m->spawns[side]),side);
+    for(int side=0;side<2;side++){
+        Vector3 p=aw_center(m,m->spawns[side]);aw_outpost(&scenery,p,side);
+        aw_ao_contact_add(ao,p.x,p.y,p.z,2.7f,2.5f,1.5f,.9f);
+    }
     /* Model the playable ocean shelf; its inner edge is exactly the land
      * mesher's submerged border. The water sheet continues beyond play bounds. */
     for(int c=0;c<AW_OCEAN_CELLS;c++){
@@ -255,11 +308,23 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     }
     Vector3 sea[4]={{-96,-0.12f,-96},{224,-0.12f,-96},{224,-0.12f,224},{-96,-0.12f,224}};
     aw_top(&water,sea,4,WHITE,0,0);
+    double bake_start=GetTime();
+    aw_bake_vertices(ao,&terrain);
+    unsigned terrain_samples=ao->samples_baked;
+    for(int i=0,tree=0;i<scenery.count;){
+        if(tree<tree_count&&i==trees[tree].first){aw_bake_tree(ao,&scenery,trees[tree]);i=trees[tree++].last;}
+        else aw_bake_vertex(ao,&scenery,i++);
+    }
+    aw_bake_vertices(ao,&tunnels);free(trees);
+    printf("AO_BAKE ms=%.0f samples=%u cave_samples=%u contacts=%d terrain_samples=%u tree_probes=%d\n",(GetTime()-bake_start)*1000,ao->samples_baked,ao->cave_samples,ao->contact_count,terrain_samples,tree_count*18);
+    aw_ao_free(ao);free(ao);
     if(tunnels.count)s->tunnels=aw_upload(&tunnels);
     if(tunnel_lights.count)s->tunnel_lights=aw_upload(&tunnel_lights);
     s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->ocean_overlay=aw_upload(&ocean_overlay);s->water=aw_upload(&water);
     s->land_shader=LoadShaderFromMemory(aw_vertex_shader,aw_land_fragment);
     s->water_shader=LoadShaderFromMemory(aw_vertex_shader,aw_water_fragment);
+    s->ao_location=GetShaderLocation(s->land_shader,"aoEnabled");s->ao_enabled=1;
+    SetShaderValue(s->land_shader,s->ao_location,&s->ao_enabled,SHADER_UNIFORM_INT);
     s->land_reveal=GetShaderLocation(s->land_shader,"reveal");s->water_time=GetShaderLocation(s->water_shader,"time");
     s->cut_eye=GetShaderLocation(s->land_shader,"cutEye");s->cut_target=GetShaderLocation(s->land_shader,"cutTarget");s->cut_mode=GetShaderLocation(s->land_shader,"cutMode");
     s->tunnel_view=GetShaderLocation(s->land_shader,"tunnelView");
@@ -271,12 +336,11 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->water_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->water_shader,"texture0");
     s->water_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->water_shader,"texture1");
     s->shadow_shader=LoadShaderFromMemory(aw_vertex_shader,aw_shadow_fragment);
-    if(s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0||s->light_matrix<0||s->reflection_matrix<0||s->land_view<0||s->water_view<0||s->render_pass<0||s->water_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||s->shadow_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||!IsShaderValid(s->shadow_shader)){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
+    if(s->ao_location<0||s->land_reveal<0||s->water_time<0||s->cut_mode<0||s->tunnel_view<0||s->light_matrix<0||s->reflection_matrix<0||s->land_view<0||s->water_view<0||s->render_pass<0||s->water_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||s->shadow_shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]<0||!IsShaderValid(s->shadow_shader)){fprintf(stderr,"Map Lab shader compilation failed\n");exit(2);}
     s->land_material=LoadMaterialDefault();s->land_material.shader=s->land_shader;
     s->water_material=LoadMaterialDefault();s->water_material.shader=s->water_shader;
     s->shadow_material=LoadMaterialDefault();s->shadow_material.shader=s->shadow_shader;
-    /* A high-resolution shoreline distance field also carries local terrain
-     * occlusion. Its alpha keeps the water plane out of cave inspection views. */
+    /* Shoreline distance and water mask. AO is baked per opaque vertex. */
     enum {RES=384};float *height=malloc(RES*RES*sizeof(float)),*distance=malloc(RES*RES*sizeof(float));
     if(!height||!distance){fprintf(stderr,"Shore map allocation failed\n");exit(2);}
     for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
@@ -292,13 +356,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     }
     Image coast=GenImageColor(RES,RES,WHITE);Color*pixels=coast.data;
     for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
-        int i=z*RES+x;float obstruction=0;
-        for(int ring=0;ring<3;ring++)for(int d=0;d<8;d++){
-            int radius=(int[]){3,7,14}[ring],nx=aw_clamp(x+(int)(cosf(d*PI/4)*radius),0,RES-1),nz=aw_clamp(z+(int)(sinf(d*PI/4)*radius),0,RES-1);
-            obstruction+=Clamp((height[nz*RES+nx]-height[i])*.75f/(radius*.5f),0,1);
-        }
-        float ao=1.0f-obstruction/24*.8f;
-        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),(unsigned char)Clamp(height[i]/40*255,0,255),(unsigned char)(ao*255),height[i]>1.44f?0:255};
+        int i=z*RES+x;
+        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),0,255,height[i]>1.44f?0:255};
     }
     free(height);free(distance);
     s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);

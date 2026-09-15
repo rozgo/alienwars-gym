@@ -25,7 +25,7 @@ static const char *aw_land_fragment = AW_GLSL
     "in vec3 position;in vec3 normal;in vec4 color;in vec2 uv;out vec4 finalColor;\n"
     "uniform float reveal;\n"
     "uniform vec3 cutEye,cutTarget,viewDirection;\n"
-    "uniform int cutMode,tunnelView,renderPass;\n"
+    "uniform int cutMode,tunnelView,renderPass,aoEnabled;\n"
     "uniform mat4 lightVP;\n"
     "uniform sampler2D texture0,texture1;\n"
     "float hash(vec3 p){p=fract(p*0.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}\n"
@@ -85,16 +85,14 @@ static const char *aw_land_fragment = AW_GLSL
     " float G=nl/(nl*(1.0-k)+k)*nv/(nv*(1.0-k)+k);\n"
     " vec3 f0=mix(vec3(.035),linear,metal),F=f0+(1.0-f0)*pow(1.0-vh,5.0);\n"
     " float visibility=tunnelView>0||cutMode>0||reveal<4095.0?1.0:shadow(position,n);\n"
-    " float ao=texture(texture0,(position.xz+32.0)/192.0).b;\n"
-    " if(kind>0.5&&kind<9.5)ao=mix(.70,1.0,clamp(n.y*.5+.5,0.0,1.0));\n"
-    " if(tunnelView>0)ao=.92;\n"
+    " float ao=aoEnabled>0?clamp(color.a,0.0,1.0):1.0;\n"
     /* Broad overcast fill carries the scene. Weak key light and restrained AO
      * preserve shape without deep black cliffs or high-contrast prop shadows. */
     " vec3 sky=mix(vec3(.40,.45,.49),vec3(.52,.56,.58),n.y*.5+.5);\n"
-    " vec3 ambient=linear*sky*mix(.82,1.0,ao);\n"
+    " vec3 ambient=linear*sky*mix(.68,1.0,ao);\n"
     " vec3 diffuse=linear*(1.0-metal)*nl;\n"
     " vec3 spec=D*G*F/max(4.0*nl*nv,.001)*nl;\n"
-    " vec3 lit=ambient+(diffuse+spec*.55)*vec3(.48,.46,.42)*mix(.65,1.0,visibility);\n"
+    " vec3 lit=ambient+(diffuse+spec*.55)*vec3(.48,.46,.42)*mix(.40,1.0,visibility);\n"
     " if(kind>2.5&&kind<3.5)lit+=linear*vec3(.16,.20,.09)*pow(max(dot(-n,sun),0.0),2.0);\n"
     " lit*=.62;lit+=linear*emission;\n"
     /* Guides and navigation overlays keep a stable, bright response rather

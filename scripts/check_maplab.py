@@ -55,6 +55,15 @@ volume_wasm = run(['node','build/volume-test.js'])
 assert volume_native == volume_wasm, 'Native/WASM volumetric meshing disagree'
 print(volume_native)
 
+occlusion_source = 'tests/alienwars/occlusion_test.c'
+run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',occlusion_source,'-lm','-o','build/occlusion-test'])
+occlusion_native = run(['build/occlusion-test'])
+run([emcc,'-std=c11','-O3','-I.',occlusion_source,'-lm','-o','build/occlusion-test.js',
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+occlusion_wasm = run(['node','build/occlusion-test.js'])
+assert occlusion_native == occlusion_wasm, 'Native/WASM occlusion fixtures disagree'
+print(occlusion_native)
+
 manifest = json.loads((PAGES / 'build.json').read_text())
 for name, expected in manifest['artifacts'].items():
     blob = (PAGES / name).read_bytes()
@@ -100,8 +109,9 @@ for seed in [0, 1, 73, 4294967295]:
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
 report = {'generator_version':6,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+          'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
           'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,
           'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
           'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, closed lakes/ocean boundary, cave clearance, manifold meshing, deliberate failures, viewer parity, artifacts and JavaScript')
+print('PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, closed lakes/ocean boundary, cave clearance, manifold meshing, baked occlusion, deliberate failures, viewer parity, artifacts and JavaScript')
