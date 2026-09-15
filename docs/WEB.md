@@ -49,6 +49,16 @@ output; and verifies artifact hashes and JavaScript syntax. Inspect the browser
 for loading, controls, terrain joins, tunnel visibility, patrols and layout.
 See [the Map Lab contract](MAPLAB.md) for the full validation scope.
 
+Drag pans, Shift-drag orbits, and right-drag also pans. The canvas captures a
+drag through release over the sidebar; cancellation and focus loss release any
+held mouse buttons. Browser wheel input preserves pixel deltas, normalizes line
+and page units, and handles Chrome's Ctrl+wheel pinch without page zoom or a
+second GLFW wheel update. `camera_zoom.h` applies logarithmic scale changes with
+resistance at 16/280 and at most about 13% elastic stretch, then settles to the
+limit when input stops. Focus/reset controls clear pending zoom. Run
+`python3 scripts/check_camera.py` for input-boundary and native/WASM zoom checks;
+also review drag release and wheel behavior in Chrome.
+
 ## Publish from main
 
 Commit authored source first, then rebuild so `docs/maplab/build.json` records

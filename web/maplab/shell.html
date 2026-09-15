@@ -244,6 +244,46 @@
       </section>
     </aside>
   </main>
+  <script id="map-input">
+    function installMapInput(canvas, zoom, enabled) {
+      const held = new Set();
+      let pointer = null, position = {clientX:0,clientY:0};
+      const release = () => {
+        // Raylib's GLFW backend listens for mouseup on the canvas only.
+        // Cancellation/focus loss may not produce a compatibility mouseup.
+        for(const button of [...held])canvas.dispatchEvent(new MouseEvent('mouseup',{...position,button,buttons:0,bubbles:true}));
+        const id=pointer;pointer=null;
+        if(id!==null&&canvas.hasPointerCapture(id))canvas.releasePointerCapture(id);
+      };
+      canvas.addEventListener('pointerdown',event=>{
+        canvas.focus({preventScroll:true});
+        if(event.isPrimary&&event.pointerType!=='touch'){
+          pointer=event.pointerId;canvas.setPointerCapture(pointer);
+        }
+      });
+      canvas.addEventListener('mousedown',event=>{held.add(event.button);position={clientX:event.clientX,clientY:event.clientY};});
+      canvas.addEventListener('mouseup',event=>held.delete(event.button));
+      canvas.addEventListener('mousemove',event=>{
+        position={clientX:event.clientX,clientY:event.clientY};
+        if(held.size&&event.buttons===0)release();
+      },true);
+      // Fallback if the browser loses capture before the physical release.
+      window.addEventListener('mouseup',event=>{
+        if(event.target!==canvas&&held.has(event.button))canvas.dispatchEvent(new MouseEvent('mouseup',event));
+      },true);
+      for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,event=>{if(event.pointerId===pointer)release();});
+      window.addEventListener('blur',release);
+      document.addEventListener('visibilitychange',()=>{if(document.hidden)release();});
+      canvas.addEventListener('wheel',event=>{
+        event.preventDefault();event.stopImmediatePropagation();
+        if(!enabled()||!Number.isFinite(event.deltaY))return;
+        // Preserve trackpad precision instead of GLFW's minimum one-tick
+        // quantization. Pinch arrives as Ctrl+wheel in Chrome on macOS.
+        const pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?canvas.clientHeight:1);
+        zoom(Math.max(-.35,Math.min(.35,pixels*(event.ctrlKey?.005:.0015))));
+      },{capture:true,passive:false});
+    }
+  </script>
   <script>
     const $ = id => document.getElementById(id);
     const params = new URLSearchParams(location.search);
@@ -476,8 +516,7 @@
     $('ocean-access').addEventListener('change',()=>{Module._aw_option(9,Number($('ocean-access').checked));$('ocean-key').hidden=!$('ocean-access').checked;syncUrl();});
     document.querySelectorAll('[data-camera]').forEach(button=>button.addEventListener('click',()=>{Module._aw_camera_control(Number(button.dataset.camera));if(button.dataset.camera==='0'||button.dataset.camera==='9')$('follow').checked=false;}));
     Module.canvas.addEventListener('contextmenu',event=>event.preventDefault());
-    Module.canvas.addEventListener('pointerdown',()=>Module.canvas.focus({preventScroll:true}));
-    Module.canvas.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
+    installMapInput(Module.canvas,delta=>Module._aw_camera_zoom(delta),()=>ready&&!rebuilding);
     Module.canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fail('WebGL context lost');});
     new ResizeObserver(()=>requestAnimationFrame(resizeCanvas)).observe(document.querySelector('.viewport'));
     window.addEventListener('error',event=>{if(!ready)fail(event.message);});

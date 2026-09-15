@@ -224,3 +224,10 @@ rate/acceleration bounds, shortest-angle turning, pause/reset behavior and
 30/60/120 Hz tests (`scripts/check_motion.py`). Retain validated support paths
 through tunnels and bridges when changing motion. The quadrotor's cruise pace
 is deliberately much lower than either fixed-wing variant; preserve that order.
+
+Map camera input is owned by `installMapInput` in the web shell and
+`camera_zoom.h`. Keep pointer capture, outside-release/focus-loss cleanup and
+fractional trackpad wheel deltas; do not reintroduce GLFW's per-event minimum
+wheel tick or double-handle wheel events. Preserve bounded elastic zoom,
+immediate reverse input and preset resets. Run `scripts/check_camera.py` and
+verify outside-canvas release in Chrome for input changes.

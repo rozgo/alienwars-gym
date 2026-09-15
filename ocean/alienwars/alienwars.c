@@ -2,6 +2,7 @@
 #include "render.h"
 #include "patrol_render.h"
 #include "sensor_render.h"
+#include "camera_zoom.h"
 #include <inttypes.h>
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -34,6 +35,12 @@ static int baked_occlusion=1,surface_detail=1;
 static int isolate_tunnels=0,show_tunnel_ceilings=0;
 static Camera3D camera;
 static float yaw=0.75f,pitch=0.9f,zoom=158.0f;
+static AwZoom zoom_input;
+static void aw_set_zoom(float scale){aw_zoom_reset(&zoom_input,scale);zoom=expf(zoom_input.value);}
+AW_EXPORT void aw_camera_zoom(float delta){
+    if(!zoom_input.initialized)aw_set_zoom(zoom);
+    aw_zoom_push(&zoom_input,delta);
+}
 static Vector3 focus={64,10,64};
 static float revealed=AW_CELLS,animation_time=0,unit_progress=0;
 static int show_overlay=0,show_ocean=0,show_path=1,paused=0,unit_paused=0;
@@ -54,7 +61,7 @@ static void aw_frame_tunnels(void){
         lo.y=fminf(lo.y,aw_y(n->q/4.0f));hi.y=fmaxf(hi.y,aw_y((n->q+aw_trail_height(n->profile))/4.0f));
     }
     focus=Vector3Scale(Vector3Add(lo,hi),0.5f);yaw=0.75f;pitch=0.8f;
-    zoom=Clamp(Vector3Distance(lo,hi)*1.12f,16,210);
+    aw_set_zoom(Clamp(Vector3Distance(lo,hi)*1.12f,16,210));
 }
 static void aw_set_isolation(int value){
     /* Visibility only: both modes share the same camera, including any orbit,
@@ -123,10 +130,10 @@ AW_EXPORT void aw_step(void) {
 }
 
 AW_EXPORT void aw_camera_control(int action) {
-    if(action==0){follow_scout=0;if(isolate_tunnels)aw_frame_tunnels();else{yaw=0.75f;pitch=0.9f;zoom=158;focus=(Vector3){64,10,64};}}
-    if(action==9){aw_set_isolation(0);yaw=.75f;pitch=.9f;zoom=235;focus=(Vector3){64,0,64};follow_scout=0;}
-    if(action==1)zoom=fmaxf(16,zoom*0.84f);
-    if(action==2)zoom=fminf(280,zoom/0.84f);
+    if(action==0){follow_scout=0;if(isolate_tunnels)aw_frame_tunnels();else{yaw=0.75f;pitch=0.9f;aw_set_zoom(158);focus=(Vector3){64,10,64};}}
+    if(action==9){aw_set_isolation(0);yaw=.75f;pitch=.9f;aw_set_zoom(235);focus=(Vector3){64,0,64};follow_scout=0;}
+    if(action==1)aw_camera_zoom(logf(.84f));
+    if(action==2)aw_camera_zoom(-logf(.84f));
     if(action==3)yaw-=0.22f;
     if(action==4)yaw+=0.22f;
     if(action>=5&&action<=8){
@@ -225,7 +232,7 @@ AW_EXPORT void aw_sensor_control(int action,int value){
     if(action==3)sensor_xray=!!value;
     if(action==4&&sensors.count){
         aw_sensor_update_poses(0);follow_scout=0;aw_set_isolation(0);
-        focus=aw_sensor_v3(sensors.units[sensor_selected].pose.position);zoom=68;pitch=.82f;
+        focus=aw_sensor_v3(sensors.units[sensor_selected].pose.position);aw_set_zoom(68);pitch=.82f;
     }
     if(action>=5&&action<=8&&sensors.count){
         int t=action-5;AwSensorConfig c=sensors.units[sensor_selected].config[t];c.enabled=!!value;aw_sensor_attach(&sensors,sensor_selected,t,c);
@@ -246,7 +253,7 @@ static void aw_tour(int entrance){
         if(qa<qb||(qa==qb&&da<db))deepest=i;
     }unit_progress=(float)deepest;}
     unit_paused=1;revealed=AW_CELLS;follow_scout=0;
-    focus=aw_unit_position();zoom=entrance?30:38;yaw=entrance?-1.4f:0.9f;pitch=0.85f;aw_publish();
+    focus=aw_unit_position();aw_set_zoom(entrance?30:38);yaw=entrance?-1.4f:0.9f;pitch=0.85f;aw_publish();
 }
 AW_EXPORT void aw_inspect_tunnel(void){aw_tour(0);}
 AW_EXPORT void aw_inspect_entrance(void){aw_tour(1);}
@@ -262,7 +269,7 @@ AW_EXPORT void aw_inspect_mountain(int bypass){
     }
     aw_sensor_teleport(&sensors,0);unit_motion[0]=(AwMotion){0};aw_set_isolation(0);scout_tour=2+branch;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
     focus=(Vector3){(r->x+2*r->step+.5f)*AW_UNIT,aw_y(2),(r->z+2*r->step+.5f)*AW_UNIT};
-    zoom=4*r->step*AW_UNIT+22;pitch=.8f;yaw=.75f+r->rotation*1.5707963f;aw_publish();
+    aw_set_zoom(4*r->step*AW_UNIT+22);pitch=.8f;yaw=.75f+r->rotation*1.5707963f;aw_publish();
 }
 
 AW_EXPORT void aw_inspect_bridge(void){
@@ -276,7 +283,7 @@ AW_EXPORT void aw_inspect_bridge(void){
         world.path[world.path_length++]=n;
     }
     aw_sensor_teleport(&sensors,0);unit_motion[0]=(AwMotion){0};aw_set_isolation(0);scout_tour=4;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
-    focus=aw_bridge_point(b,b->length*.5f,0,0);zoom=b->length*AW_UNIT+16;pitch=.70f;yaw=b->dx?.8f:2.3f;aw_publish();
+    focus=aw_bridge_point(b,b->length*.5f,0,0);aw_set_zoom(b->length*AW_UNIT+16);pitch=.70f;yaw=b->dx?.8f:2.3f;aw_publish();
 }
 
 AW_EXPORT int aw_inspect_patrol(void){
@@ -284,7 +291,7 @@ AW_EXPORT int aw_inspect_patrol(void){
     int i=next++%AW_PATROLS;const AwPatrol*p=&patrols.units[i];if(p->count<2)return -1;
     AwPatrolPoint point=aw_patrol_position(&world,p,p->progress);
     aw_set_isolation(0);follow_scout=0;focus=(Vector3){point.x*AW_UNIT,aw_y(point.q/4),point.z*AW_UNIT};
-    sensor_selected=i+1;zoom=p->layer==AW_PATROL_AIR?45:24;pitch=.8f;yaw=.75f;aw_publish();return i;
+    sensor_selected=i+1;aw_set_zoom(p->layer==AW_PATROL_AIR?45:24);pitch=.8f;yaw=.75f;aw_publish();return i;
 }
 
 static void aw_draw_unit(void) {
@@ -334,7 +341,11 @@ static void aw_update(void) {
     }else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
         yaw-=mouse.x*0.005f;pitch=Clamp(pitch+mouse.y*0.004f,0.42f,1.35f);
     }
-    zoom=Clamp(zoom*(1-GetMouseWheelMove()*0.09f),16,280);
+#ifndef PLATFORM_WEB
+    aw_camera_zoom(-GetMouseWheelMove()*.095f);
+#endif
+    if(!zoom_input.initialized)aw_set_zoom(zoom);
+    zoom=aw_zoom_step(&zoom_input,dt);
     if(IsKeyDown(KEY_Q))yaw-=dt;
     if(IsKeyDown(KEY_E))yaw+=dt;
     if(IsKeyPressed(KEY_HOME))aw_camera_control(0);
