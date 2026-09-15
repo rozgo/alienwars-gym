@@ -1,0 +1,151 @@
+{
+  "artifact": "AlienWars-Gym-Demo.mp4",
+  "release": "https://github.com/rozgo/alienwars-gym/releases/tag/demo-2026-09-15",
+  "source_url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=2&tunnels=1&cut=1&sensors=15&unit=7&sensorsAll=1",
+  "published_source_commit": "4570dae02c76bd2c18acae5123147257b343caea",
+  "generator_version": 10,
+  "browser": "Chrome/152.0.7977.83",
+  "capture": "Headless Chrome CDP JPEG screencast, timestamp resampled to 30 fps",
+  "duration_seconds": 57.0,
+  "bytes": 37595932,
+  "sha256": "267c02a6516a0f26ec4fba499dda5cbc1dd30be5ad7edec0a8c5850197a3966d",
+  "video": {
+    "codec": "H.264",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "audio": {
+    "codec": "AAC",
+    "rate_hz": 48000,
+    "integrated_lufs": -20.06,
+    "true_peak_dbtp": -9.06,
+    "provenance": "Original deterministic ambient synthesis; no third-party samples."
+  },
+  "worlds": [
+    {
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=2&tunnels=1&cut=1&sensors=15&unit=7&sensorsAll=1",
+      "hash": "2ed014e9"
+    },
+    {
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2438762858&sym=1&a=6&b=6&biome=2&tunnels=1&sensors=0&cut=1",
+      "hash": "817efaf8"
+    },
+    {
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2026&sym=0&a=2&b=9&biome=1&tunnels=1&sensors=0&cut=1",
+      "hash": "9916f8cb"
+    }
+  ],
+  "shots": [
+    {
+      "name": "01-opening",
+      "seconds": 4,
+      "frames": 120,
+      "received": 222,
+      "bytes": 4800717,
+      "fps": "60 fps"
+    },
+    {
+      "name": "02-terrain",
+      "seconds": 6,
+      "frames": 180,
+      "received": 390,
+      "bytes": 3415988,
+      "fps": "60 fps"
+    },
+    {
+      "name": "03-lidar",
+      "seconds": 3,
+      "frames": 90,
+      "received": 169,
+      "bytes": 2296939,
+      "fps": "60 fps"
+    },
+    {
+      "name": "04-rf",
+      "seconds": 3,
+      "frames": 90,
+      "received": 170,
+      "bytes": 1840289,
+      "fps": "60 fps"
+    },
+    {
+      "name": "05-depth",
+      "seconds": 4,
+      "frames": 120,
+      "received": 221,
+      "bytes": 2702027,
+      "fps": "60 fps"
+    },
+    {
+      "name": "06-ground",
+      "seconds": 3,
+      "frames": 90,
+      "received": 185,
+      "bytes": 3290777,
+      "fps": "60 fps"
+    },
+    {
+      "name": "07-naval",
+      "seconds": 4,
+      "frames": 120,
+      "received": 246,
+      "bytes": 1676817,
+      "fps": "60 fps"
+    },
+    {
+      "name": "08-entrance",
+      "seconds": 4,
+      "frames": 120,
+      "received": 241,
+      "bytes": 6385826,
+      "fps": "60 fps"
+    },
+    {
+      "name": "09-tunnel",
+      "seconds": 7,
+      "frames": 210,
+      "received": 427,
+      "bytes": 8900158,
+      "fps": "60 fps"
+    },
+    {
+      "name": "10-isolation",
+      "seconds": 7,
+      "frames": 210,
+      "received": 373,
+      "bytes": 1036126,
+      "fps": "60 fps"
+    },
+    {
+      "name": "11-bridge",
+      "seconds": 3,
+      "frames": 90,
+      "received": 183,
+      "bytes": 2731692,
+      "fps": "60 fps"
+    },
+    {
+      "name": "12-variety",
+      "seconds": 3,
+      "frames": 90,
+      "received": 184,
+      "bytes": 2098375,
+      "fps": "60 fps"
+    },
+    {
+      "name": "13-closing",
+      "seconds": 6,
+      "frames": 180,
+      "received": 365,
+      "bytes": 3623793,
+      "fps": "60 fps"
+    }
+  ],
+  "checks": {
+    "browser_errors": [],
+    "uncropped_screencast_frames": 13,
+    "full_ffmpeg_decode_exit": 0,
+    "visual_review": "Encoded frames checked for captions, depth preview, cutaway, fixed-camera tunnel isolation and closing credits; MP4 playback opened in QuickTime."
+  }
+}

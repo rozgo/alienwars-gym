@@ -5,6 +5,9 @@ with native C, Raylib and WebAssembly.
 
 **[Open AlienWars Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)**
 
+[Watch the 57-second showcase](https://github.com/rozgo/alienwars-gym/releases/tag/demo-2026-09-15)
+— terrain, sensors, ground/sea/air units, tunnels and bridges.
+
 Map Lab generates symmetric or asymmetric worlds with continuous WFC terrain,
 rolling hills, cliffs, beaches, lakes and an extended ocean. Roads reach bases
 up to ten floors high. Volumetric tunnels descend through ramp entrances, while
@@ -26,6 +29,7 @@ rendering, with fixed observation buffers for the future RL environment.
 - [Sensor architecture, observations and benchmarks](docs/SENSORS.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Raylib web build and GitHub Pages](docs/WEB.md)
+- [Demo recording and editing](scripts/demo/README.md)
 - [Generation research](docs/GENERATION_RESEARCH.md)
 - [Upstream source and provenance](docs/UPSTREAM.md)
 - [PufferLib documentation](https://puffer.ai/docs.html)
