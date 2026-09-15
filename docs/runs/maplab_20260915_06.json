@@ -1,0 +1,56 @@
+{
+  "milestone": "Faster turn easing and drag-to-pan map controls",
+  "generator_version": 10,
+  "source_commit": "e3f0e9df28c05b4a3a91b2c64dd799ed6a7bbea8",
+  "source_dirty": false,
+  "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+  "raylib": "5.5",
+  "artifacts": {
+    "index.html": {
+      "bytes": 39798,
+      "sha256": "5aeb46b14f5348ec97fc4b13802e341f64b35c3c80925a548bb4b58f9da90e25"
+    },
+    "maplab.js": {
+      "bytes": 233512,
+      "sha256": "a406c13f3c1da061866569ead2d761cfb45dee32e452da9ab929dcfae5ac843f"
+    },
+    "maplab.wasm": {
+      "bytes": 397149,
+      "sha256": "2ecc65043ad8e957992e9d99d8ea5050f4178e871cdf6d228619669442261c2c"
+    }
+  },
+  "changes": [
+    "Yaw and pitch easing run at three times the previous tempo: rate limits and response frequency scale by 3, acceleration limits by 9.",
+    "Quadrotor cruise remains 0.65 route segments/s; gunship 2.55 and transport 1.9.",
+    "Left-drag pans; either Shift key with left-drag orbits. Right-drag remains a pan gesture. Native and web camera hints updated."
+  ],
+  "checks": {
+    "motion": {
+      "motion_version": 1,
+      "native": "MOTION_TEST profiles=9 rate/acceleration_bounds=PASS pitch=PASS reversals=PASS angle_wrap=PASS pause/reset=PASS 30/60/120Hz=PASS turn_pace=PASS",
+      "wasm": "MOTION_TEST profiles=9 rate/acceleration_bounds=PASS pitch=PASS reversals=PASS angle_wrap=PASS pause/reset=PASS 30/60/120Hz=PASS turn_pace=PASS"
+    },
+    "packaged": {
+      "artifacts": "PASS",
+      "javascript": "PASS",
+      "packaged_native_wasm": "MAP seed=2438762858 version=10 hash=817efaf8 walk=2669 reached=2549 path=175 decisions=1096 attempts=2 structure=126 tunnels=128 cost=1968 shapes=249 entrance_ne=1395 entrance_sw=2700 depth_ne=-4 depth_sw=-4 lakes=2 rooms=4 base_a=718 base_b=3377 landforms=18 plans=1 ocean=5982 bridges=2"
+    }
+  },
+  "browser": {
+    "seed": 2438762858,
+    "symmetry": 1,
+    "floors": [
+      6,
+      6
+    ],
+    "palette": 2,
+    "hash": "817efaf8",
+    "checks": [
+      "Chrome: dragging the canvas translated the map while preserving its orientation; visible and accessible gesture hints match the new bindings.",
+      "Live quadrotor observed at 1.4 world units/s on sampled segments, with live pose and sensor readings.",
+      "Focus and Reset view buttons remain functional; updated scene visually inspected.",
+      "No console warning/error entries."
+    ]
+  },
+  "validation_scope": "Native ASan/UBSan and WASM tests cover all 9 motion profiles, angular rate/acceleration bounds, angle wrapping, reversals, pitch, pause/reset and 30/60/120 Hz parity. Native and web viewer builds, JavaScript syntax, artifact hashes and one matched packaged world checked. Generation, navigation and sensor algorithms are unchanged; their full suites were not repeated for these tuning and input-binding changes."
+}
