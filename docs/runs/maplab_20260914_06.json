@@ -1,0 +1,171 @@
+{
+  "milestone": "Procedural opposite-diagonal entrances and underground crossings",
+  "generator_version": 5,
+  "source_commit": "99c912656cbe696b2242f3ad5bb9fa45f7825530",
+  "source_dirty": false,
+  "checks": {
+    "generator_version": 5,
+    "native": "MAP_TEST version=5 seeds=256 digest=1d382a24 terrains=12 max_structure=84 geometry_choices=202810 entrance_sites=54 depths=7 independent=50 PASS",
+    "wasm": "MAP_TEST version=5 seeds=256 digest=1d382a24 terrains=12 max_structure=84 geometry_choices=202810 entrance_sites=54 depths=7 independent=50 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=2 triangles=97802 edges=147015 boundary=624 manifold=PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "5",
+        "hash": "7d3bf5cf",
+        "walk": "1813",
+        "reached": "1476",
+        "path": "168",
+        "decisions": "2592",
+        "attempts": "2",
+        "structure": "33",
+        "tunnels": "48",
+        "cost": "1935",
+        "shapes": "1106",
+        "entrance_ne": "1383",
+        "entrance_sw": "2902",
+        "depth_ne": "-6",
+        "depth_sw": "-9"
+      },
+      {
+        "seed": "1",
+        "version": "5",
+        "hash": "b51b598c",
+        "walk": "1754",
+        "reached": "1332",
+        "path": "164",
+        "decisions": "2583",
+        "attempts": "5",
+        "structure": "35",
+        "tunnels": "54",
+        "cost": "1926",
+        "shapes": "1142",
+        "entrance_ne": "1841",
+        "entrance_sw": "2519",
+        "depth_ne": "-9",
+        "depth_sw": "-10"
+      },
+      {
+        "seed": "73",
+        "version": "5",
+        "hash": "af577cfd",
+        "walk": "1724",
+        "reached": "1466",
+        "path": "164",
+        "decisions": "2496",
+        "attempts": "4",
+        "structure": "31",
+        "tunnels": "49",
+        "cost": "1910",
+        "shapes": "1120",
+        "entrance_ne": "1384",
+        "entrance_sw": "2520",
+        "depth_ne": "-6",
+        "depth_sw": "-10"
+      },
+      {
+        "seed": "4294967295",
+        "version": "5",
+        "hash": "d2501b5d",
+        "walk": "1844",
+        "reached": "1585",
+        "path": "160",
+        "decisions": "2554",
+        "attempts": "6",
+        "structure": "38",
+        "tunnels": "82",
+        "cost": "1892",
+        "shapes": "1087",
+        "entrance_ne": "1017",
+        "entrance_sw": "3284",
+        "depth_ne": "-6",
+        "depth_sw": "-10"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "examples": {
+    "symmetric_temperate": "MAP seed=73 version=5 hash=9003845d walk=1754 reached=1446 path=143 decisions=1298 attempts=4 structure=58 tunnels=46 cost=1824 shapes=565 entrance_ne=1384 entrance_sw=2711 depth_ne=-6 depth_sw=-6",
+    "asymmetric_volcanic": "MAP seed=1 version=5 hash=8596afe7 walk=1461 reached=1123 path=170 decisions=2602 attempts=3 structure=35 tunnels=50 cost=1913 shapes=1142 entrance_ne=1842 entrance_sw=2582 depth_ne=-10 depth_sw=-4"
+  },
+  "browser_review": {
+    "browser": "Chrome, WebGL2",
+    "symmetric_seed73": {
+      "settings": {
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1
+      },
+      "hash": "9003845d",
+      "walkable_spans": 1754,
+      "base_path_steps": 142,
+      "cave_tour_steps": 38,
+      "cave_waypoints": 46,
+      "chamber_floors": [
+        -1.5,
+        -1.5
+      ],
+      "observed_core_generation_ms": 244
+    },
+    "asymmetric_seed1": {
+      "settings": {
+        "symmetry": 0,
+        "floors": [
+          10,
+          3
+        ],
+        "biome": 4
+      },
+      "hash": "8596afe7",
+      "walkable_spans": 1461,
+      "base_path_steps": 169,
+      "cave_waypoints": 50,
+      "chamber_floors": [
+        -2.5,
+        -1
+      ],
+      "observed_core_generation_ms": 244
+    },
+    "tunnels_disabled_seed1": {
+      "hash": "0edbdb3e",
+      "cave_waypoints": 0,
+      "inspection_controls_disabled": true
+    },
+    "verified": [
+      "Opposite-diagonal entrance markers in the full terrain",
+      "Symmetric and asymmetric isolated networks",
+      "Continuous roofs, ramps and cave-only scout tour",
+      "Final packaged build with floor-10 volcanic terrain and tile boundaries",
+      "Tunnels-off state and empty depth display"
+    ],
+    "console": "No runtime/shader errors; existing Raylib VAO/NPOT capability warnings only",
+    "timing_scope": "Core generation including plan retries; excludes meshing and loading"
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 25900,
+      "sha256": "50d645007019258203d273994d5ea2d03eed0617b90db8b2cdd378abfdf129e4"
+    },
+    "maplab.js": {
+      "bytes": 230552,
+      "sha256": "8dbc6bec08682e0a561d1678630fc5b96cd2aaad6538d698ff07c0e26056fbcb"
+    },
+    "maplab.wasm": {
+      "bytes": 223339,
+      "sha256": "d2a0e8e14b29ea37f795db867c3111594ac270b08232ec785b01f74f7f519123"
+    }
+  },
+  "baseline_breakout_unchanged": true,
+  "surface_corner_geometry_unchanged": true,
+  "limitations": [
+    "Two entrances in bounded northeast/southwest regions; not an arbitrary strategic graph.",
+    "Seeded chamber floors currently range from -1 to -2.5.",
+    "At most 16 candidate plans on the same surface; exhaustion reports failure.",
+    "Navigation uses conservative surface/centerline graphs; no combat or trained AlienWars policy."
+  ]
+}
