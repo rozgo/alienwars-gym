@@ -1,0 +1,248 @@
+{
+  "milestone": "Rolling hills, fitted bridges, reliable slope faces and nine scripted unit types",
+  "generator_version": 9,
+  "source_commit": "b00dd39e9ae2ee0d81ffa11bbc384d5147b0f131",
+  "source_dirty": false,
+  "changes": [
+    "Seeded rolling lowland elevation sockets retain continuous road, bank and cliff joins.",
+    "Optional bridge crossings fit existing reachable banks and unchanged water beds; decks share the meshed collision solid and support both body sizes.",
+    "Slope triangles use the strongest signed field samples for winding, avoiding flipped visible faces caused by near-zero sample cancellation.",
+    "The original scout plus tracked rover and cargo hauler form three ground types; skiff, patrol boat and cutter use separate draft and mast clearance; quadrotor, gunship and transport use terrain-aware flight envelopes.",
+    "Patrol traffic can run, pause or hide; Find next patrol frames each background unit. Reduced-motion preference starts traffic paused."
+  ],
+  "toolchain": {
+    "native": "Apple clang 21.0.0, arm64, ASan/UBSan test builds",
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+    "raylib": "5.5"
+  },
+  "validation": {
+    "commands": [
+      "./build.sh alienwars build/maplab --cpu --debug",
+      "./scripts/build_maplab.sh",
+      "python3 scripts/check_maplab.py",
+      "build/patrol-test",
+      "node build/patrol-test.js"
+    ],
+    "scope": "The full generator, diversity, mountain, relief, volume, occlusion and detail suites passed in native C and WASM. The volume phase includes the slope-winding fix. After adding patrols, the new patrol suite passed separately in both targets. The final committed source was rebuilt cleanly, then the packaged viewer section of check_maplab.py was rerun: four native/WASM headless comparisons, matching artifact hashes, versioned asset URLs and JavaScript syntax. The combined results below retain the unchanged core-suite measurements.",
+    "checks": {
+      "generator_version": 9,
+      "native": "MAP_TEST version=9 seeds=256 digest=2cad3e6d terrains=12 max_structure=174 geometry_choices=64523 entrance_sites=89 depths=7 independent=50 PASS",
+      "wasm": "MAP_TEST version=9 seeds=256 digest=2cad3e6d terrains=12 max_structure=174 geometry_choices=64523 entrance_sites=89 depths=7 independent=50 PASS",
+      "volume_native": "VOLUME_TEST spans=3 fixtures=4 mountain_joins=PASS bridge_joins=PASS slope_winding=PASS triangles=254924 edges=383162 boundary=1552 manifold=PASS",
+      "volume_wasm": "VOLUME_TEST spans=3 fixtures=4 mountain_joins=PASS bridge_joins=PASS slope_winding=PASS triangles=254924 edges=383162 boundary=1552 manifold=PASS",
+      "mountain_native": "MOUNTAIN_TEST version=9 worlds=32 terrain_invariance=PASS optional_regions=18 digest=8e14c47a topologies=18 profiles=8 graded_edges=42 multiple_tunnels=6 full_regions=18 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+      "mountain_wasm": "MOUNTAIN_TEST version=9 worlds=32 terrain_invariance=PASS optional_regions=18 digest=8e14c47a topologies=18 profiles=8 graded_edges=42 multiple_tunnels=6 full_regions=18 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+      "relief_native": "RELIEF_TEST version=9 worlds=32 digest=8e14c47a bridge_worlds=20 bridges=35 min_walkable_slopes=50 graded_segments=157 water_spans=208 deck_support=PASS underpass=PASS symmetry=PASS ocean_unchanged=PASS",
+      "relief_wasm": "RELIEF_TEST version=9 worlds=32 digest=8e14c47a bridge_worlds=20 bridges=35 min_walkable_slopes=50 graded_segments=157 water_spans=208 deck_support=PASS underpass=PASS symmetry=PASS ocean_unchanged=PASS",
+      "detail_native": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+      "detail_wasm": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+      "occlusion_native": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+      "occlusion_wasm": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+      "diversity_native": "DIVERSITY sym=0 worlds=24 bases=20 entrances=23 outline_bits_x100=1383 height_q_x100=358 road_change_permille=758 cave_change_permille=974 lake_change_permille=938 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1189 height_q_x100=369 road_change_permille=739 cave_change_permille=930 lake_change_permille=942 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=9 digest=14ea53ff PASS",
+      "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=20 entrances=23 outline_bits_x100=1383 height_q_x100=358 road_change_permille=758 cave_change_permille=974 lake_change_permille=938 room_types=2 lake_counts=3 form_counts=8 PASS\nDIVERSITY sym=1 worlds=24 bases=21 entrances=23 outline_bits_x100=1189 height_q_x100=369 road_change_permille=739 cave_change_permille=930 lake_change_permille=942 room_types=2 lake_counts=3 form_counts=6 PASS\nDIVERSITY_TEST version=9 digest=14ea53ff PASS",
+      "packaged_viewer_seed_checks": [
+        {
+          "seed": "0",
+          "version": "9",
+          "hash": "bddcad69",
+          "walk": "2161",
+          "reached": "2041",
+          "path": "126",
+          "decisions": "2022",
+          "attempts": "5",
+          "structure": "80",
+          "tunnels": "70",
+          "cost": "1502",
+          "shapes": "376",
+          "entrance_ne": "1518",
+          "entrance_sw": "3338",
+          "depth_ne": "-4",
+          "depth_sw": "-4",
+          "lakes": "2",
+          "rooms": "2",
+          "base_a": "1299",
+          "base_b": "3250",
+          "landforms": "13",
+          "plans": "2",
+          "ocean": "6223",
+          "bridges": "1"
+        },
+        {
+          "seed": "1",
+          "version": "9",
+          "hash": "58f9ea67",
+          "walk": "2049",
+          "reached": "1924",
+          "path": "174",
+          "decisions": "2082",
+          "attempts": "11",
+          "structure": "116",
+          "tunnels": "80",
+          "cost": "1906",
+          "shapes": "402",
+          "entrance_ne": "814",
+          "entrance_sw": "2888",
+          "depth_ne": "-8",
+          "depth_sw": "-10",
+          "lakes": "1",
+          "rooms": "2",
+          "base_a": "843",
+          "base_b": "3320",
+          "landforms": "10",
+          "plans": "2",
+          "ocean": "6296",
+          "bridges": "1"
+        },
+        {
+          "seed": "73",
+          "version": "9",
+          "hash": "361c5ab4",
+          "walk": "2022",
+          "reached": "1871",
+          "path": "127",
+          "decisions": "2110",
+          "attempts": "6",
+          "structure": "24",
+          "tunnels": "82",
+          "cost": "1510",
+          "shapes": "161",
+          "entrance_ne": "1067",
+          "entrance_sw": "3472",
+          "depth_ne": "-4",
+          "depth_sw": "-7",
+          "lakes": "2",
+          "rooms": "4",
+          "base_a": "775",
+          "base_b": "2745",
+          "landforms": "10",
+          "plans": "1",
+          "ocean": "6225",
+          "bridges": "1"
+        },
+        {
+          "seed": "4294967295",
+          "version": "9",
+          "hash": "ed3847d6",
+          "walk": "1897",
+          "reached": "1877",
+          "path": "166",
+          "decisions": "1755",
+          "attempts": "10",
+          "structure": "116",
+          "tunnels": "42",
+          "cost": "1846",
+          "shapes": "303",
+          "entrance_ne": "1573",
+          "entrance_sw": "2511",
+          "depth_ne": "-9",
+          "depth_sw": "-6",
+          "lakes": "1",
+          "rooms": "2",
+          "base_a": "782",
+          "base_b": "2995",
+          "landforms": "12",
+          "plans": "2",
+          "ocean": "6673",
+          "bridges": "2"
+        }
+      ],
+      "artifact_hashes_match": true,
+      "javascript_syntax": "passed",
+      "patrol_native": "PATROL_TEST worlds=8 routes=64 digest=438e8917 ground_nodes=2171 naval_nodes=3604 air_nodes=3036 large_body=PASS draft_and_mast=PASS flight_clearance=PASS deterministic=PASS map_unchanged=PASS",
+      "patrol_wasm": "PATROL_TEST worlds=8 routes=64 digest=438e8917 ground_nodes=2171 naval_nodes=3604 air_nodes=3036 large_body=PASS draft_and_mast=PASS flight_clearance=PASS deterministic=PASS map_unchanged=PASS"
+    }
+  },
+  "relief_comparison": {
+    "baseline_commit": "faae9677ccb261b56b73746f4c0ba21cd6b549e4",
+    "worlds": 32,
+    "method": "Identical seed/settings cohort in the previous version 8 and current version 9 generator; counts of non-road walkable sloped cells.",
+    "version_8": {
+      "total": 996,
+      "mean": 31.125,
+      "min": 6,
+      "max": 74
+    },
+    "version_9": {
+      "total": 3805,
+      "mean": 118.90625,
+      "min": 50,
+      "max": 262
+    },
+    "mean_ratio": 3.82,
+    "bridge_worlds": 20,
+    "bridges": 35,
+    "interpretation": "Observed cohort coverage, not a promise of bridges or this slope increase for every seed."
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "worlds": [
+      {
+        "seed": 580059347,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "tunnels": true,
+        "hash": "0a247e5e",
+        "bridges": 2
+      },
+      {
+        "seed": 1,
+        "symmetry": 0,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "tunnels": true,
+        "hash": "a6094bbb",
+        "bridges": 1
+      },
+      {
+        "seed": 1,
+        "symmetry": 1,
+        "floors": [
+          6,
+          6
+        ],
+        "biome": 1,
+        "tunnels": true,
+        "hash": "f7b136ce",
+        "bridges": 2
+      }
+    ],
+    "verified": [
+      "Black triangular rows reproduced in seed 580059347 before the winding correction and absent after it, with normal detail and baked occlusion enabled.",
+      "Bridge deck joins and hill ramps reviewed close-up, with tile boundaries and walkability overlays.",
+      "Tunnel isolation retains the entrance camera framing and leaves Follow scout available.",
+      "All eight background patrol silhouettes inspected using Find next patrol, including ground placement, boat hulls and wakes, and separate aircraft heights.",
+      "Live aircraft and scout movement observed; pause and inspection controls work.",
+      "No warning/error console entries during final local review."
+    ]
+  },
+  "limitations": [
+    "Scripted patrols; no AlienWars learned policy, combat or mutual collision avoidance.",
+    "Procedural prototype unit meshes; moving units do not enter the baked static shadow texture.",
+    "Sampled terrain/body clearance; decorative trees and trusses are not collision geometry.",
+    "Boats have no buoyancy simulation and aircraft have no flight dynamics.",
+    "Bridges are optional cardinal bank-pair crossings; no hydrology or forced landscape changes.",
+    "Land remains 64 by 64 tiles within the 96 by 96 ocean domain."
+  ],
+  "breakout_artifacts_unchanged": true,
+  "artifacts": {
+    "index.html": {
+      "bytes": 32521,
+      "sha256": "9d4033a2e874227fc81005225b3e283dbfdf15278714e16060853b8cdd6127ee"
+    },
+    "maplab.js": {
+      "bytes": 232931,
+      "sha256": "d078b51ec95de8a1a3216c58851e8e41c0621a2924b2d6a4410cdd99a9052e89"
+    },
+    "maplab.wasm": {
+      "bytes": 365893,
+      "sha256": "206dc0cbaf00508ddc040241ebda04d9fe3320e27b1219fa49335fdf41c31f47"
+    }
+  }
+}
