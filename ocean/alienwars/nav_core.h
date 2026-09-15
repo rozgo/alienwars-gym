@@ -54,6 +54,12 @@ static float aw_nav_node_q(const AwMap *m,int n) {
 static AwSVec aw_nav_position(const AwGroundUnit *u) {
     return (AwSVec){u->x,u->q*.75f-1.2f,u->z};
 }
+static int aw_nav_dry_support(const AwMap *m,float x,float q,float z){
+    /* Water covers the unchanged surface bed at q=1.44. A cave floor below
+     * a roof is a different story and must not be treated as a water bed. */
+    float bed=aw_ocean_bed_q(m,x,z);
+    return !(q<1.44f&&bed<1.44f&&fabsf(q-bed)<.5f);
+}
 /* Integrate a small supported ground body. At most 0.1 world units per 30 Hz
  * substep; reject wall penetration and terminate attempted unsupported travel.
  * Floor hints track the current story, never the topmost x/z surface. */
@@ -71,7 +77,7 @@ static void aw_ground_step(const AwMap *m,AwGroundUnit *u,int throttle,int steer
     if(x<4||z<4||x>124||z>124){u->failed=1;u->speed=0;return;}
     float q=aw_support_q(m,x*.5f,z*.5f,u->q);
     if(q<u->q-1.05f){u->failed=1;u->speed=0;return;}
-    if(q>u->q+.46f||!aw_body_fits(m,x*.5f,q,z*.5f,0)){
+    if(q>u->q+.46f||!aw_nav_dry_support(m,x*.5f,q,z*.5f)||!aw_body_fits(m,x*.5f,q,z*.5f,0)){
         u->contact=1;u->speed=0;return;
     }
     float pitch=atan2f((q-u->q)*.75f,hypotf(dx,dz));
@@ -86,7 +92,7 @@ static int aw_nav_edge(const AwNavWorld *w,int a,int b) {
     for(int j=1;j<8;j++){
         float t=j/8.0f,x=aw_lerp(p.x,q.x,t)*.5f,z=aw_lerp(p.z,q.z,t)*.5f,h=aw_lerp(qa,qb,t);
         float floor=aw_support_q(&w->map,x,z,h);
-        if(fabsf(floor-h)>.3f||!aw_body_fits(&w->map,x,floor,z,0))return 0;
+        if(fabsf(floor-h)>.3f||!aw_nav_dry_support(&w->map,x,floor,z)||!aw_body_fits(&w->map,x,floor,z,0))return 0;
     }
     return 1;
 }
@@ -97,7 +103,7 @@ static void aw_nav_graph(AwNavWorld *w) {
         if(!m->walkable[n]||!m->reachable[n])continue;
         int c=aw_node_cell(m,n);float q=aw_nav_node_q(m,n);
         w->positions[n]=(AwSVec){(c%64+.5f)*2,q*.75f-1.2f,(c/64+.5f)*2};
-        w->allowed[n]=aw_body_fits(m,c%64+.5f,q,c/64+.5f,0);
+        w->allowed[n]=aw_nav_dry_support(m,c%64+.5f,q,c/64+.5f)&&aw_body_fits(m,c%64+.5f,q,c/64+.5f,0);
     }
     for(int n=0;n<AW_NODES;n++)if(w->allowed[n])for(int d=0;d<AW_LINKS;d++){
         int b=aw_open(m,n,d);

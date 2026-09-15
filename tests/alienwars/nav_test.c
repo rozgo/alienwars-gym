@@ -56,7 +56,14 @@ static void fixtures(void){
     unit=(AwGroundUnit){.x=25,.z=25,.q=22,.motion={.yaw=AW_MOTION_PI*.5f,.initialized=1}};
     for(int i=0;i<30;i++)aw_ground_step(&fixture.map,&unit,2,1,1.0f/30);
     assert(!unit.failed&&!unit.contact&&unit.q>20);
-    printf("NAV_FIXTURES observations=%d finite=PASS reset=PASS deterministic=PASS actions=PASS success=PASS timeout=PASS wall=PASS cliff=PASS stacked_bridge=PASS no_step_alloc=PASS\n",AW_NAV_OBS);
+    /* A supported submerged surface is not a ground route. Underground
+     * floors remain valid even when their elevation is below sea level. */
+    flat(4);for(int c=0;c<AW_CELLS;c++)aw_flat(&fixture.map.cells[c],0);
+    unit=(AwGroundUnit){.x=25,.z=25,.q=0,.motion={.initialized=1}};
+    aw_ground_step(&fixture.map,&unit,2,1,1.0f/30);
+    assert(unit.contact&&!unit.failed&&unit.z==25);
+    assert(aw_nav_dry_support(&fixture.map,12.5f,-4,12.5f));
+    printf("NAV_FIXTURES observations=%d finite=PASS reset=PASS deterministic=PASS actions=PASS success=PASS timeout=PASS wall=PASS cliff=PASS stacked_bridge=PASS submerged_bed=PASS no_step_alloc=PASS\n",AW_NAV_OBS);
 }
 int main(int argc,char **argv){
     fixtures();

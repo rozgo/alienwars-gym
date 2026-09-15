@@ -23,6 +23,8 @@ must run the same action-driven simulation. Map Lab remains the world inspector.
 - Fixed 10 Hz decisions with three 30 Hz motion/sensing substeps. Motion uses
   bounded acceleration and yaw rate, sampled body clearance and support from the
   shared tetrahedral solid. A blocked move stops translation and produces contact.
+  Entering a submerged surface bed also produces contact; bridges and underground
+  floors remain distinct from water beds. This is not a swimming/fluid simulator.
   Loss of floor support is a failure; no teleportation between stacked floors.
 - Policy input is the existing 613-float sensor contract plus eight task floats:
   relative goal right/forward/height, goal distance, forward speed, yaw rate,
@@ -114,6 +116,11 @@ CUDA handles the native PufferNet/PPO learner. Rollout throughput is not CUDA
 environment throughput, and it excludes map-bank preparation. Training requires
 `env.controller=0`; scripted baselines are restricted to the separate viewer.
 Keep `train.gamma=0.99` to match the task's potential shaping contract.
+
+For a curriculum stage, pass `--base.load_model_path=EXACT_CHECKPOINT.bin` and a
+new run ID. Native training loads those weights before the first rollout and
+saves `initial.bin` for hash verification. Optimizer state, recurrence, RNG and
+step counters start fresh. This is weight initialization, not training resume.
 
 ## Evaluate and view a checkpoint
 

@@ -27,7 +27,7 @@ manifest={'contract':1,'checkpoint':Path(model).name if model else None,
           'layers':int(os.environ.get('AW_NAV_LAYERS','2')),
           'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
           'dirty':bool(subprocess.check_output(['git','status','--porcelain']))}
-manifest['files']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.suffix in ('.js','.wasm','.data')}
+manifest['files']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.suffix in ('.html','.css','.js','.wasm','.data')}
 (root/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 PY
 echo 'Built: build/web/alienwars-nav/index.html'
