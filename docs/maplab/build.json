@@ -1,13 +1,13 @@
 {
   "generator_version": 9,
-  "source_commit": "b00dd39e9ae2ee0d81ffa11bbc384d5147b0f131",
+  "source_commit": "3483f3e8f52252fc72cdcfd2383193b39414b430",
   "source_dirty": false,
   "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
   "raylib": "5.5",
   "artifacts": {
     "index.html": {
-      "bytes": 32521,
-      "sha256": "9d4033a2e874227fc81005225b3e283dbfdf15278714e16060853b8cdd6127ee"
+      "bytes": 32860,
+      "sha256": "7635689feb3034226b3bdb3d7d67129be235301d72c35a4ebcc2269282b6596f"
     },
     "maplab.js": {
       "bytes": 232931,

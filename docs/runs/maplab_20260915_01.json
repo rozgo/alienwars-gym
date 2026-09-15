@@ -1,0 +1,51 @@
+{
+  "milestone": "Compact charcoal monospace Map Lab interface",
+  "generator_version": 9,
+  "source_commit": "3483f3e8f52252fc72cdcfd2383193b39414b430",
+  "source_dirty": false,
+  "changes": [
+    "Neutral charcoal panels, fields and overlays with muted accents.",
+    "Monospace font stack throughout the browser UI.",
+    "44px header, 288px sidebar, 12px panel padding and 32px desktop controls.",
+    "Compact square toggles, tighter section spacing and responsive single-column controls on phones."
+  ],
+  "validation_scope": "Presentation-only CSS and theme-color change. Rebuilt with scripts/build_maplab.sh. Compiled JavaScript and WASM bytes exactly match the validated patrol release a288984b; no generator or navigation rerun was needed. Verified manifest hashes, clean source, content-versioned runtime URLs and JavaScript syntax using the artifact section of scripts/check_maplab.py.",
+  "checks": {
+    "runtime_matches_prior_release": true,
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed",
+    "breakout_unchanged": true
+  },
+  "browser_review": {
+    "browser": "Chrome / WebGL2",
+    "widths": [
+      1728,
+      390
+    ],
+    "horizontal_overflow": false,
+    "clipped_controls": false,
+    "font": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace",
+    "seed": 580059347,
+    "hash": "0a247e5e",
+    "verified": [
+      "Desktop and phone layouts inspected visually.",
+      "Patrol traffic, Pause scout and Find next patrol remain functional.",
+      "Viewport override reset after phone review.",
+      "No warning/error console entries."
+    ]
+  },
+  "artifacts": {
+    "index.html": {
+      "bytes": 32860,
+      "sha256": "7635689feb3034226b3bdb3d7d67129be235301d72c35a4ebcc2269282b6596f"
+    },
+    "maplab.js": {
+      "bytes": 232931,
+      "sha256": "d078b51ec95de8a1a3216c58851e8e41c0621a2924b2d6a4410cdd99a9052e89"
+    },
+    "maplab.wasm": {
+      "bytes": 365893,
+      "sha256": "206dc0cbaf00508ddc040241ebda04d9fe3320e27b1219fa49335fdf41c31f47"
+    }
+  }
+}
