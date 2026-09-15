@@ -45,6 +45,11 @@ static int aw_traversal_build_uncached(AwMap*m){
     /* The possible floor planes come from nearby excavations, but acceptance
      * depends on support and body clearance in the actual polygonal solid. */
     for(int c=0;c<AW_CELLS;c++){
+        if(m->bridge_bins[c]){
+            const AwBridge*b=&m->bridges[m->bridge_bins[c]-1];
+            float u=(c%64-b->x)*b->dx+(c/64-b->z)*b->dz;
+            aw_span_add(m,c,aw_bridge_q(b,u));
+        }
         for(int j=0;j<m->cave_bin_count[c];j++){
             const AwCaveEdge*e=&m->cave_edges[m->cave_bins[c][j]];const AwCaveNode*a=&m->cave[e->a],*b=&m->cave[e->b];
             float dx=b->x-a->x,dz=b->z-a->z,t=((c%64-a->x)*dx+(c/64-a->z)*dz)/(dx*dx+dz*dz);

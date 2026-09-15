@@ -43,7 +43,7 @@ static float aw_y(float height) {
 
 static float aw_ground_y(const AwMap *m,int node,float fx,float fz){
     int c=aw_node_cell(m,node);float q=node>=AW_SPAN_START?m->spans[node-AW_SPAN_START].q:node>=AW_CELLS?m->cave[node-AW_CELLS].q:aw_surface_q(m,node,fx,fz);
-    if(m->cave_bin_count[c]||m->trail_bin_count[c])q=aw_support_q(m,c%64+fx,c/64+fz,q);
+    if(m->cave_bin_count[c]||m->trail_bin_count[c]||m->bridge_bins[c])q=aw_support_q(m,c%64+fx,c/64+fz,q);
     return aw_y(q/4.0f);
 }
 static Vector3 aw_center(const AwMap *m,int node){
@@ -159,15 +159,16 @@ static void aw_render_volume_triangle(void*opaque,AwVolumePoint a,AwVolumePoint 
         Color colors[4]={aw_vertex_color(m,cx,cz),aw_vertex_color(m,cx+1,cz),aw_vertex_color(m,cx+1,cz+1),aw_vertex_color(m,cx,cz+1)};
         float lava=aw_bilinear(aw_vertex_lava(m,cx,cz),aw_vertex_lava(m,cx+1,cz),aw_vertex_lava(m,cx+1,cz+1),aw_vertex_lava(m,cx,cz+1),fx,fz);
         Color color=aw_tile_color(colors,fx,fz);Vector3 normal=aw_surface_normal(m,x,z);
-        if((m->cave_bin_count[cz*64+cx]||m->trail_bin_count[cz*64+cx])&&q<aw_height_q(m,x,z)-0.08f){
+        int deck=m->bridge_bins[cz*64+cx]&&q>aw_height_q(m,x,z)+.02f;
+        if(deck||((m->cave_bin_count[cz*64+cx]||m->trail_bin_count[cz*64+cx])&&q<aw_height_q(m,x,z)-0.08f)){
             const float e=0.02f;
             float nx=aw_density(m,x-e,q,z)-aw_density(m,x+e,q,z);
             float ny=aw_density(m,x,q-e,z)-aw_density(m,x,q+e,z);
             float nz=aw_density(m,x,q,z-e)-aw_density(m,x,q,z+e);
             normal=Vector3Normalize((Vector3){nx/AW_UNIT,ny/0.75f,nz/AW_UNIT});
-            color=(Color){112,119,105,255};lava=0;
+            color=deck?(Color){105,116,116,255}:(Color){112,119,105,255};lava=0;
         }
-        int n=r->b->count++;r->b->positions[n]=(Vector3){x*AW_UNIT,aw_y(q/4),z*AW_UNIT};r->b->normals[n]=normal;r->b->colors[n]=color;r->b->uv[n]=(Vector2){r->rank,10+lava};
+        int n=r->b->count++;r->b->positions[n]=(Vector3){x*AW_UNIT,aw_y(q/4),z*AW_UNIT};r->b->normals[n]=normal;r->b->colors[n]=color;r->b->uv[n]=(Vector2){r->rank,deck?5:10+lava};
     }
     /* Keep actual excavated triangles for inspection. No proxy boxes or second
      * mesher: the isolated shell uses the same vertices as the world surface.
@@ -263,6 +264,31 @@ static void aw_build_detail(AwScene*s,const AwMap*m){
     s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->surface_mask;
     s->land_material.maps[MATERIAL_MAP_ROUGHNESS].texture=s->detail;
 }
+/* Edge trusses are visual structure outside the validated walking strip.
+ * The deck itself is authoritative volume geometry, not this decorative mesh. */
+static Vector3 aw_bridge_point(const AwBridge*b,float u,float side,float rise){
+    return (Vector3){(b->x+.5f+b->dx*u+b->dz*side)*AW_UNIT,
+        aw_y(aw_bridge_q(b,u)/4)+rise,(b->z+.5f+b->dz*u-b->dx*side)*AW_UNIT};
+}
+static void aw_bridge_details(AwBuilder*mesh,const AwBridge*b){
+    Color steel={ 60, 70, 70,255};
+    for(int side=-1;side<=1;side+=2)for(int u=0;u<b->length;u++){
+        Vector3 a=aw_bridge_point(b,u,side*1.06f,.05f),c=aw_bridge_point(b,u+1,side*1.06f,.05f);
+        Vector3 top=a,end=c;top.y+=.82f;end.y+=.82f;
+        aw_branch(mesh,a,top,.065f,.065f,steel,AW_CELLS-1,5,4);
+        aw_branch(mesh,top,end,.075f,.075f,steel,AW_CELLS-1,5,4);
+        aw_branch(mesh,a,c,.09f,.09f,steel,AW_CELLS-1,5,4);
+        if(u%2)aw_branch(mesh,top,c,.035f,.035f,steel,AW_CELLS-1,5,4);
+        else aw_branch(mesh,a,end,.035f,.035f,steel,AW_CELLS-1,5,4);
+        /* Transverse expansion seams sit on the actual deck grade. */
+        if(u%2==0){Vector3 left=aw_bridge_point(b,u,-.98f,.018f),right=aw_bridge_point(b,u,.98f,.018f);
+            aw_branch(mesh,left,right,.018f,.018f,(Color){ 70, 70, 70,255},AW_CELLS-1,5,4);}
+    }
+    for(int side=-1;side<=1;side+=2){
+        Vector3 a=aw_bridge_point(b,b->length,side*1.06f,.05f),top=a;top.y+=.82f;
+        aw_branch(mesh,a,top,.065f,.065f,steel,AW_CELLS-1,5,4);
+    }
+}
 static void aw_build_scene(AwScene*s,const AwMap*m){
     aw_destroy_scene(s);AwBuilder terrain={0},scenery={0},overlay={0},ocean_overlay={0},water={0},tunnels={0},tunnel_lights={0};
     AwOcclusion*ao=aw_ao_alloc(1,sizeof(*ao));aw_ao_init(ao,m);
@@ -277,7 +303,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         int canonical=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c;
         uint32_t h=aw_hash(m->seed^(uint32_t)canonical*8191u);Vector3 p=aw_center(m,c);
         int trail_surface=m->trail_bin_count[c]&&aw_mountain_field(m,x+.5f,aw_height_q(m,x+.5f,z+.5f)+1,z+.5f)<1;
-        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&!trail_surface&&m->walkable[c]){
+        if(!t->road&&!m->cave_access[c]&&!t->tunnel&&!trail_surface&&!m->bridge_bins[c]&&m->walkable[c]){
             float jitter=(aw_prop_random(h)-.5f)*.65f;if(m->options.symmetry&&c>=AW_CELLS/2)jitter=-jitter;
             p.x+=jitter;p.z-=jitter;
             p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);
@@ -304,6 +330,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
             Color color=m->reachable[c]?(Color){66,236,178,105}:(Color){246,132,82,105};aw_top(&overlay,v,4,color,rank,2);
         }
     }
+    for(int i=0;i<m->bridge_count;i++)aw_bridge_details(&scenery,&m->bridges[i]);
     for(int i=0;i<m->span_count;i++){
         const AwSpan*s=&m->spans[i];int c=s->cell;
         if(m->surface_span[c]==i&&m->walkable[c])continue;

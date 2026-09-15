@@ -189,4 +189,12 @@ a regional grammar, not the complete road-search/hydrology research roadmap.
 The user permits doubling map size when features need more room. Treat a larger
 land grid as an architectural change: scale ocean bounds, navigation/storage
 capacities and the browser mesh budget together; do not compress features merely
-to preserve the current dimensions. Version 8 still uses the 64 × 64 land grid.
+to preserve the current dimensions. Version 9 still uses the 64 × 64 land grid.
+
+Version 9 combines pinned rolling lowland sockets with the existing cliff WFC.
+Keep bank and road shoulders continuous, and retain relief/bridge coverage tests.
+Bridges fit the completed terrain through `bridges.h`; deck geometry in
+`bridge_field.h` is part of the shared solid, with separate walkable spans above
+unchanged water beds. Validate both bank joins, both body sizes, headroom below
+low decks, meaningful water gaps and rotational pairs. Never fill the channel
+or reposition a lake to force a bridge. Decorative trusses are not collision.

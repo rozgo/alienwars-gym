@@ -17,7 +17,8 @@
 #define AW_SPANS 4096
 #define AW_SPAN_START (AW_CELLS+AW_CAVE_NODES)
 #define AW_NODES (AW_SPAN_START+AW_SPANS)
-#define AW_VERSION 8
+#define AW_VERSION 9
+#define AW_BRIDGES 4
 #define AW_MOUNTAINS 2
 #define AW_MOUNT_GRID 5
 #define AW_MOUNT_CELLS 25
@@ -41,6 +42,8 @@ static const int aw_cost[AW_TILES]={12,19,13,18,16,20,23,28,34,0,0,10};
 typedef struct {int symmetry,floors_a,floors_b,biome,tunnels;} AwOptions;
 typedef struct {int x2,z2,rx,rz,height,rotation;} AwLandform;
 typedef struct {int x,z,rx,rz;} AwLake;
+/* Bank centers, cardinal bearing, deck crown and endpoint elevations, in q. */
+typedef struct {int x,z,dx,dz,length,qa,qb,crown;} AwBridge;
 typedef struct {uint8_t q[4],material,road,tunnel,portal;} AwCell;
 typedef struct {int16_t x,z,q,portal; uint8_t profile,junction; int16_t links[6];} AwCaveNode;
 typedef struct {int16_t a,b;} AwCaveEdge;
@@ -62,6 +65,8 @@ typedef struct {int16_t x,q,z;uint16_t valid;float value;} AwDensitySample;
 typedef struct {
     AwDensitySample*density_cache; /* Temporary, per-map validation cache. */
     AwSpan spans[AW_SPANS];int span_count,span_ready;
+    AwBridge bridges[AW_BRIDGES];int bridge_count;
+    uint8_t bridge_bins[AW_CELLS]; /* One-based; crossings never overlap. */
     int16_t span_first[AW_CELLS],surface_span[AW_CELLS],cave_span[AW_CAVE_NODES],trail_span[AW_TRAIL_NODES];
     AwMountain mountains[AW_MOUNTAINS];int mountain_count;
     AwTrailNode trail[AW_TRAIL_NODES];AwTrailEdge trail_edges[AW_TRAIL_EDGES];
@@ -72,7 +77,7 @@ typedef struct {
     AwLandform landforms[AW_LANDFORMS];AwLake lakes[AW_LAKES];
     int landform_count,lake_count,road_ends[2],landmarks[2],layout_attempts;
     uint32_t layout_seed;
-    uint8_t macro_q[AW_VERT*AW_VERT],lake_mask[AW_VERT*AW_VERT];
+    uint8_t macro_q[AW_VERT*AW_VERT],lake_mask[AW_VERT*AW_VERT],rolling[AW_VERT*AW_VERT];
     AwCaveNode cave[AW_CAVE_NODES]; AwCaveEdge cave_edges[AW_CAVE_EDGES];
     uint16_t cave_bins[AW_CELLS][AW_BIN_SIZE]; uint8_t cave_bin_count[AW_CELLS];
     int cave_count,cave_edge_count,cave_decisions,cave_expanded,cave_backtracks;
@@ -175,6 +180,7 @@ static int aw_shape_domains(AwMap*m){
         target=aw_clamp(target,0,40);
         lo[v]=target/4*4;hi[v]=lo[v]+(target%4?4:0);
         preferred[v]=target%4>=2?hi[v]:lo[v];
+        if(m->rolling[cv]){lo[v]=hi[v]=preferred[v]=target;m->blend[v]=255;}
         if(m->lake_mask[cv])lo[v]=hi[v]=preferred[v]=target;
         if(pin[v]>=0)lo[v]=hi[v]=preferred[v]=pin[v];
         /* Hard ocean sockets surround the entire mesh. Apply after shoulder
@@ -351,6 +357,7 @@ static float aw_surface_q(const AwMap*m,int c,float fx,float fz){
     return x>=z?a+(b-a)*x+(e-b)*z:a+(e-d)*x+(d-a)*z;
 }
 
+#include "bridge_field.h"
 #include "caves.h"
 #include "ocean.h"
 #include "traversal.h"
@@ -382,9 +389,10 @@ static void aw_navigation(AwMap*m){
     for(int c=0;c<AW_CELLS;c++){
         int lo=40,hi=0;for(int k=0;k<4;k++){int q=m->cells[c].q[k];if(q<lo)lo=q;if(q>hi)hi=q;}
         m->walkable[c]=aw_cost[m->cells[c].material]>0&&lo>=4&&hi-lo<=1;
-        if(m->walkable[c]&&(m->cave_bin_count[c]||m->trail_bin_count[c])){
+        if(m->walkable[c]&&(m->cave_bin_count[c]||m->trail_bin_count[c]||m->bridge_bins[c])){
             float q=aw_surface_q(m,c,0.5f,0.5f);
             if(fabsf(aw_support_q(m,c%64+0.5f,c/64+0.5f,q)-q)>0.1f)m->walkable[c]=0;
+            if(m->bridge_bins[c]&&!aw_body_fits(m,c%64+.5f,q,c/64+.5f,0))m->walkable[c]=0;
         }
         m->walk_count+=m->walkable[c];
     }
@@ -446,6 +454,7 @@ static int aw_lakes_valid(const AwMap*m){
     }
     return 1;
 }
+static int aw_bridge_validate(const AwMap*m,const AwBridge*b);
 static int aw_validate(AwMap*m){
     if(!aw_lakes_valid(m))return 0;
     for(int c=0;c<AW_CELLS;c++){
@@ -480,6 +489,7 @@ static int aw_validate(AwMap*m){
         }}
         for(int side=0;side<2;side++)if(!seen[m->cave[m->cave_entrances[side]].portal])return 0;
     }
+    for(int i=0;i<m->bridge_count;i++)if(!aw_bridge_validate(m,&m->bridges[i]))return 0;
     return aw_mountain_validate(m)&&aw_find_path(m,m->spawns[0],m->spawns[1]);
 }
 static uint32_t aw_fingerprint(const AwMap*m){
@@ -498,6 +508,11 @@ static uint32_t aw_fingerprint(const AwMap*m){
         const AwTrailNode*n=&m->trail[i];h=(h^n->x)*16777619u;h=(h^n->z)*16777619u;h=(h^n->q)*16777619u;h=(h^n->profile)*16777619u;h=(h^n->mode)*16777619u;
     }
     for(int i=0;i<m->mountain_count;i++)for(int c=0;c<25;c++)h=(h^m->mountains[i].sockets[c])*16777619u;
+    for(int v=0;v<AW_VERT*AW_VERT;v++)h=(h^m->blend[v])*16777619u;
+    for(int i=0;i<m->bridge_count;i++){const AwBridge*b=&m->bridges[i];
+        int data[]={b->x,b->z,b->dx,b->dz,b->length,b->qa,b->qb,b->crown};
+        for(int k=0;k<8;k++)h=(h^(uint32_t)data[k])*16777619u;
+    }
     return h;
 }
 /* Reserve walkable approaches before material WFC can put lava on them.
@@ -527,6 +542,7 @@ static int aw_cave_approaches(AwMap*m){
     return 1;
 }
 #include "natural_routes.h"
+#include "bridges.h"
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);options.biome=aw_clamp(options.biome,0,4);
@@ -539,7 +555,7 @@ static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
             aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;
             if(!aw_caves(m,attempt))continue;
             m->valid=aw_validate(m);
-            if(m->valid){aw_natural_passages(m);aw_ocean_build(m);m->hash=aw_fingerprint(m);return 1;}
+            if(m->valid){aw_natural_passages(m);aw_bridges(m);aw_ocean_build(m);m->hash=aw_fingerprint(m);return 1;}
         }
     }
     return 0;

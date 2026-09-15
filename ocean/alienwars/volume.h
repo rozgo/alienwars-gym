@@ -50,6 +50,7 @@ static void aw_volume_cell(const AwMap*m,int cell,AwVolumeTriangle emit,void*ctx
             float gx=(float)(cx*AW_SUBDIV+x+dx[k])/AW_SUBDIV,gz=(float)(cz*AW_SUBDIV+z+dz[k])/AW_SUBDIV;
             h[k]=aw_height_q(m,gx,gz);lo=fminf(lo,h[k]);hi=fmaxf(hi,h[k]);p[k]=(AwVolumePoint){gx,0,gz};p[k+4]=p[k];
         }
+        if(m->bridge_bins[cell]){const AwBridge*b=&m->bridges[m->bridge_bins[cell]-1];lo=fminf(lo,fminf(b->qa,b->qb)-1.25f);hi=fmaxf(hi,b->crown);}
         lo=fminf(lo,bottom);int q0=(int)floorf(lo*2)-1,q1=(int)ceilf(hi*2)+1;
         for(int k=0;k<4;k++){p[k].q=q0*0.5f;v[k]=aw_density_at_height(m,p[k].x,p[k].q,p[k].z,h[k]);}
         for(int q=q0;q<q1;q++){

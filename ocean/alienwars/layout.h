@@ -191,6 +191,37 @@ static void aw_carve_lakes(AwMap*m){
         }
     }
 }
+/* Broad lowland relief complements the sharp landform/cliff grammar. Pair
+ * complete noise fields before sampling symmetric worlds: no half-map seam.
+ * The shoreline and entrance districts retain their required dry sockets. */
+static void aw_rolling_hills(AwMap*m){
+    for(int z=0;z<AW_VERT;z++)for(int x=0;x<AW_VERT;x++){
+        int v=z*AW_VERT+x,q=m->macro_q[v];if(q<4||q>8||m->lake_mask[v])continue;
+        int n=aw_noise(m->layout_seed^0x7a191u,x,z,16)*3+aw_noise(m->layout_seed^0x913fu,x,z,9);
+        if(m->options.symmetry){int other=aw_noise(m->layout_seed^0x7a191u,64-x,64-z,16)*3+aw_noise(m->layout_seed^0x913fu,64-x,64-z,9);n=(n+other)/2;}
+        int relief=aw_clamp((n-240)/62,0,9),distance=12;
+        for(int side=0;side<2;side++){
+            int c=m->landmarks[side];int d=aw_abs(x*2-c%64*2-1)+aw_abs(z*2-c/64*2-1);
+            if(d<30)relief=relief*aw_clamp(d-20,0,10)/10;
+        }
+        /* A broad shoulder meets pinned roads; do not create a steep ditch
+         * along every lowland connector or disturb base grade modules. */
+        for(int dz=-5;dz<=5;dz++)for(int dx=-5;dx<=5;dx++){
+            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=64||nz>=64)continue;
+            if(m->cells[nz*64+nx].road){int d=aw_abs(2*dx+1)+aw_abs(2*dz+1);if(d<distance)distance=d;}
+        }
+        relief=relief*aw_clamp(distance-2,0,10)/10;
+        /* Low riparian shoulders separate rolling uplands from water. The
+         * original high cliffs are outside this lowland field. */
+        int shore=6;
+        for(int dz=-5;dz<=5;dz++)for(int dx=-5;dx<=5;dx++){
+            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>64||nz>64)continue;
+            if(m->macro_q[nz*65+nx]<4){int d=aw_abs(dx)+aw_abs(dz);if(d<shore)shore=d;}
+        }
+        relief=relief*aw_clamp(shore-2,0,4)/4;
+        m->macro_q[v]=q+relief;m->rolling[v]=1;
+    }
+}
 static int aw_layout(AwMap*m){
     uint32_t rng=aw_hash(m->layout_seed^0x124731u);
     if(!aw_road(m,0)||!aw_road(m,1))return 0;
@@ -237,6 +268,7 @@ static int aw_layout(AwMap*m){
         m->macro_q[v]=aw_clamp(q,0,40);
     }
     aw_carve_lakes(m);
+    aw_rolling_hills(m);
     return 1;
 }
 #endif

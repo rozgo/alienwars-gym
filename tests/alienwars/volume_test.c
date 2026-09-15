@@ -34,7 +34,7 @@ int main(void){
     for(int i=0;i<3;i++){float q=(float[]){-6,4,12}[i];assert(aw_density(&m,12.5f,q+1,12.5f)<0);assert(aw_density(&m,12.5f,q-0.5f,12.5f)>0);}
     assert(aw_density(&m,12.5f,1,12.5f)>0);assert(aw_density(&m,12.5f,10,12.5f)>0);assert(aw_density(&m,12.5f,18,12.5f)>0);
     int total_triangles=0,total_edges=0,total_boundary=0;
-    for(int breach=0;breach<3;breach++){
+    for(int breach=0;breach<4;breach++){
         memset(edges,0,sizeof(edges));triangles=edge_count=0;
         for(int c=0;c<AW_CELLS;c++)aw_flat(&m.cells[c],breach==1?14:20);
         if(breach==2){
@@ -48,6 +48,17 @@ int main(void){
             }
             assert(aw_mountain_index(&m));
         }
+        if(breach==3){
+            memset(&m,0,sizeof(m));memset(m.blend,255,sizeof(m.blend));
+            for(int c=0;c<AW_CELLS;c++)for(int k=0;k<4;k++){
+                int x=aw_corner_vertex(c,k)%65;m.cells[c].q[k]=x>=11&&x<=15?0:20;
+            }
+            m.bridge_count=1;m.bridges[0]=(AwBridge){8,12,1,0,10,20,20,22};
+            assert(aw_bridge_index(&m)&&aw_traversal_build(&m));
+            assert(aw_density(&m,13.5f,21.5f,12.5f)>0);
+            assert(aw_density(&m,13.5f,10,12.5f)<0);
+            assert(fabsf(aw_support_q(&m,13.5f,12.5f,22)-22)<.001f);
+        }
         for(int z=6;z<19;z++)for(int x=6;x<19;x++)aw_volume_cell(&m,z*64+x,triangle,NULL);
         int boundary=0;
         for(int i=0;i<TABLE;i++)if(edges[i].count){
@@ -59,8 +70,9 @@ int main(void){
         total_triangles+=triangles;total_edges+=edge_count;total_boundary+=boundary;
     }
 
+    memset(&m,0,sizeof(m));line(8,12,12,1,0,9);assert(aw_cave_index(&m));
     /* A surface breach is a true absence of rock, not a hidden roof mesh. */
     for(int c=0;c<AW_CELLS;c++)aw_flat(&m.cells[c],14);
     assert(aw_density(&m,12.5f,14,12.5f)<=0);assert(aw_density(&m,12.5f,13,12.5f)<0);
-    printf("VOLUME_TEST spans=3 fixtures=3 mountain_joins=PASS triangles=%d edges=%d boundary=%d manifold=PASS\n",total_triangles,total_edges,total_boundary);
+    printf("VOLUME_TEST spans=3 fixtures=4 mountain_joins=PASS bridge_joins=PASS triangles=%d edges=%d boundary=%d manifold=PASS\n",total_triangles,total_edges,total_boundary);
 }

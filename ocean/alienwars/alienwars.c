@@ -4,11 +4,11 @@
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #define AW_EXPORT EMSCRIPTEN_KEEPALIVE
-EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps,int lakes,int rooms,int baseA,int baseB,int ocean,int mountains),{
+EM_JS(void,aw_report,(uint32_t seed,uint32_t hash,int valid,int walk,int reached,int length,int decisions,int reductions,int attempts,int resolved,int paused,double milliseconds,int tunnels,int structural,int cut,int layer,float floor,int cost,int shapes,int tour,int depthA,int depthB,int fps,int lakes,int rooms,int baseA,int baseB,int ocean,int mountains,int bridges),{
     if(typeof window !== 'undefined' && window.maplabReport) window.maplabReport({
         seed:seed>>>0,hash:(hash>>>0).toString(16).padStart(8,'0'),valid:!!valid,
         walk,reached,length,decisions,reductions,attempts,resolved,paused:!!paused,milliseconds,
-        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps,lakes,rooms,baseA,baseB,ocean,mountains
+        tunnels,structural,cut:!!cut,layer,floor,cost,shapes,tour,depthA,depthB,fps,lakes,rooms,baseA,baseB,ocean,mountains,bridges
     });
 });
 #else
@@ -55,7 +55,7 @@ static void aw_set_isolation(int value){
 
 static void aw_publish(void) {
     aw_report(world.seed,world.hash,world.valid,world.walk_count,world.reached_count,world.path_length,
-        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS(),world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.ocean_count,world.mountain_count);
+        world.decisions,world.reductions,world.attempts,(int)revealed,paused,generation_ms,world.tunnel_count,world.structure_decisions+world.cave_decisions,cut_active,scout_layer,scout_floor,world.path_cost,world.shape_decisions,scout_tour,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,GetFPS(),world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.ocean_count,world.mountain_count,world.bridge_count);
 }
 
 AW_EXPORT void aw_new(uint32_t seed,int watch) {
@@ -196,6 +196,20 @@ AW_EXPORT void aw_inspect_mountain(int bypass){
     zoom=4*r->step*AW_UNIT+22;pitch=.8f;yaw=.75f+r->rotation*1.5707963f;aw_publish();
 }
 
+AW_EXPORT void aw_inspect_bridge(void){
+    static int next=0;if(!world.valid||!world.bridge_count)return;
+    const AwBridge*b=&world.bridges[next++%world.bridge_count];
+    world.path_length=world.path_cost=0;
+    for(int u=0;u<=b->length;u++){
+        int c=(b->z+b->dz*u)*64+b->x+b->dx*u;
+        int n=AW_SPAN_START+aw_span_find(&world,c,aw_bridge_q(b,u));
+        if(world.path_length)world.path_cost+=aw_move_cost(&world,world.path[world.path_length-1],n);
+        world.path[world.path_length++]=n;
+    }
+    aw_set_isolation(0);scout_tour=4;unit_progress=0;unit_paused=0;show_path=1;revealed=AW_CELLS;follow_scout=0;
+    focus=aw_bridge_point(b,b->length*.5f,0,0);zoom=b->length*AW_UNIT+16;pitch=.70f;yaw=b->dx?.8f:2.3f;aw_publish();
+}
+
 static void aw_draw_unit(void) {
     Vector3 p=aw_unit_position();
     DrawCylinder((Vector3){p.x,p.y+0.025f,p.z},0.6f,0.6f,0.01f,12,(Color){26,39,38,170});
@@ -326,8 +340,8 @@ int main(int argc,char **argv) {
     }
     if(headless){
         if(!aw_generate_options(&world,seed,settings))return 1;
-        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d entrance_ne=%d entrance_sw=%d depth_ne=%d depth_sw=%d lakes=%d rooms=%d base_a=%d base_b=%d landforms=%d plans=%d ocean=%d\n",
-            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions,world.cave_entrances[0]>=0?world.cave[world.cave_entrances[0]].portal:-1,world.cave_entrances[1]>=0?world.cave[world.cave_entrances[1]].portal:-1,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.landform_count,world.layout_attempts,world.ocean_count);
+        printf("MAP seed=%" PRIu32 " version=%d hash=%08" PRIx32 " walk=%d reached=%d path=%d decisions=%d attempts=%d structure=%d tunnels=%d cost=%d shapes=%d entrance_ne=%d entrance_sw=%d depth_ne=%d depth_sw=%d lakes=%d rooms=%d base_a=%d base_b=%d landforms=%d plans=%d ocean=%d bridges=%d\n",
+            seed,AW_VERSION,world.hash,world.walk_count,world.reached_count,world.path_length,world.decisions,world.attempts,world.structure_decisions,world.tunnel_count,world.path_cost,world.shape_decisions,world.cave_entrances[0]>=0?world.cave[world.cave_entrances[0]].portal:-1,world.cave_entrances[1]>=0?world.cave[world.cave_entrances[1]].portal:-1,world.cave_hubs[0]>=0?world.cave[world.cave_hubs[0]].q:0,world.cave_hubs[1]>=0?world.cave[world.cave_hubs[1]].q:0,world.lake_count,world.cave_count?2+world.cave_room_count:0,world.spawns[0],world.spawns[1],world.landform_count,world.layout_attempts,world.ocean_count,world.bridge_count);
         return 0;
     }
     SetTraceLogLevel(LOG_WARNING);

@@ -55,6 +55,15 @@ mountain_wasm = run(['node','build/mountain-test.js'])
 assert mountain_native == mountain_wasm, 'Native/WASM mountain topology and traversal disagree'
 print(mountain_native)
 
+relief_source = 'tests/alienwars/relief_test.c'
+run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',relief_source,'-lm','-o','build/relief-test'])
+relief_native = run(['build/relief-test'])
+run([emcc,'-std=c11','-O3','-I.',relief_source,'-lm','-o','build/relief-test.js',
+     '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+relief_wasm = run(['node','build/relief-test.js'])
+assert relief_native == relief_wasm, 'Native/WASM hills and bridge navigation disagree'
+print(relief_native)
+
 volume_source = 'tests/alienwars/volume_test.c'
 run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',volume_source,'-lm','-o','build/volume-test'])
 volume_native = run(['build/volume-test'])
@@ -128,8 +137,9 @@ for seed in [0, 1, 73, 4294967295]:
     web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
-report = {'generator_version':8,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+report = {'generator_version':9,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
           'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
+          'relief_native':relief_native,'relief_wasm':relief_wasm,
           'detail_native':detail_native,'detail_wasm':detail_wasm,
           'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
           'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,

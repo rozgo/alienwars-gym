@@ -186,7 +186,8 @@ static float aw_cave_field(const AwMap*m,float x,float yq,float z){
 static float aw_density_at_height(const AwMap*m,float x,float q,float z,float height){
     float rock=height-q;
     if(m->trail_edge_count)rock=fminf(rock,aw_mountain_field(m,x,q,z));
-    return m->cave_edge_count?fminf(rock,aw_cave_field(m,x,q,z)):rock;
+    if(m->cave_edge_count)rock=fminf(rock,aw_cave_field(m,x,q,z));
+    return m->bridge_count?aw_bridge_union(m,x,q,z,rock,height):rock;
 }
 /* Barycentric sampling of the SAME six tetrahedra used by the mesher. This
  * makes collision/clearance agree with polygonal cave walls, not an unsampled

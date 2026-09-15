@@ -5,7 +5,7 @@ Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
 The scout is scripted; combat and an AlienWars RL policy are not implemented.
 The [trained Breakout baseline](https://rozgo.github.io/alienwars-gym/) is preserved.
 
-## World contract — generator version 8
+## World contract — generator version 9
 
 The 64 × 64 land region sits inside a 96 × 96 ocean domain, two world units per tile. A floor is three
 world units; elevations use quarter floors. Bases support floors 1–10. Surface
@@ -92,9 +92,9 @@ the cave planner tries up to 16 seeded passage alternatives. Each must
 pass WFC, body/support checks, surface access to each mouth and a cave-only
 crossing between them. Exhaustion reports generation failure; it never silently
 substitutes the old central layout. Seeds, settings and generator version
-identify the world. Version 8 fits optional crossings to existing terrain and
-removes the dedicated mountain stamp, changing seeded worlds. Older seed URLs regenerate
-using version 8; use the previous release revision for an exact older world.
+identify the world. Version 9 adds lowland relief and fitted bridge crossings,
+changing seeded worlds. Older seed URLs regenerate using version 9; use the
+previous release revision for an exact older world.
 
 This is a bounded, static terrain milestone. It does not yet generate arbitrary
 strategic graphs, mine shafts, elevators, destructible terrain or simulated
@@ -111,6 +111,48 @@ specular response, leaf backlighting and water highlights are restrained.
 Emissive effects retain their response; navigation overlays use stable unlit
 color so units, effects and inspection information stand out from the world.
 The scout and UI use separate, unchanged rendering passes.
+
+## Rolling hills and bridges — version 9
+
+Two broad seeded value-noise fields (16- and 9-tile scales) raise lowland
+interiors by up to nine quarter floors. Road shoulders, entrance districts and
+riparian banks attenuate that relief. The original high cliff bands remain.
+Symmetric worlds combine the complete rotated noise fields before sampling;
+there is no cut at the diagonal. The hill heights become pinned elevation
+sockets in shape WFC, with linear shared-edge interpolation instead of cliff
+terracing. WFC still resolves cliff corner patterns, road grades, materials and
+passage sockets. The noise field is not itself WFC.
+
+After validating terrain and optional mountain routes, a bounded bank-pair
+search fits 6–20-tile bridges over existing water gaps. Both banks must already
+be reachable and provide body clearance. At least half of the crossing spans
+a gap and at least one third crosses water. Ranking favors an existing walking
+detour of at least six extra steps, with geographically distinct alternatives.
+One or two crossings are attempted (mirrored pairs in symmetric worlds).
+Unsuitable worlds keep their terrain and can have no bridges; generation never
+rerolls or adds land to force one.
+
+Decks have level landing sockets and ramps of at most one quarter floor per
+tile. Their 2.32-tile width and 1.25-quarter-floor thickness enter the shared
+implicit solid, marching-tetrahedra mesh, support queries, occlusion and shadow
+passes. A compact abutment weld removes sub-lattice pinches, capped at the
+planned deck top so approach grades stay exact. Walkable spans connect both
+ends through the deck; small and large bodies must pass the complete route.
+Ground below a low deck is blocked when headroom is insufficient. The original
+water bed and naval depth/connectivity stay unchanged. Bridge air draft for
+future ships is not yet part of the naval path API.
+
+Steel edge trusses and expansion seams are decorative and lie outside the
+validated center walking strip. **Cross a bridge** frames a bridge and starts
+the scout along it; click again to visit the next crossing. The automatic
+base-to-base search can also use bridges whenever they lower its route cost.
+Tunnel isolation continues to change visibility without moving the camera.
+
+`relief_test.c` checks 32 worlds for walkable slope coverage, bridge support,
+large-body connectivity, clear space under decks, matching mirrored structures,
+and unchanged ocean data. The volume suite includes a bridge/abutment fixture
+that checks mesh-edge pairing and agreement with collision density. These
+checks run in native C and WASM alongside the existing terrain and cave suites.
 
 ## Mountain traversal — version 8
 
