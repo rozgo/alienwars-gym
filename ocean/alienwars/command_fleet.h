@@ -17,6 +17,7 @@ typedef struct {
     float accumulator,terminal[AW_UNITS];
     int ready,trained,arrivals[AW_UNITS],automatic[AW_UNITS],status[AW_UNITS],arrival_handled[AW_UNITS];
     int selection,command_result,command_requested;
+    int total_contacts[AW_UNITS],total_blocked[AW_UNITS],total_collisions[AW_UNITS];
 } AwCommandFleet;
 static void aw_command_fleet_close(AwCommandFleet*f){
     for(int i=0;i<AW_UNITS;i++)if(f->net[i])free_puffernet(f->net[i]);
@@ -27,11 +28,12 @@ static int aw_command_fleet_destination(AwCommandFleet*f,const AwMap*m,int i,AwS
     if(i<0||i>=AW_UNITS||!f->active[i]||f->unit[i].vehicle.failed)return 0;
     AwVehicle vehicle=f->unit[i].vehicle;
     if(!aw_mission_plan(&f->planner,&vehicle,goal,&f->candidate)){
-        f->status[i]=AW_MISSION_UNAVAILABLE;return 0;
+        if(automatic)f->status[i]=AW_MISSION_UNAVAILABLE;return 0;
     }
     f->route[i]=f->candidate;
     aw_mission_agent_reset(&f->unit[i],&f->route[i],6000);
     f->unit[i].vehicle=vehicle; /* new command preserves momentum and pose */
+    f->unit[i].odometry_origin=f->world.sensors.units[i].odometry.distance;
     f->unit[i].previous_potential=aw_mission_project(&f->unit[i]);
     if(!automatic)f->home[i]=vehicle.position;
     f->destination[i]=f->route[i].point[f->route[i].count-1];f->automatic[i]=automatic;f->terminal[i]=1;f->status[i]=AW_MISSION_TRAVELLING;f->arrival_handled[i]=0;
@@ -45,7 +47,14 @@ static void aw_command_fleet_scout_route(AwCommandFleet*f,const AwMap*m,int star
     AwVehicle vehicle={.family=0,.variant=0,.position=r->point[start],.yaw=atan2f(delta.x,delta.z)};
     if(!aw_mission_plan(&f->planner,&vehicle,r->point[r->count-1],&f->route[0])){f->active[0]=0;return;}
     f->active[0]=1;aw_mission_agent_reset(&f->unit[0],&f->route[0],6000);
+    if(f->weights[0]&&!f->net[0]){int sizes[]={4,3,3,3};f->weights[0]->idx=0;f->net[0]=make_puffernet(f->weights[0],1,AW_MISSION_INPUTS,128,2,sizes,4);}
+    f->status[0]=AW_MISSION_TRAVELLING;f->arrival_handled[0]=0;
     f->previous[0]=vehicle;f->home[0]=vehicle.position;f->destination[0]=r->point[r->count-1];f->automatic[0]=1;f->terminal[0]=1;
+    if(f->ready){
+        aw_sensor_teleport(&f->world.sensors,0);
+        f->world.sensors.units[0].pose=(AwSensorPose){.position=vehicle.position,.yaw=vehicle.yaw,.pitch=vehicle.pitch};
+        aw_mission_observe(&f->world);
+    }
 }
 static void aw_command_fleet_init(AwCommandFleet*f,const AwMap*m,const AwPatrols*p){
     AwSensorConfig equipment[AW_UNITS][4];int preserve=f->ready;
@@ -107,8 +116,9 @@ static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int sc
     if(!f->ready)return;
     aw_command_fleet_continue(f,m);
     f->accumulator+=dt;
-    while(f->accumulator>=.1f){f->accumulator-=.1f;float actions[16][4];
+    while(f->accumulator>=.1f){f->accumulator-=.1f;float actions[16][4];int contacts[AW_UNITS],blocked[AW_UNITS],collisions[AW_UNITS];
         for(int i=0;i<AW_UNITS;i++){
+            contacts[i]=f->unit[i].contacts;blocked[i]=f->unit[i].blocked_total;collisions[i]=f->unit[i].collision_events;
             f->previous[i]=f->unit[i].vehicle;f->world.paused[i]=!(i?others_live:scout_live);
             actions[i][0]=2;actions[i][1]=actions[i][2]=actions[i][3]=1;
             if(!f->active[i]||f->world.paused[i])continue;
@@ -120,6 +130,7 @@ static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int sc
         }
         aw_mission_tick(&f->world,m,actions);
         for(int i=0;i<AW_UNITS;i++)if(f->active[i]){
+            f->total_contacts[i]+=f->unit[i].contacts-contacts[i];f->total_blocked[i]+=f->unit[i].blocked_total-blocked[i];f->total_collisions[i]+=f->unit[i].collision_events-collisions[i];
             if(f->unit[i].vehicle.failed)f->status[i]=AW_MISSION_IMPACT;
             else if(f->unit[i].timeout)f->status[i]=AW_MISSION_STALLED;
         }

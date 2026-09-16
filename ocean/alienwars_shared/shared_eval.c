@@ -21,7 +21,7 @@ int main(int argc,char**argv){
         for(int i=0;i<12;i++){terminal[i]=1;present[i]=t->world.active[i];attempted[aw_shared_family(i)]++;unavailable[aw_shared_family(i)]+=!present[i];}
         while(!t->reset_pending){
             for(int i=0;i<12;i++){
-                if(baseline)aw_shared_reference(t,i,t->actions[i],baseline==2);
+                if(baseline||t->terminal[i])aw_shared_reference(t,i,t->actions[i],baseline==2);
                 else {unsigned char mask[13];aw_shared_mask(t,i,mask);forward_puffernet(net[i],t->world.agents[i].observation,t->actions[i],NULL,&terminal[i]);multidiscrete(net[i]->multidiscrete,net[i]->decoder->output,t->actions[i],1,mask);}
             }
             aw_shared_step(t);

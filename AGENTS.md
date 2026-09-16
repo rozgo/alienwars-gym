@@ -6,8 +6,9 @@ This is a source-based PufferLib 5.0 project. Start with `README.md`,
 `docs/DEVELOPMENT.md`, and `docs/UPSTREAM.md`. Check `git status` before edits and
 preserve unrelated work. Follow explicit user instructions over this guide.
 AlienWars has a procedural 3D Map Lab with twelve physical ground, naval, air
-and submarine units. `alienwars_local` trains five local-controller families
-behind global A* routes; see `docs/LOCAL_NAVIGATION.md`. A separate historical
+and submarine units. `alienwars_shared` trains five family policies simultaneously in shared worlds,
+with A* global routes and actual attachable-sensor inputs; see
+`docs/SHARED_NAVIGATION.md`. `alienwars_local` is the historical v1 experiment. A separate historical
 navigation MVP trains a small scout through the native PufferLib interface. Combat is not implemented. See `docs/NAVIGATION_RL.md`.
 Do not describe
 scripted patrols as trained policies. The Breakout bootstrap experiment was
@@ -206,9 +207,10 @@ low decks, meaningful water gaps and rotational pairs. Never fill the channel
 or reposition a lake to force a bridge. Decorative trusses are not collision.
 
 `patrols.h` prepares route banks for twelve physical vehicles without changing
-world generation or its hash. `vehicle_profiles.h`, `vehicles.h`,
-`local_navigation.h` and `fleet.h` own profile tradeoffs, physics, policy inputs
-and viewer control. Preserve fixed-wing forward airspeed and slow turns,
+world generation or its hash. `vehicle_profiles.h` and `vehicles.h` own physical profile tradeoffs.
+`mission_routes.h`, `missions.h` and `command_fleet.h` own current navigation,
+policy inputs and viewer control; `local_navigation.h`/`fleet.h` retain the
+historical v1 task. Preserve fixed-wing forward airspeed and slow turns,
 quad hover/strafe, submarine submersion, boat draft/mast, and body clearance.
 Use +Z forward in every model. Ground traction must affect both physical speed
 and A* route cost. Keep rendered heading/sensor mounts tied to physical pose;
@@ -252,3 +254,14 @@ fractional trackpad wheel deltas; do not reintroduce GLFW's per-event minimum
 wheel tick or double-handle wheel events. Preserve bounded elastic zoom,
 immediate reverse input and preset resets. Run `scripts/check_camera.py` and
 verify outside-canvas release in Chrome for input changes.
+
+Shared navigation v2 lives in `mission_routes.h`, `missions.h`, `command_fleet.h`
+and `ocean/alienwars_shared/`. Preserve physical flight primitives, synchronized
+collision proposals, separated parking goals, independent terminal/recurrent
+state, policy-specific gather batches and no step/reset allocations. Equipment
+must alter policy observations; overlay visibility must not. Full missions and
+route availability are measured separately. Run `scripts/check_shared.py`, the
+CUDA joint gather test, single-policy regression and actual Chrome destination/
+endurance checks. Keep source/checkpoint contracts exact (645 inputs, 4/3/3/3
+heads); do not preload the historical 96-input policies into this viewer. Group
+commands are independent destinations, not learned formation coordination.

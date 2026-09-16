@@ -116,7 +116,7 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==10){baked_occlusion=!!value;aw_set_occlusion(&scene,baked_occlusion);}
     if(option==11){surface_detail=!!value;aw_set_detail(&scene,surface_detail);}
     if(option==12)patrol_mode=aw_clamp(value,0,2);
-    if(option==13){aw_command_fleet_init(&fleet,&world,&patrols);for(int i=0;i<AW_UNITS;i++)aw_sensor_teleport(&sensors,i);unit_paused=0;patrol_mode=0;aw_sensor_update_poses(0);}
+    if(option==13){aw_command_fleet_init(&fleet,&world,&patrols);unit_paused=0;patrol_mode=0;aw_sensor_update_poses(0);}
     aw_publish();
 }
 
@@ -213,7 +213,7 @@ EM_JS(void,aw_sensor_report,(int unit,const float* values),{
 #endif
 #ifdef PLATFORM_WEB
 EM_JS(void,aw_command_fleet_report,(int trained,int selected,const char* role,const float* values),{
-    if(window.maplabFleet)window.maplabFleet({trained:!!trained,selected,role:UTF8ToString(role),values:Array.from(HEAPF32.subarray(values>>2,(values>>2)+22))});
+    if(window.maplabFleet)window.maplabFleet({trained:!!trained,selected,role:UTF8ToString(role),values:Array.from(HEAPF32.subarray(values>>2,(values>>2)+26))});
 });
 #endif
 static void aw_publish_sensors(void){
@@ -232,8 +232,8 @@ static void aw_publish_sensors(void){
     aw_sensor_report(sensor_selected,values);
     const AwVehicle*v=&fleet.unit[sensor_selected].vehicle;AwVehicleSpec spec=aw_vehicle_spec(v->family,v->variant);
     AwSVec goal=fleet.destination[sensor_selected];
-    float profile[22]={spec.speed,spec.turn,spec.width*2,spec.length*2,aw_vehicle_sensor_range(v->family,v->variant),v->failed,v->contact,(float)fleet.arrivals[sensor_selected],(float)fleet.unit[sensor_selected].cursor,(float)fleet.route[sensor_selected].count,
-        fleet.status[sensor_selected],fleet.selection,fleet.unit[sensor_selected].remaining,fleet.command_result,fleet.world.ticks*.1f,goal.x,goal.y,goal.z,v->family,fleet.active[sensor_selected],fleet.command_requested,command_armed};
+    float profile[26]={spec.speed,spec.turn,spec.width*2,spec.length*2,aw_vehicle_sensor_range(v->family,v->variant),v->failed,v->contact,(float)fleet.arrivals[sensor_selected],(float)fleet.unit[sensor_selected].cursor,(float)fleet.route[sensor_selected].count,
+        fleet.status[sensor_selected],fleet.selection,fleet.unit[sensor_selected].remaining,fleet.command_result,fleet.world.ticks*.1f,goal.x,goal.y,goal.z,v->family,fleet.active[sensor_selected],fleet.command_requested,command_armed,fleet.total_contacts[sensor_selected],fleet.total_blocked[sensor_selected],fleet.total_collisions[sensor_selected],fleet.unit[sensor_selected].ticks};
     aw_command_fleet_report(fleet.trained,sensor_selected,fleet.active[sensor_selected]?aw_vehicle_role(v->family,v->variant):"Unavailable: no body-clear route",profile);
 #endif
 }
@@ -258,8 +258,10 @@ AW_EXPORT int aw_move_to(float x,float y,float z,int mask){
     for(int i=0;i<AW_UNITS;i++)if(mask&(1<<i)){
         AwSVec target={x+(ordinal++-(count-1)*.5f)*4.5f,y,z};
         const AwVehicle*v=&fleet.unit[i].vehicle;
+        int selected_family=fleet.unit[sensor_selected].vehicle.family;
+        if(v->family!=selected_family&&(v->family==AW_VEHICLE_QUAD||v->family==AW_VEHICLE_WING||v->family==AW_VEHICLE_SUB))target.y=v->position.y;
         if(v->family==AW_VEHICLE_BOAT)target.y=-.12f;
-        if(v->family==AW_VEHICLE_GROUND){float q=(y+1.2f)/.75f;target.y=aw_support_q(&world,target.x*.5f,target.z*.5f,q)*.75f-1.2f;}
+        if(v->family==AW_VEHICLE_GROUND){float q=(y+1.2f)/.75f;if(selected_family!=AW_VEHICLE_GROUND&&target.x>=0&&target.z>=0&&target.x<128&&target.z<128){int cell=(int)(target.z*.5f)*64+(int)(target.x*.5f);q=aw_surface_q(&world,cell,fmodf(target.x*.5f,1),fmodf(target.z*.5f,1));}target.y=aw_support_q(&world,target.x*.5f,target.z*.5f,q)*.75f-1.2f;}
         accepted+=aw_command_fleet_destination(&fleet,&world,i,target,0);
     }
     fleet.command_requested=count;fleet.command_result=accepted;command_armed=0;aw_publish_sensors();return accepted;
@@ -467,12 +469,14 @@ static void aw_update(void) {
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
             if(!isolate_tunnels&&patrol_mode!=2)aw_draw_fleet();
             aw_units_lit_end();
+            rlDrawRenderBatchActive();rlDisableDepthTest();rlDisableDepthMask();
             for(int i=0;i<AW_UNITS;i++)if(fleet.active[i]&&(fleet.selection&(1<<i))){
                 Vector3 p=aw_sensor_v3(aw_command_fleet_pose(&fleet,i).position);p.y+=.08f;
                 DrawCylinderWires(p,1.5f,1.5f,.04f,24,(Color){118,217,195,255});
                 Vector3 goal=aw_sensor_v3(fleet.destination[i]);goal.y+=.1f;
                 DrawCylinderWires(goal,1,1,.08f,16,(Color){235,197,111,255});
             }
+            rlDrawRenderBatchActive();rlEnableDepthMask();rlEnableDepthTest();
             aw_sensors_draw(&sensors,sensor_selected,sensor_layers,sensor_all,sensor_xray,animation_time,isolate_tunnels,patrol_mode==2);
         }else{
             /* The wire footprint makes the incomplete terrain readable. */

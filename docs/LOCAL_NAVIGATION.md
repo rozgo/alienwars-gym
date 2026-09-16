@@ -1,4 +1,8 @@
-# A* routes and local vehicle policies
+# Historical local vehicle policies
+
+This is the version 1 experiment. Current Map Lab uses the shared-world
+[version 2 contract](SHARED_NAVIGATION.md), including actual attachable sensors,
+heading-aware flight routes and five learners in the same rollout.
 
 Contract version 1 introduces twelve units and five local-controller families:
 ground, surface boat, quadcopter, fixed-wing, and submarine. Three variants in

@@ -1,7 +1,7 @@
 # Raylib web build and GitHub Pages
 
 The public experience is **AlienWars Map Lab**, built with Raylib and
-Emscripten. Generation, simulation and scripted patrols execute locally in
+Emscripten. Generation, simulation, sensors and policy inference execute locally in
 WebAssembly; Raylib renders through WebGL 2. The separate Navigation Lab runs
 the trained scout checkpoint in the browser. Native CUDA training runs on the
 GPU machine; the public Training Observatory serves recorded runs and evaluations.

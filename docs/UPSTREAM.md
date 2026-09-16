@@ -31,6 +31,12 @@ and resolved starting configurations. Native training now honors explicit
 `load_model_path` weight initialization and saves `initial.bin` for verification;
 checkpoint loads reject wrong-sized or nonfinite weights. Optimizer state is
 not restored by this flat-weight initialization.
+AlienWars also adds the opt-in synchronous `vec.train_all_policies=1` path:
+policy-specific rollout/recurrent-state gathering, independent PPO workspaces
+and optimizers, and five-family checkpoint initialization/saving. This is a local
+trainer extension, not a claim that upstream's frozen-opponent path jointly
+trains every policy. It currently supports one GPU and CPU environments; see
+[SHARED_NAVIGATION.md](SHARED_NAVIGATION.md). The normal flag-zero path is retained.
 Upstream example environments remain available as reference code; the project
 bootstrap demo and its dedicated tooling have been retired.
 

@@ -2,7 +2,8 @@
 
 ## Native development
 
-Map Lab is the standalone C terrain and scripted-traffic viewer. Navigation Lab
+Map Lab is the standalone C terrain and shared-fleet policy viewer. See
+[SHARED_NAVIGATION.md](SHARED_NAVIGATION.md) for its five-learner PPO contract. Navigation Lab
 adds a native PufferLib scout task using the same terrain, support and sensors.
 Its contract and commands are in [NAVIGATION_RL.md](NAVIGATION_RL.md).
 

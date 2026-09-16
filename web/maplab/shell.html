@@ -138,7 +138,7 @@
         <button data-camera="2" aria-label="Zoom out" title="Zoom out">−</button><button data-camera="8" aria-label="Pan down" title="Pan down">↓</button><button data-camera="1" aria-label="Zoom in" title="Zoom in">+</button>
       </div>
       <div class="viewport-footer">
-        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch violet"></i>Tunnel entrances</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to pan · Shift-drag to orbit · Scroll to zoom</p></div>
+        <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch violet"></i>Tunnel entrances</span><span><i class="swatch gold"></i>Selected routes</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to pan · Shift-drag to orbit · Scroll to zoom</p></div>
         <div class="scout"><div id="scout-heading">NAVIGATION SCOUT / A ↔ B</div><span id="scout-status">A* routes · Local navigation</span></div>
       </div>
       <div class="loading" id="loading" role="status"><p id="loading-text">Preparing the map…</p><progress aria-label="Loading map runtime"></progress><small>Generated and rendered on your device.</small></div>
@@ -211,7 +211,7 @@
         <button id="ocean-view" data-camera="9">View ocean extent</button>
         <p class="seed-note" id="ocean-key" hidden>Blue: sea-connected water · 16-tile outer belt. Naval patrols stay in sea-connected water and respect their draft.</p>
         <label class="toggle" for="walkability">Walkability overlay<input type="checkbox" id="walkability"></label>
-        <label class="toggle" for="path"><span id="path-toggle-label">Scout route</span><input type="checkbox" id="path" checked></label>
+        <label class="toggle" for="path"><span id="path-toggle-label">Selected routes</span><input type="checkbox" id="path" checked></label>
         <label for="patrol-mode">Patrol traffic</label><select id="patrol-mode"><option value="0">Live · ground, naval, air &amp; subs</option><option value="1">Paused</option><option value="2">Hidden</option></select>
         <div class="seed-actions"><button id="find-patrol">Find next patrol</button><button id="restart-fleet">Restart vehicles</button></div><p class="seed-note" id="patrol-note">3 ground · 3 naval · 3 air · 3 submarines · physical navigation</p>
         <details><summary>Twelve unit types</summary><p>Ground: inspection scout, tracked rover, cargo hauler.<br>Naval: skiff, patrol boat, cutter.<br>Air: quadrotor, recon wing, transport.<br>Underwater: recon, patrol, heavy submarine.<br>Global routes use A* with terrain, altitude, water depth and hull clearance. Variants trade speed, turning space, size and sensor reach. Fixed wings maintain forward airspeed; quadcopters hover and strafe. No combat yet. <a href="../training/fleet.html">Fleet training results ↗</a></p></details>
@@ -330,7 +330,7 @@
       const isolated=$('isolate-tunnels').checked;
       $('isolation-options').hidden=!isolated;
       $('surface-legend').hidden=isolated;$('tunnel-legend').hidden=!isolated;
-      $('path-toggle-label').textContent=isolated?'Passage guides':'Scout route';
+      $('path-toggle-label').textContent=isolated?'Passage guides':'Selected routes';
       $('scout-heading').textContent=isolated?'TUNNEL STRUCTURE / ALL PASSAGES':'NAVIGATION SCOUT / A ↔ B';
       $('overlay-key').hidden=isolated||!$('walkability').checked;
       for(const id of ['cutaway','tile-boundaries','walkability','ocean-access','ocean-view'])$(id).disabled=isolated||!ready;
@@ -444,6 +444,7 @@
     };
     const depthPixels=Array.from({length:48},()=>{const pixel=document.createElement('i');$('depth-preview').appendChild(pixel);return pixel;});
     window.maplabFleet=report=>{
+      if(window.lastFleetReport?.selected!==report.selected)$('command-altitude').value='';
       window.lastFleetReport=report;
       const v=report.values;
       const count=Number(v[11]).toString(2).replace(/0/g,'').length;
@@ -451,6 +452,10 @@
       $('command-status').textContent=`${count} selected · ${['Travelling','Arrived','Route unavailable','Aircraft impact','Mission timed out'][v[10]]||'Ready'} · ${v[12].toFixed(0)}u remaining${v[20]?` · Last command ${v[13]}/${v[20]} routed`:''}`;
       $('command-altitude-label').hidden=![2,3,4].includes(v[18]);
       $('unit-profile').textContent=`${report.role} · Speed ${v[0].toFixed(1)} · Turn ${(v[1]*180/Math.PI).toFixed(0)}°/s · Range ${v[4].toFixed(0)}`;
+      if(!$('isolate-tunnels').checked){
+        $('scout-heading').textContent=$('sensor-unit').selectedOptions[0].textContent.toUpperCase();
+        $('scout-status').textContent=`${['Ground','Ocean','Quadcopter','Fixed wing','Submarine'][v[18]]} · ${v[12].toFixed(0)}u to destination · ${report.trained?'PPO':'Reference'}`;
+      }
       $('patrol-note').textContent=`12 vehicles · A* routes · ${report.trained?'Jointly trained PPO':'Reference controllers'}${v[5]?' · Selected aircraft stopped after collision':''}`;
     };
     window.maplabSensors=(unit,data)=>{
@@ -472,7 +477,7 @@
     function applySensorView(){
       if(!ready)return;
       const unit=Number($('sensor-unit').value),mask=[0,1,2,3].reduce((n,t)=>n|($('sensor-show-'+t).checked?1<<t:0),0);
-      Module._aw_sensor_control(0,unit);Module._aw_sensor_control(1,mask);
+      if(window.lastFleetReport?.selected!==unit)Module._aw_sensor_control(0,unit);Module._aw_sensor_control(1,mask);
       Module._aw_sensor_control(2,Number($('sensor-all').checked));Module._aw_sensor_control(3,Number($('sensor-xray').checked));syncUrl();
     }
     for(const id of ['sensor-unit','sensor-all','sensor-xray','sensor-show-0','sensor-show-1','sensor-show-2','sensor-show-3'])$(id).addEventListener('change',applySensorView);

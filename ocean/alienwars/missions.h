@@ -11,7 +11,7 @@ typedef struct {
     AwVehicle vehicle;
     const AwMissionRoute *route;
     int cursor,ticks,limit,arrived,timeout,contacts,blocked_ticks,blocked_total,collision_events,invalid;
-    float along,remaining,reward,total,previous_potential;
+    float along,remaining,reward,total,previous_potential,odometry_origin;
     float observation[AW_MISSION_INPUTS];
 } AwMissionAgent;
 typedef struct {
@@ -108,6 +108,9 @@ static void aw_mission_observe(AwMissionWorld*w){
         o[21]=spec.accel/6;o[22]=spec.vertical/2;o[23]=spec.reverse/8;o[24]=spec.height/3;o[25]=fminf(1,a->remaining/256);
         o[26]=fminf(1,a->blocked_ticks/100.0f);
         memcpy(o+32,w->sensors.observations[i],AW_SENSOR_OBS*sizeof(float));
+        /* A recurrent mission starts a new odometer reference, as an episodic
+         * training reset does. The sensor/display lifetime odometer stays intact. */
+        o[32+12]=fminf(1,fmaxf(0,(w->sensors.units[i].odometry.distance-a->odometry_origin)/1024));
         for(int j=0;j<32;j++)o[j]=fminf(1,fmaxf(-1,o[j]));
     }
 }

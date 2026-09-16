@@ -20,7 +20,9 @@ regional WFC fits optional mountain passages and exposed bypasses to existing
 terrain. Bridges cross suitable water gaps without changing the landscape.
 
 Three ground, three naval, three air and three submarine variants traverse the
-world with A* global routes and physical local control. Fixed wings fly forward;
+world with A* global routes and physical local control. Five PPO learners train
+simultaneously in shared worlds, with individual goals and recurrent memory.
+Click units or select a family and command destinations in Map Lab. Fixed wings fly forward;
 quadcopters hover and strafe. Traction, clearance, turning, depth and sensing
 create tradeoffs between variants. Units remain visible through terrain and
 water. The five-family local navigation task is documented separately from the
@@ -34,7 +36,7 @@ rendering, with fixed observation buffers used by the navigation RL task.
 - [Agent instructions](AGENTS.md)
 - [Map Lab specification and validation](docs/MAPLAB.md)
 - [Sensor architecture, observations and benchmarks](docs/SENSORS.md)
-- [Vehicle profiles and local navigation contract](docs/LOCAL_NAVIGATION.md)
+- [Shared-world PPO, vehicle profiles and interactive missions](docs/SHARED_NAVIGATION.md)
 - [Navigation RL contract, training statistics and policy viewer](docs/NAVIGATION_RL.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Raylib web build and GitHub Pages](docs/WEB.md)
