@@ -22,5 +22,9 @@ report=json.loads((ROOT/'docs/maplab/build.json').read_text())
 report['controllers']=manifest
 (ROOT/'docs/maplab/build.json').write_text(json.dumps(report,indent=2)+'\n')
 
-(ROOT/"docs/training/fleet.html").write_text((ROOT/"web/training/fleet.html").read_text())
-(ROOT/"docs/training/fleet.json").write_text((ROOT/"docs/runs/shared-navigation-2026-09-16.json").read_text())
+results=(ROOT/"docs/runs/shared-navigation-2026-09-16.json").read_bytes()
+page=(ROOT/"web/training/fleet.html").read_text()
+assert '__FLEET_RESULT_VERSION__' in page
+page=page.replace('__FLEET_RESULT_VERSION__',hashlib.sha256(results).hexdigest()[:16])
+(ROOT/"docs/training/fleet.html").write_text(page)
+(ROOT/"docs/training/fleet.json").write_bytes(results)

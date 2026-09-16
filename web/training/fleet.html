@@ -11,7 +11,7 @@
 <h2>Measured limits</h2><p id="target"></p><ul id="limitations"></ul><p id="endurance" class="note"></p>
 <footer><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/runs/shared-navigation-2026-09-16.md">Complete run report</a> · <a href="https://github.com/rozgo/alienwars-gym/releases/tag/shared-navigation-2026-09-16">Checkpoints &amp; records</a> · <a href="fleet.json">Recorded results JSON</a> · <a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/LOCAL_NAVIGATION.md">Historical v1 experiment</a></footer></main>
 <script>
-fetch('fleet.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(data=>{
+fetch('fleet.json?v=__FLEET_RESULT_VERSION__').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(data=>{
  const e=data.evaluation,selected=e.results[e.selected_label],reference=e.results.reference,random=e.results.random;
  const names=['Ground vehicles','Surface boats','Quadcopters','Fixed wings','Submarines'];
  document.querySelector('#summary').textContent=`${data.training.total_agent_steps.toLocaleString()} agent steps across three independent training seeds on one RTX 4090. Final evaluation: ${e.maps} unseen maps × 3 scenarios, up to 240 simulated seconds per mission. Recorded September 16, 2026.`;
