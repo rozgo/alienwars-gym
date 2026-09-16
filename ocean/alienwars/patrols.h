@@ -2,9 +2,8 @@
 #define ALIENWARS_PATROLS_H
 #include "map.h"
 #include "volume_routes.h"
-/* Eight ambient patrols plus the existing inspection scout = three of each
- * ground/naval/air class. Scripted traffic, independent of the map fingerprint
- * and the inspection route; no combat, learning or unit-to-unit avoidance. */
+/* Prepared route banks for three ground, three naval, three air and three
+ * submarine variants. Route generation does not change the map fingerprint. */
 #define AW_PATROLS 11
 #define AW_UNITS (AW_PATROLS+1)
 #define AW_AIR_POINTS 512
@@ -18,9 +17,9 @@ typedef struct {float x,q,z;} AwPatrolPoint;
 static float aw_patrol_floor(const AwMap*m,int node){
     return node>=AW_SPAN_START?m->spans[node-AW_SPAN_START].q:node>=AW_CELLS?m->cave[node-AW_CELLS].q:aw_surface_q(m,node,.5f,.5f);
 }
-static int aw_patrol_ground_edge(const AwMap*m,int a,int b){
+static int aw_patrol_ground_edge_size(const AwMap*m,int a,int b,int large){
     if(a>=AW_SPAN_START&&b>=AW_SPAN_START){
-        for(int d=0;d<4;d++)if(m->spans[a-AW_SPAN_START].links[d]==b-AW_SPAN_START)return !!(m->spans[a-AW_SPAN_START].edge_fits[d]&2);
+        for(int d=0;d<4;d++)if(m->spans[a-AW_SPAN_START].links[d]==b-AW_SPAN_START)return !!(m->spans[a-AW_SPAN_START].edge_fits[d]&(large?2:1));
         return 0;
     }
     int ca=aw_node_cell(m,a),cb=aw_node_cell(m,b);float qa=aw_patrol_floor(m,a),qb=aw_patrol_floor(m,b);
@@ -28,9 +27,10 @@ static int aw_patrol_ground_edge(const AwMap*m,int a,int b){
     for(int j=1;j<4;j++){
         float t=j*.25f,x=aw_lerp(ca%64,cb%64,t)+.5f,z=aw_lerp(ca/64,cb/64,t)+.5f,q=aw_lerp(qa,qb,t);
         float support=aw_support_q(m,x,z,q);
-        if(fabsf(support-q)>.3f||!aw_body_fits(m,x,support,z,1))return 0;
+        if(fabsf(support-q)>.3f||!aw_body_fits(m,x,support,z,large))return 0;
     }return 1;
 }
+static int aw_patrol_ground_edge(const AwMap*m,int a,int b){return aw_patrol_ground_edge_size(m,a,b,1);}
 typedef struct {const AwMap*m;int layer,variant;const uint8_t*allowed;} AwPatrolGraph;
 static AwRoutePoint aw_patrol_node(const AwPatrolGraph*g,int n){
     if(g->layer==AW_PATROL_NAVAL)return (AwRoutePoint){n%96-16+.5f,1.44f,n/96-16+.5f};
@@ -41,7 +41,7 @@ static int aw_patrol_edges(void*ctx,int a,AwAStarEdge*out){
     AwPatrolGraph*g=ctx;int count=0;
     for(int d=0;d<(g->layer==AW_PATROL_NAVAL?4:AW_LINKS);d++){
         int b=g->layer==AW_PATROL_NAVAL?aw_ocean_neighbor(a,d):aw_open(g->m,a,d);
-        if(b<0||!g->allowed[b]||(g->layer==AW_PATROL_GROUND&&!aw_patrol_ground_edge(g->m,a,b)))continue;
+        if(b<0||!g->allowed[b]||(g->layer==AW_PATROL_GROUND&&!aw_patrol_ground_edge_size(g->m,a,b,g->variant!=0)))continue;
         float cost=aw_patrol_estimate(g,a,b);if(g->layer==AW_PATROL_GROUND)cost*=fmaxf(1,aw_move_cost(g->m,a,b)/10.0f);
         out[count++]=(AwAStarEdge){b,cost};
     }return count;
@@ -50,6 +50,14 @@ static int aw_patrol_search(AwPatrolGraph*g,int start,int goal,int*out){
     AwAStar scratch={0};int nodes=g->layer==AW_PATROL_NAVAL?AW_OCEAN_CELLS:AW_NODES;
     if(!aw_astar_init(&scratch,nodes)){aw_astar_close(&scratch);return 0;}
     int n=aw_astar_path(&scratch,nodes,start,goal,g,aw_patrol_edges,aw_patrol_estimate,out,AW_NODES);aw_astar_close(&scratch);return n;
+}
+static int aw_patrol_scout(const AwMap*m,AwPatrol*p,int start,int goal){
+    uint8_t allowed[AW_NODES]={0};
+    for(int c=0;c<AW_CELLS;c++)allowed[c]=m->walkable[c]&&aw_body_fits(m,c%64+.5f,aw_surface_q(m,c,.5f,.5f),c/64+.5f,0);
+    for(int c=0;c<m->cave_count;c++)allowed[AW_CELLS+c]=1;
+    for(int c=0;c<m->span_count;c++)allowed[AW_SPAN_START+c]=!!(m->spans[c].fits&1);
+    AwPatrolGraph graph={m,AW_PATROL_GROUND,0,allowed};p->layer=AW_PATROL_GROUND;p->variant=0;
+    p->count=aw_patrol_search(&graph,start,goal,p->route);return p->count>1;
 }
 static int aw_patrol_ground(AwMap*m,AwPatrol*p,uint32_t salt){
     uint8_t allowed[AW_NODES]={0};int prev[AW_NODES],queue[AW_NODES],depth[AW_NODES]={0};

@@ -3,7 +3,7 @@
 #include <time.h>
 typedef struct {AwMap map;AwRayWorld rays;AwLocalRoute routes[AW_UNITS];int count;} AwLocalWorld;
 typedef struct AwLocalBank {int family,maps,refs;unsigned seed;AwLocalWorld*worlds;struct AwLocalBank*next;} AwLocalBank;
-struct AwLocalTask {AwLocalBank*bank;AwLocalWorld*world;AwLocalEpisode episode;unsigned rng;int difficulty;AwBody peers[4];AwSVec center[4];float phase[4];};
+struct AwLocalTask {AwLocalBank*bank;AwLocalWorld*world;AwLocalEpisode episode;unsigned rng,action_rng;int difficulty;AwBody peers[4];AwSVec center[4];float phase[4];};
 static AwLocalBank*banks;
 static unsigned aw_local_rng(unsigned*s){unsigned x=*s?*s:173;x^=x<<13;x^=x>>17;x^=x<<5;return *s=x;}
 static float aw_local_rand(unsigned*s){return (aw_local_rng(s)&65535)/65535.0f;}
@@ -14,12 +14,12 @@ AwLocalTask*aw_local_create(int family,int maps,unsigned seed,unsigned instance,
         clock_t timer=clock();for(int i=0;i<maps;i++){AwLocalWorld*w=&b->worlds[i];AwPatrols*patrol=calloc(1,sizeof(*patrol));
             if(!patrol||!aw_generate_options(&w->map,seed+i,(AwOptions){i%2,1+(i*3)%10,1+(i*5)%10,i%4,1})||!aw_patrol_build(&w->map,patrol)){free(patrol);free(b->worlds);free(b);return NULL;}
             aw_ray_world_init(&w->rays,&w->map);
-            if(family==0){AwPatrol scout={.layer=0,.variant=0,.count=w->map.path_length};memcpy(scout.route,w->map.path,scout.count*sizeof(int));aw_local_route(&w->map,&scout,&w->routes[w->count++]);}
+            if(family==0){AwPatrol scout={0};if(aw_patrol_scout(&w->map,&scout,w->map.spawns[0],w->map.spawns[1]))aw_local_route(&w->map,&scout,&w->routes[w->count++]);}
             for(int j=0;j<AW_PATROLS;j++)if(patrol->units[j].count>2&&aw_vehicle_family(patrol->units[j].layer,patrol->units[j].variant)==family)aw_local_route(&w->map,&patrol->units[j],&w->routes[w->count++]);
             free(patrol);if(!w->count){free(b->worlds);free(b);return NULL;}
             fprintf(stderr,"LOCAL_MAP family=%d seed=%u hash=%08x routes=%d\n",family,w->map.seed,w->map.hash,w->count);
         }fprintf(stderr,"LOCAL_BANK family=%d worlds=%d prep_seconds=%.3f\n",family,maps,(clock()-timer)/(double)CLOCKS_PER_SEC);b->next=banks;banks=b;}
-    AwLocalTask*t=calloc(1,sizeof(*t));if(!t)return NULL;t->bank=b;b->refs++;t->rng=aw_hash(instance^seed^173);t->difficulty=difficulty;return t;
+    AwLocalTask*t=calloc(1,sizeof(*t));if(!t)return NULL;t->bank=b;b->refs++;t->rng=aw_hash(instance^seed^173);t->action_rng=aw_hash(instance^3917);t->difficulty=difficulty;return t;
 }
 void aw_local_destroy(AwLocalTask*t){if(!t)return;AwLocalBank*b=t->bank;if(!--b->refs){AwLocalBank**p=&banks;while(*p!=b)p=&(*p)->next;*p=b->next;free(b->worlds);free(b);}free(t);}
 static void aw_local_traffic(AwLocalTask*t){
@@ -65,4 +65,4 @@ void aw_local_tick_task(AwLocalTask*t,const float*actions,float*obs,float*reward
     aw_local_observe(&t->episode,&t->world->map,&t->world->rays,t->peers,4,-1,.1f);
     memcpy(obs,t->episode.observation,sizeof(t->episode.observation));*reward=t->episode.reward;*success=t->episode.success;*contacts=t->episode.vehicle.contact;*terminal=t->episode.success||t->episode.timeout||t->episode.vehicle.failed;
 }
-void aw_local_baseline_task(AwLocalTask*t,float*actions,int mode){if(mode==1)for(int i=0;i<4;i++)actions[i]=aw_local_rng(&t->rng)%3;else aw_local_reference(&t->episode,actions);}
+void aw_local_baseline_task(AwLocalTask*t,float*actions,int mode){if(mode==1)for(int i=0;i<4;i++)actions[i]=aw_local_rng(&t->action_rng)%3;else aw_local_reference(&t->episode,actions);}

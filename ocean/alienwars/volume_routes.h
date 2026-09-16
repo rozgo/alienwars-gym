@@ -23,7 +23,7 @@ static float aw_volume_roof(const AwMap*m,float x,float z){
 static int aw_volume_clear(const AwVolumeGraph*g,AwRoutePoint p){
     const AwMap*m=g->map;
     if(g->submarine){
-        float radius=.40f+g->variant*.18f,halfq=.9f+g->variant*.27f;
+        float radius=.68f+g->variant*.22f,halfq=.9f+g->variant*.27f;
         if(p.q+halfq>=1.44f)return 0;
         for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++){
             float x=p.x+dx*radius,z=p.z+dz*radius;int ox=(int)floorf(x)+AW_OCEAN_BELT,oz=(int)floorf(z)+AW_OCEAN_BELT;
@@ -32,7 +32,7 @@ static int aw_volume_clear(const AwVolumeGraph*g,AwRoutePoint p){
             if(x>=0&&z>=0&&x<64&&z<64)for(int y=-1;y<=1;y++)if(aw_density(m,x,p.q+y*halfq,z)>0)return 0;
         }return 1;
     }
-    float radius=g->variant==0?.5f:g->variant==1?1.1f:1.5f;
+    float radius=g->variant==0?.68f:g->variant==1?1.1f:1.5f;
     if(p.x-radius<0||p.z-radius<0||p.x+radius>=64||p.z+radius>=64)return 0;
     for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++)if(p.q<aw_volume_roof(m,p.x+dx*radius,p.z+dz*radius)+3)return 0;
     return 1;
