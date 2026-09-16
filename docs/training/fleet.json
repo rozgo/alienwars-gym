@@ -1,0 +1,349 @@
+{
+  "contract": 1,
+  "generator_version": 10,
+  "training_seed": 273,
+  "training_map_seeds": [
+    201,
+    202,
+    203,
+    204,
+    205,
+    206,
+    207,
+    208
+  ],
+  "selection_map_seeds": [
+    10001,
+    10002,
+    10003,
+    10004
+  ],
+  "test_map_seeds": [
+    20001,
+    20002,
+    20003,
+    20004,
+    20005,
+    20006,
+    20007,
+    20008
+  ],
+  "test_instance_seed": 9091,
+  "episodes_per_family": 128,
+  "traffic": "one fixed and up to three kinematic moving body proxies",
+  "joint_learning": false,
+  "stages": [
+    {
+      "run": "family-0-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "steps": 4194304,
+      "trainer_seconds": 278.4162822,
+      "median_sps": 15465.22352,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-0-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 288.4852943,
+      "median_sps": 14773.368470000001,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-1-clear-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 28.89865541,
+      "median_sps": 148217.16465,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-1-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 28.84503245,
+      "median_sps": 145281.1321,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-2-clear-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 33.15248322,
+      "median_sps": 127044.35245,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-2-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 44.72474933,
+      "median_sps": 94508.25009,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-3-clear-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 33.3624897,
+      "median_sps": 125751.7566,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-3-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "steps": 4194304,
+      "trainer_seconds": 52.23398995,
+      "median_sps": 80317.85723,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-3-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 48.64431286,
+      "median_sps": 86743.79678,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-4-clear-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 6.181240082,
+      "median_sps": 699883.3839,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-4-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "steps": 4194304,
+      "trainer_seconds": 8.181619406,
+      "median_sps": 521302.05595,
+      "finite_metrics": true
+    },
+    {
+      "run": "family-4-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "steps": 4194304,
+      "trainer_seconds": 7.693867922,
+      "median_sps": 557554.9347999999,
+      "finite_metrics": true
+    },
+    {
+      "run": "ground-bearing-273",
+      "source": "b84e6bd005511e890b1d4c1490145b3b27bcf3bd",
+      "steps": 8388608,
+      "trainer_seconds": 290.2726679,
+      "median_sps": 29043.90504,
+      "finite_metrics": true
+    },
+    {
+      "run": "ground-pilot-273",
+      "source": "c09229cf4c9120ae805cc49245ad846348fcb2a7",
+      "steps": 1048576,
+      "trainer_seconds": 55.12824154,
+      "median_sps": 18927.448320000003,
+      "finite_metrics": true
+    }
+  ],
+  "results": [
+    {
+      "family": 0,
+      "name": "Ground",
+      "evaluation": {
+        "policy": {
+          "family": 0,
+          "episodes": 128,
+          "successes": 95,
+          "steps": 26153,
+          "contact_steps": 441
+        },
+        "reference": {
+          "family": 0,
+          "episodes": 128,
+          "successes": 91,
+          "steps": 28319,
+          "contact_steps": 17597
+        },
+        "random": {
+          "family": 0,
+          "episodes": 128,
+          "successes": 0,
+          "steps": 64000,
+          "contact_steps": 974
+        }
+      }
+    },
+    {
+      "family": 1,
+      "name": "Surface boats",
+      "evaluation": {
+        "policy": {
+          "family": 1,
+          "episodes": 128,
+          "successes": 86,
+          "steps": 35496,
+          "contact_steps": 778
+        },
+        "reference": {
+          "family": 1,
+          "episodes": 128,
+          "successes": 75,
+          "steps": 39267,
+          "contact_steps": 21518
+        },
+        "random": {
+          "family": 1,
+          "episodes": 128,
+          "successes": 0,
+          "steps": 64000,
+          "contact_steps": 275
+        }
+      }
+    },
+    {
+      "family": 2,
+      "name": "Quadcopters",
+      "evaluation": {
+        "policy": {
+          "family": 2,
+          "episodes": 128,
+          "successes": 128,
+          "steps": 9748,
+          "contact_steps": 6
+        },
+        "reference": {
+          "family": 2,
+          "episodes": 128,
+          "successes": 80,
+          "steps": 34988,
+          "contact_steps": 23674
+        },
+        "random": {
+          "family": 2,
+          "episodes": 128,
+          "successes": 0,
+          "steps": 64000,
+          "contact_steps": 116
+        }
+      }
+    },
+    {
+      "family": 3,
+      "name": "Fixed wings",
+      "evaluation": {
+        "policy": {
+          "family": 3,
+          "episodes": 128,
+          "successes": 105,
+          "steps": 7783,
+          "contact_steps": 23
+        },
+        "reference": {
+          "family": 3,
+          "episodes": 128,
+          "successes": 21,
+          "steps": 7149,
+          "contact_steps": 104
+        },
+        "random": {
+          "family": 3,
+          "episodes": 128,
+          "successes": 5,
+          "steps": 7067,
+          "contact_steps": 123
+        }
+      }
+    },
+    {
+      "family": 4,
+      "name": "Submarines",
+      "evaluation": {
+        "policy": {
+          "family": 4,
+          "episodes": 128,
+          "successes": 96,
+          "steps": 32553,
+          "contact_steps": 738
+        },
+        "reference": {
+          "family": 4,
+          "episodes": 128,
+          "successes": 65,
+          "steps": 42538,
+          "contact_steps": 24421
+        },
+        "random": {
+          "family": 4,
+          "episodes": 128,
+          "successes": 0,
+          "steps": 64000,
+          "contact_steps": 478
+        }
+      }
+    }
+  ],
+  "policies": [
+    {
+      "family": 0,
+      "name": "Ground",
+      "run": "family-0-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "sha256": "cd629c5f62946eb1639699ae6c13c9c1351c585797f631b4ff92daadb59d7616",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-0.bin"
+    },
+    {
+      "family": 1,
+      "name": "Surface boats",
+      "run": "family-1-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "sha256": "ab3fcc5697098affe18c3ebaa01b50679becedbe29af99d6e2bd4b8e6acd2ef9",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-1.bin"
+    },
+    {
+      "family": 2,
+      "name": "Quadcopters",
+      "run": "family-2-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "sha256": "ab7b7b5d3061b2fe1cb59669af66c3fa99b1393d1b23b530a173bb8fe5bd2663",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-2.bin"
+    },
+    {
+      "family": 3,
+      "name": "Fixed wings",
+      "run": "family-3-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "sha256": "9d7fdbac8e82b701b1e73427468e437592a6be8bd922df5c38c2ef049fba8d1f",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-3.bin"
+    },
+    {
+      "family": 4,
+      "name": "Submarines",
+      "run": "family-4-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "sha256": "f7b3b9ffdc62322f0642d83c802529ba059b9e5902e616fb4025c0f1170b0e31",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-4.bin"
+    }
+  ],
+  "total_training_steps": 59768832,
+  "total_trainer_seconds": 1204.22092627,
+  "hardware": "NVIDIA RTX 4090, one GPU; CPU environment and CUDA PPO learner",
+  "precision": "bf16 native learner; flat fp32 checkpoint export",
+  "toolchain": "Clang 18.1.3; CUDA 13.0.88; NVIDIA driver 580.173.02",
+  "full_fleet_probe": {
+    "seed": 73,
+    "seconds": 120,
+    "aircraft_collisions": 1,
+    "limitations": "The hauler also stalled; completed local tests do not establish reliable indefinite fleet operation."
+  },
+  "limitations": [
+    "One training seed; no robustness claim.",
+    "Local route sections, not end-to-end learned global planning.",
+    "Other vehicles in training are kinematic, not jointly learning.",
+    "Positional flight A* does not guarantee curvature-feasible routes.",
+    "Ideal waypoint location and visible target velocity; cosmetic props are not colliders.",
+    "Controller inputs are fixed range/neighbor profiles, separate from sensor preview equipment."
+  ],
+  "inference_rng_seed": 9092,
+  "random_baseline_rng": "aw_hash(9091 ^ 3917)"
+}

@@ -1,21 +1,79 @@
 {
   "generator_version": 10,
-  "source_commit": "e4d91e7f89e16805dae7d304b05704a7893065a2",
+  "source_commit": "0db1680e59bb790ccb597fe0b7e76a4d47b37217",
   "source_dirty": false,
   "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
   "raylib": "5.5",
   "artifacts": {
     "index.html": {
-      "bytes": 41382,
-      "sha256": "5e742e094d1f75106e3866a3f4301150e6652be4120440daf3eff21d2c6e6071"
+      "bytes": 42644,
+      "sha256": "b64713cd2704c541c4b14a8d774d1ad8eb912464ee302d36a75a8e6a9f22f21b"
     },
     "maplab.js": {
-      "bytes": 233808,
-      "sha256": "e28ddb0eb225c34782ab2c22ea8f40f80a72e9d0883b8b3bb4adad8e6c0479be"
+      "bytes": 239086,
+      "sha256": "7705a40d400855de8f5c1d2683ad745dbdd76434963e0bcc1780692ad3cf1381"
     },
     "maplab.wasm": {
-      "bytes": 398237,
-      "sha256": "f91862ac4276b2da072b7e28f5f4631e639e5689480ebd8add948291691e5e52"
+      "bytes": 452086,
+      "sha256": "84c963398bdc7045d0038be9d8eb9c869addec0411e946d58509b3f250337619"
+    },
+    "maplab.data": {
+      "bytes": 2245120,
+      "sha256": "24cee6281ae932b5693f37fc09cc535ac6b72341c29e5b3a51e5447dc7163fd5"
     }
+  },
+  "controllers": {
+    "contract": 1,
+    "observations": 96,
+    "actions": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "hidden": 128,
+    "layers": 2,
+    "policies": [
+      {
+        "family": 0,
+        "name": "Ground",
+        "run": "family-0-profiles-273",
+        "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+        "sha256": "cd629c5f62946eb1639699ae6c13c9c1351c585797f631b4ff92daadb59d7616",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-0.bin"
+      },
+      {
+        "family": 1,
+        "name": "Surface boats",
+        "run": "family-1-traffic-273",
+        "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+        "sha256": "ab3fcc5697098affe18c3ebaa01b50679becedbe29af99d6e2bd4b8e6acd2ef9",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-1.bin"
+      },
+      {
+        "family": 2,
+        "name": "Quadcopters",
+        "run": "family-2-traffic-273",
+        "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+        "sha256": "ab7b7b5d3061b2fe1cb59669af66c3fa99b1393d1b23b530a173bb8fe5bd2663",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-2.bin"
+      },
+      {
+        "family": 3,
+        "name": "Fixed wings",
+        "run": "family-3-profiles-273",
+        "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+        "sha256": "9d7fdbac8e82b701b1e73427468e437592a6be8bd922df5c38c2ef049fba8d1f",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-3.bin"
+      },
+      {
+        "family": 4,
+        "name": "Submarines",
+        "run": "family-4-profiles-273",
+        "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+        "sha256": "f7b3b9ffdc62322f0642d83c802529ba059b9e5902e616fb4025c0f1170b0e31",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-4.bin"
+      }
+    ]
   }
 }
