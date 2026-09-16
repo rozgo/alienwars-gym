@@ -1,349 +1,2127 @@
 {
-  "contract": 1,
-  "generator_version": 10,
-  "training_seed": 273,
-  "training_map_seeds": [
-    201,
-    202,
-    203,
-    204,
-    205,
-    206,
-    207,
-    208
-  ],
-  "selection_map_seeds": [
-    10001,
-    10002,
-    10003,
-    10004
-  ],
-  "test_map_seeds": [
-    20001,
-    20002,
-    20003,
-    20004,
-    20005,
-    20006,
-    20007,
-    20008
-  ],
-  "test_instance_seed": 9091,
-  "episodes_per_family": 128,
-  "traffic": "one fixed and up to three kinematic moving body proxies",
-  "joint_learning": false,
-  "stages": [
-    {
-      "run": "family-0-profiles-273",
-      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-      "steps": 4194304,
-      "trainer_seconds": 278.4162822,
-      "median_sps": 15465.22352,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-0-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 288.4852943,
-      "median_sps": 14773.368470000001,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-1-clear-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 28.89865541,
-      "median_sps": 148217.16465,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-1-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 28.84503245,
-      "median_sps": 145281.1321,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-2-clear-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 33.15248322,
-      "median_sps": 127044.35245,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-2-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 44.72474933,
-      "median_sps": 94508.25009,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-3-clear-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 33.3624897,
-      "median_sps": 125751.7566,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-3-profiles-273",
-      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-      "steps": 4194304,
-      "trainer_seconds": 52.23398995,
-      "median_sps": 80317.85723,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-3-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 48.64431286,
-      "median_sps": 86743.79678,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-4-clear-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 6.181240082,
-      "median_sps": 699883.3839,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-4-profiles-273",
-      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-      "steps": 4194304,
-      "trainer_seconds": 8.181619406,
-      "median_sps": 521302.05595,
-      "finite_metrics": true
-    },
-    {
-      "run": "family-4-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "steps": 4194304,
-      "trainer_seconds": 7.693867922,
-      "median_sps": 557554.9347999999,
-      "finite_metrics": true
-    },
-    {
-      "run": "ground-bearing-273",
-      "source": "b84e6bd005511e890b1d4c1490145b3b27bcf3bd",
-      "steps": 8388608,
-      "trainer_seconds": 290.2726679,
-      "median_sps": 29043.90504,
-      "finite_metrics": true
-    },
-    {
-      "run": "ground-pilot-273",
-      "source": "c09229cf4c9120ae805cc49245ad846348fcb2a7",
-      "steps": 1048576,
-      "trainer_seconds": 55.12824154,
-      "median_sps": 18927.448320000003,
-      "finite_metrics": true
+  "contract": 2,
+  "date": "2026-09-16",
+  "training": {
+    "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+    "total_agent_steps": 49545216,
+    "trainer_seconds": 1107.3550876,
+    "process_seconds": 1393.6845136312768,
+    "seeds": [
+      373,
+      474,
+      575
+    ],
+    "map_seeds": [
+      301,
+      302,
+      303,
+      304,
+      305,
+      306,
+      307,
+      308
+    ],
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "driver": "580.173.02",
+    "cuda": "13.0.88",
+    "compiler": "Ubuntu clang 18.1.3",
+    "backend": "CPU worlds, synchronous single-GPU native PPO",
+    "precision": "bf16 learner, fp32 weight exports",
+    "parameters_per_family": 182656,
+    "stages": [
+      {
+        "seed": 373,
+        "curriculum": 0,
+        "agent_steps": 2359296,
+        "run": "shared-v3-s373-c0",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=373",
+          "--base.run_id=shared-v3-s373-c0",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=2359296",
+          "--env.curriculum=0",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.012",
+          "--train.ent_coef=0.003"
+        ],
+        "process_seconds": 111.33129173889756,
+        "checkpoints": [
+          "9fb40ec487585f0bb67509e59fadc7b6f3b14adcb12a3606b13ef727d130af01",
+          "be80fe45e6ab6a775f1ee6f548c6951dfa5113951063894e5eb7ee6cde53e9af",
+          "17c4484e41e253c0c471d2ee6643d2f048ea51c80013a180c5199df9cd416d52",
+          "7184b844657156df121b468750f337f8607811a74284b4b5b55d000771533812",
+          "0b63ea14a78643ad948a80913dcc4d957a6b3288fca187df9da8a20fe54738e1"
+        ],
+        "trainer_seconds": 73.2105026
+      },
+      {
+        "seed": 373,
+        "curriculum": 1,
+        "agent_steps": 4718592,
+        "run": "shared-v3-s373-c1",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=373",
+          "--base.run_id=shared-v3-s373-c1",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=4718592",
+          "--env.curriculum=1",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008",
+          "--base.load_model_dir=outputs/shared/shared-v3/s373-c0"
+        ],
+        "process_seconds": 140.81871335301548,
+        "checkpoints": [
+          "ce2bf507d3e76647e9075b4e8cf2c2a860a23c3188666d1622985a2633e3132c",
+          "c054bbc35337773ba967dbe171a7556d17b0ad5a5850c3fc56404be9ab6bed3b",
+          "fe31833d2e4f90fa7b8aa3c342a55979f8eb134a8505f67937880e82f5ea9e67",
+          "a58a903a9567e9070f3b8178a52bbee8012571b620be07f020959c214c6d41a7",
+          "db1547b5c259236036db982a8a79c77d03cad6f29b75d43fd8961dc368a4f961"
+        ],
+        "trainer_seconds": 117.965363
+      },
+      {
+        "seed": 373,
+        "curriculum": 2,
+        "agent_steps": 9437184,
+        "run": "shared-v3-s373-c2",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=373",
+          "--base.run_id=shared-v3-s373-c2",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=9437184",
+          "--env.curriculum=2",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008",
+          "--base.load_model_dir=outputs/shared/shared-v3/s373-c1"
+        ],
+        "process_seconds": 204.01037058234215,
+        "checkpoints": [
+          "43377fce89d8e6fdb442fdc969cd1a68850d7b0a9c713d58f9e1830ec0b9576f",
+          "ed3e78dd7e40b0f7b1292c05277df30ef6489e6517a50ef284d255a8f94de6d8",
+          "91139ec6c76ddaddb132c94d72c50718a2e31e37a5f5e4caa60f40406a0eebf5",
+          "92748fdf142b0d717d2ecb29acbbfa113f23287a0873809cc613a3da7342ac4b",
+          "6ac0a3b1267020272736ff55b845c3f9669d0b67411283f306c9c3285d89ac1b"
+        ],
+        "trainer_seconds": 171.785034
+      },
+      {
+        "seed": 474,
+        "curriculum": 0,
+        "agent_steps": 2359296,
+        "run": "shared-v3-s474-c0",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=474",
+          "--base.run_id=shared-v3-s474-c0",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=2359296",
+          "--env.curriculum=0",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.012",
+          "--train.ent_coef=0.003"
+        ],
+        "process_seconds": 121.2256961716339,
+        "checkpoints": [
+          "8fb6246e379164b6945d15d10ca6f872e1c7cd62b1bf945c5dc4f5f6dd4c4867",
+          "4b998b82fa89ef32a05228504409071cd81bf044ab73c6fc082607030bb7cba3",
+          "38a414c4424ad6691a7a21218e0644165cc6bc110025eebbaddb675efc26bdbf",
+          "2c40d9b08638f5872863d818cbc1ff29085b69dcd080c477643e53796d8c642d",
+          "cdd7eb6a8135c27214c433ddf1ce7506a25d6eccffce4e9182471b1a52f42d12"
+        ],
+        "trainer_seconds": 75.9537048
+      },
+      {
+        "seed": 474,
+        "curriculum": 1,
+        "agent_steps": 4718592,
+        "run": "shared-v3-s474-c1",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=474",
+          "--base.run_id=shared-v3-s474-c1",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=4718592",
+          "--env.curriculum=1",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008",
+          "--base.load_model_dir=outputs/shared/shared-v3/s474-c0"
+        ],
+        "process_seconds": 136.9420284340158,
+        "checkpoints": [
+          "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+          "552ca2beb3963f0aa723d93d6550bf481957d21b8678da87b81a4409b308d174",
+          "b1160aa27969c23ab98d23604a7fa41c61b05a686f01cbd501b62076ecd11701",
+          "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+          "356f4bdb88322cebe386dfc204abe69ea196826adc53155f04086359e20e5539"
+        ],
+        "trainer_seconds": 114.408035
+      },
+      {
+        "seed": 474,
+        "curriculum": 2,
+        "agent_steps": 9437184,
+        "run": "shared-v3-s474-c2",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=474",
+          "--base.run_id=shared-v3-s474-c2",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=9437184",
+          "--env.curriculum=2",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008",
+          "--base.load_model_dir=outputs/shared/shared-v3/s474-c1"
+        ],
+        "process_seconds": 228.72747346106917,
+        "checkpoints": [
+          "093b2620909307df3acd98af3a8f926afb47a014e5ece533c978cdce7951c63e",
+          "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+          "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+          "d93dfe7b4abd182583893b9cc241dee4c9534ad80c6d97a5d806f2789cbbfd26",
+          "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce"
+        ],
+        "trainer_seconds": 197.020676
+      },
+      {
+        "seed": 575,
+        "curriculum": 0,
+        "agent_steps": 2359296,
+        "run": "shared-v3-s575-c0",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=575",
+          "--base.run_id=shared-v3-s575-c0",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=2359296",
+          "--env.curriculum=0",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.012",
+          "--train.ent_coef=0.003"
+        ],
+        "process_seconds": 110.69953241478652,
+        "checkpoints": [
+          "6623a72b6a330a9eeba27e4b54327222d6f77e27a6ab3a22718b0a4b5eb9bd9e",
+          "d281494621233aaf9b760c84ac092d0cb34d4675ac49a60e12e6ff0dc416dc10",
+          "09794b5f4f02bfc94d9f07c4b42ba6057a6906fb2c46c36badbd821d237c0d05",
+          "d551aa518a0fa86a292c92f33f48821c67b120b403aad9b79defbf5c17fdb9fd",
+          "662bbf782296775af34087b0dba7433904c83046ef21654e27b73a2d7ca1a91f"
+        ],
+        "trainer_seconds": 72.0202942
+      },
+      {
+        "seed": 575,
+        "curriculum": 1,
+        "agent_steps": 4718592,
+        "run": "shared-v3-s575-c1",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=575",
+          "--base.run_id=shared-v3-s575-c1",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=4718592",
+          "--env.curriculum=1",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008",
+          "--base.load_model_dir=outputs/shared/shared-v3/s575-c0"
+        ],
+        "process_seconds": 137.33233575709164,
+        "checkpoints": [
+          "3ac02a613f82fedca0444f05cf8eca0d6780ac2502a3a0b485f416ca11989dbe",
+          "ddb296782fc6e0876c780107491f452a9bc433392e0b2241140825078c5933cf",
+          "2833aa3426ff0ec8ba7ca852497d9d763793ce4837e823e49da15cba7d9eeea5",
+          "22a5d4b3e4469aa784468487e3137119d38845b8bbab008b65f284b99ef32cc9",
+          "3cb0d13582be45d90c90b5241a425a48927b3496c1ee57f2376786bb2c52268d"
+        ],
+        "trainer_seconds": 114.394981
+      },
+      {
+        "seed": 575,
+        "curriculum": 2,
+        "agent_steps": 9437184,
+        "run": "shared-v3-s575-c2",
+        "command": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=575",
+          "--base.run_id=shared-v3-s575-c2",
+          "--base.checkpoint_dir=outputs/shared/checkpoints",
+          "--train.total_timesteps=9437184",
+          "--env.curriculum=2",
+          "--env.maps=8",
+          "--env.map_seed=301",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008",
+          "--base.load_model_dir=outputs/shared/shared-v3/s575-c1"
+        ],
+        "process_seconds": 202.59707171842456,
+        "checkpoints": [
+          "55f4fc68c4a09fb7ab48c221e75511e78c252a747eb0c7ba91e1ec1c023647a9",
+          "94d389c817cc93e10549e6eea140f6a2e7993001e9abacc5c26510a35dfeffe0",
+          "60927286dccd174da2a5642bc98843cc964ddee1be8ebabd4d04b9fdfea0b544",
+          "e3550e4662abb4d79a534dba9f6db2cddca2ec351dd4875351ca23539df0342b",
+          "2f483cbe1bbfb56a0dababf48cddcc1188652f6404fd252ffebe1d7d01c8d1c6"
+        ],
+        "trainer_seconds": 170.596497
+      }
+    ],
+    "preliminary_runs_excluded": true
+  },
+  "selection": {
+    "map_seeds": [
+      11001,
+      11002,
+      11003
+    ],
+    "rule": "Per family and training seed: highest full-mission arrival count across curricula 1 and 2, then fewer contact decisions, then fewer steps. Evaluate each assembled family set together; deploy the highest macro family arrival rate. No final-test data used for selection.",
+    "selected_seed": 474,
+    "sets": [
+      {
+        "seed": 373,
+        "family_choices": [
+          {
+            "family": 0,
+            "seed": 373,
+            "curriculum": 2,
+            "selection": {
+              "family": 0,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 17,
+              "steps": 36342,
+              "contact_decisions": 10260,
+              "collision_events": 1365,
+              "blocked_decisions": 19764
+            },
+            "sha256": "43377fce89d8e6fdb442fdc969cd1a68850d7b0a9c713d58f9e1830ec0b9576f"
+          },
+          {
+            "family": 1,
+            "seed": 373,
+            "curriculum": 1,
+            "selection": {
+              "family": 1,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 24,
+              "steps": 24269,
+              "contact_decisions": 89,
+              "collision_events": 37,
+              "blocked_decisions": 7341
+            },
+            "sha256": "c054bbc35337773ba967dbe171a7556d17b0ad5a5850c3fc56404be9ab6bed3b"
+          },
+          {
+            "family": 2,
+            "seed": 373,
+            "curriculum": 2,
+            "selection": {
+              "family": 2,
+              "attempted": 9,
+              "unavailable": 0,
+              "arrivals": 9,
+              "steps": 2214,
+              "contact_decisions": 0,
+              "collision_events": 0,
+              "blocked_decisions": 142
+            },
+            "sha256": "91139ec6c76ddaddb132c94d72c50718a2e31e37a5f5e4caa60f40406a0eebf5"
+          },
+          {
+            "family": 3,
+            "seed": 373,
+            "curriculum": 2,
+            "selection": {
+              "family": 3,
+              "attempted": 18,
+              "unavailable": 0,
+              "arrivals": 18,
+              "steps": 1862,
+              "contact_decisions": 0,
+              "collision_events": 0,
+              "blocked_decisions": 0
+            },
+            "sha256": "92748fdf142b0d717d2ecb29acbbfa113f23287a0873809cc613a3da7342ac4b"
+          },
+          {
+            "family": 4,
+            "seed": 373,
+            "curriculum": 1,
+            "selection": {
+              "family": 4,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 24,
+              "steps": 36612,
+              "contact_decisions": 3067,
+              "collision_events": 92,
+              "blocked_decisions": 7458
+            },
+            "sha256": "db1547b5c259236036db982a8a79c77d03cad6f29b75d43fd8961dc368a4f961"
+          }
+        ],
+        "combined_families": [
+          {
+            "family": 0,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 18,
+            "steps": 35721,
+            "contact_decisions": 10063,
+            "collision_events": 1250,
+            "blocked_decisions": 19241
+          },
+          {
+            "family": 1,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 24,
+            "steps": 23977,
+            "contact_decisions": 2,
+            "collision_events": 2,
+            "blocked_decisions": 7471
+          },
+          {
+            "family": 2,
+            "attempted": 9,
+            "unavailable": 0,
+            "arrivals": 9,
+            "steps": 2209,
+            "contact_decisions": 0,
+            "collision_events": 0,
+            "blocked_decisions": 136
+          },
+          {
+            "family": 3,
+            "attempted": 18,
+            "unavailable": 0,
+            "arrivals": 17,
+            "steps": 4173,
+            "contact_decisions": 0,
+            "collision_events": 0,
+            "blocked_decisions": 1130
+          },
+          {
+            "family": 4,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 24,
+            "steps": 36662,
+            "contact_decisions": 2919,
+            "collision_events": 82,
+            "blocked_decisions": 7397
+          }
+        ],
+        "macro_arrival_rate": 0.8777777777777777
+      },
+      {
+        "seed": 474,
+        "family_choices": [
+          {
+            "family": 0,
+            "seed": 474,
+            "curriculum": 1,
+            "selection": {
+              "family": 0,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 23,
+              "steps": 25937,
+              "contact_decisions": 7757,
+              "collision_events": 205,
+              "blocked_decisions": 10165
+            },
+            "sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33"
+          },
+          {
+            "family": 1,
+            "seed": 474,
+            "curriculum": 2,
+            "selection": {
+              "family": 1,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 26,
+              "steps": 18641,
+              "contact_decisions": 702,
+              "collision_events": 18,
+              "blocked_decisions": 2847
+            },
+            "sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c"
+          },
+          {
+            "family": 2,
+            "seed": 474,
+            "curriculum": 2,
+            "selection": {
+              "family": 2,
+              "attempted": 9,
+              "unavailable": 0,
+              "arrivals": 9,
+              "steps": 7271,
+              "contact_decisions": 0,
+              "collision_events": 0,
+              "blocked_decisions": 2519
+            },
+            "sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d"
+          },
+          {
+            "family": 3,
+            "seed": 474,
+            "curriculum": 1,
+            "selection": {
+              "family": 3,
+              "attempted": 18,
+              "unavailable": 0,
+              "arrivals": 17,
+              "steps": 2417,
+              "contact_decisions": 1,
+              "collision_events": 1,
+              "blocked_decisions": 240
+            },
+            "sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f"
+          },
+          {
+            "family": 4,
+            "seed": 474,
+            "curriculum": 2,
+            "selection": {
+              "family": 4,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 22,
+              "steps": 36788,
+              "contact_decisions": 968,
+              "collision_events": 18,
+              "blocked_decisions": 6350
+            },
+            "sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce"
+          }
+        ],
+        "combined_families": [
+          {
+            "family": 0,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 22,
+            "steps": 26198,
+            "contact_decisions": 7783,
+            "collision_events": 566,
+            "blocked_decisions": 10473
+          },
+          {
+            "family": 1,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 25,
+            "steps": 20248,
+            "contact_decisions": 2155,
+            "collision_events": 25,
+            "blocked_decisions": 4895
+          },
+          {
+            "family": 2,
+            "attempted": 9,
+            "unavailable": 0,
+            "arrivals": 9,
+            "steps": 7416,
+            "contact_decisions": 0,
+            "collision_events": 0,
+            "blocked_decisions": 2636
+          },
+          {
+            "family": 3,
+            "attempted": 18,
+            "unavailable": 0,
+            "arrivals": 17,
+            "steps": 2666,
+            "contact_decisions": 1,
+            "collision_events": 1,
+            "blocked_decisions": 358
+          },
+          {
+            "family": 4,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 22,
+            "steps": 36602,
+            "contact_decisions": 968,
+            "collision_events": 18,
+            "blocked_decisions": 6267
+          }
+        ],
+        "macro_arrival_rate": 0.9
+      },
+      {
+        "seed": 575,
+        "family_choices": [
+          {
+            "family": 0,
+            "seed": 575,
+            "curriculum": 1,
+            "selection": {
+              "family": 0,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 19,
+              "steps": 29933,
+              "contact_decisions": 8460,
+              "collision_events": 513,
+              "blocked_decisions": 12847
+            },
+            "sha256": "3ac02a613f82fedca0444f05cf8eca0d6780ac2502a3a0b485f416ca11989dbe"
+          },
+          {
+            "family": 1,
+            "seed": 575,
+            "curriculum": 2,
+            "selection": {
+              "family": 1,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 21,
+              "steps": 26494,
+              "contact_decisions": 4200,
+              "collision_events": 21,
+              "blocked_decisions": 9665
+            },
+            "sha256": "94d389c817cc93e10549e6eea140f6a2e7993001e9abacc5c26510a35dfeffe0"
+          },
+          {
+            "family": 2,
+            "seed": 575,
+            "curriculum": 2,
+            "selection": {
+              "family": 2,
+              "attempted": 9,
+              "unavailable": 0,
+              "arrivals": 9,
+              "steps": 3013,
+              "contact_decisions": 0,
+              "collision_events": 0,
+              "blocked_decisions": 477
+            },
+            "sha256": "60927286dccd174da2a5642bc98843cc964ddee1be8ebabd4d04b9fdfea0b544"
+          },
+          {
+            "family": 3,
+            "seed": 575,
+            "curriculum": 1,
+            "selection": {
+              "family": 3,
+              "attempted": 18,
+              "unavailable": 0,
+              "arrivals": 15,
+              "steps": 7161,
+              "contact_decisions": 1,
+              "collision_events": 1,
+              "blocked_decisions": 2941
+            },
+            "sha256": "22a5d4b3e4469aa784468487e3137119d38845b8bbab008b65f284b99ef32cc9"
+          },
+          {
+            "family": 4,
+            "seed": 575,
+            "curriculum": 2,
+            "selection": {
+              "family": 4,
+              "attempted": 27,
+              "unavailable": 0,
+              "arrivals": 25,
+              "steps": 34957,
+              "contact_decisions": 589,
+              "collision_events": 149,
+              "blocked_decisions": 4149
+            },
+            "sha256": "2f483cbe1bbfb56a0dababf48cddcc1188652f6404fd252ffebe1d7d01c8d1c6"
+          }
+        ],
+        "combined_families": [
+          {
+            "family": 0,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 19,
+            "steps": 29810,
+            "contact_decisions": 10239,
+            "collision_events": 318,
+            "blocked_decisions": 13827
+          },
+          {
+            "family": 1,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 21,
+            "steps": 26479,
+            "contact_decisions": 4196,
+            "collision_events": 19,
+            "blocked_decisions": 9566
+          },
+          {
+            "family": 2,
+            "attempted": 9,
+            "unavailable": 0,
+            "arrivals": 9,
+            "steps": 2969,
+            "contact_decisions": 0,
+            "collision_events": 0,
+            "blocked_decisions": 422
+          },
+          {
+            "family": 3,
+            "attempted": 18,
+            "unavailable": 0,
+            "arrivals": 16,
+            "steps": 5223,
+            "contact_decisions": 1,
+            "collision_events": 1,
+            "blocked_decisions": 1852
+          },
+          {
+            "family": 4,
+            "attempted": 27,
+            "unavailable": 0,
+            "arrivals": 23,
+            "steps": 36036,
+            "contact_decisions": 670,
+            "collision_events": 162,
+            "blocked_decisions": 5127
+          }
+        ],
+        "macro_arrival_rate": 0.8444444444444444
+      }
+    ]
+  },
+  "policies": {
+    "contract": 2,
+    "observations": 645,
+    "actions": [
+      4,
+      3,
+      3,
+      3
+    ],
+    "hidden": 128,
+    "layers": 2,
+    "training": "five independent PPO learners in shared worlds",
+    "selection_map_seeds": [
+      11001,
+      11002,
+      11003
+    ],
+    "selected_training_seed": 474,
+    "policies": [
+      {
+        "family": 0,
+        "name": "Ground",
+        "run": "shared-v3-s474-c1",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-0.bin"
+      },
+      {
+        "family": 1,
+        "name": "Surface boats",
+        "run": "shared-v3-s474-c2",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-1.bin"
+      },
+      {
+        "family": 2,
+        "name": "Quadcopters",
+        "run": "shared-v3-s474-c2",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-2.bin"
+      },
+      {
+        "family": 3,
+        "name": "Fixed wings",
+        "run": "shared-v3-s474-c1",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-3.bin"
+      },
+      {
+        "family": 4,
+        "name": "Submarines",
+        "run": "shared-v3-s474-c2",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-4.bin"
+      }
+    ]
+  },
+  "evaluation": {
+    "source_commit": "6a9317e186072f09b3d4d2cff9176e4667424271",
+    "baseline_source_commit": "5aa230ba1a4a0da2836525302aa81048ebb3cdac",
+    "map_seed": 21001,
+    "maps": 8,
+    "scenarios": 24,
+    "seconds_per_mission": 240,
+    "selected_label": "s474",
+    "policy_labels": [
+      "s373",
+      "s474",
+      "s575"
+    ],
+    "results": {
+      "reference": {
+        "command": [
+          "build/shared-eval",
+          "reference",
+          "21001",
+          "8",
+          "24",
+          "2",
+          "json"
+        ],
+        "families": [
+          {
+            "family": 0,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 49,
+            "steps": 80521,
+            "contact_decisions": 49452,
+            "collision_events": 34,
+            "blocked_decisions": 49585,
+            "requested_arrival_rate": 0.6805555555555556,
+            "available_arrival_rate": 0.6805555555555556
+          },
+          {
+            "family": 1,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 57,
+            "steps": 71920,
+            "contact_decisions": 27981,
+            "collision_events": 30,
+            "blocked_decisions": 28285,
+            "requested_arrival_rate": 0.7916666666666666,
+            "available_arrival_rate": 0.7916666666666666
+          },
+          {
+            "family": 2,
+            "attempted": 24,
+            "unavailable": 0,
+            "arrivals": 24,
+            "steps": 11177,
+            "contact_decisions": 0,
+            "collision_events": 0,
+            "blocked_decisions": 19,
+            "requested_arrival_rate": 1.0,
+            "available_arrival_rate": 1.0
+          },
+          {
+            "family": 3,
+            "attempted": 48,
+            "unavailable": 0,
+            "arrivals": 44,
+            "steps": 5639,
+            "contact_decisions": 4,
+            "collision_events": 4,
+            "blocked_decisions": 3,
+            "requested_arrival_rate": 0.9166666666666666,
+            "available_arrival_rate": 0.9166666666666666
+          },
+          {
+            "family": 4,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 60,
+            "steps": 103267,
+            "contact_decisions": 15050,
+            "collision_events": 21,
+            "blocked_decisions": 17482,
+            "requested_arrival_rate": 0.8333333333333334,
+            "available_arrival_rate": 0.8333333333333334
+          }
+        ]
+      },
+      "random": {
+        "command": [
+          "build/shared-eval",
+          "random",
+          "21001",
+          "8",
+          "24",
+          "2",
+          "json"
+        ],
+        "families": [
+          {
+            "family": 0,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 41,
+            "steps": 126458,
+            "contact_decisions": 6570,
+            "collision_events": 2709,
+            "blocked_decisions": 50132,
+            "requested_arrival_rate": 0.5694444444444444,
+            "available_arrival_rate": 0.5694444444444444
+          },
+          {
+            "family": 1,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 29,
+            "steps": 130788,
+            "contact_decisions": 2189,
+            "collision_events": 956,
+            "blocked_decisions": 36774,
+            "requested_arrival_rate": 0.4027777777777778,
+            "available_arrival_rate": 0.4027777777777778
+          },
+          {
+            "family": 2,
+            "attempted": 24,
+            "unavailable": 0,
+            "arrivals": 24,
+            "steps": 28596,
+            "contact_decisions": 6,
+            "collision_events": 4,
+            "blocked_decisions": 9543,
+            "requested_arrival_rate": 1.0,
+            "available_arrival_rate": 1.0
+          },
+          {
+            "family": 3,
+            "attempted": 48,
+            "unavailable": 0,
+            "arrivals": 35,
+            "steps": 8652,
+            "contact_decisions": 13,
+            "collision_events": 13,
+            "blocked_decisions": 2143,
+            "requested_arrival_rate": 0.7291666666666666,
+            "available_arrival_rate": 0.7291666666666666
+          },
+          {
+            "family": 4,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 6,
+            "steps": 170669,
+            "contact_decisions": 1213,
+            "collision_events": 737,
+            "blocked_decisions": 47446,
+            "requested_arrival_rate": 0.08333333333333333,
+            "available_arrival_rate": 0.08333333333333333
+          }
+        ]
+      },
+      "s373": {
+        "command": [
+          "build/shared-eval",
+          "outputs/shared/shared-v3/s373-selected",
+          "21001",
+          "8",
+          "24",
+          "2",
+          "json"
+        ],
+        "families": [
+          {
+            "family": 0,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 60,
+            "steps": 58766,
+            "contact_decisions": 12291,
+            "collision_events": 399,
+            "blocked_decisions": 21899,
+            "requested_arrival_rate": 0.8333333333333334,
+            "available_arrival_rate": 0.8333333333333334
+          },
+          {
+            "family": 1,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 65,
+            "steps": 59505,
+            "contact_decisions": 1641,
+            "collision_events": 55,
+            "blocked_decisions": 13962,
+            "requested_arrival_rate": 0.9027777777777778,
+            "available_arrival_rate": 0.9027777777777778
+          },
+          {
+            "family": 2,
+            "attempted": 24,
+            "unavailable": 0,
+            "arrivals": 18,
+            "steps": 18425,
+            "contact_decisions": 11500,
+            "collision_events": 8,
+            "blocked_decisions": 13071,
+            "requested_arrival_rate": 0.75,
+            "available_arrival_rate": 0.75
+          },
+          {
+            "family": 3,
+            "attempted": 48,
+            "unavailable": 0,
+            "arrivals": 44,
+            "steps": 9620,
+            "contact_decisions": 3,
+            "collision_events": 3,
+            "blocked_decisions": 2596,
+            "requested_arrival_rate": 0.9166666666666666,
+            "available_arrival_rate": 0.9166666666666666
+          },
+          {
+            "family": 4,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 62,
+            "steps": 97680,
+            "contact_decisions": 8071,
+            "collision_events": 394,
+            "blocked_decisions": 21006,
+            "requested_arrival_rate": 0.8611111111111112,
+            "available_arrival_rate": 0.8611111111111112
+          }
+        ],
+        "hashes": [
+          "43377fce89d8e6fdb442fdc969cd1a68850d7b0a9c713d58f9e1830ec0b9576f",
+          "c054bbc35337773ba967dbe171a7556d17b0ad5a5850c3fc56404be9ab6bed3b",
+          "91139ec6c76ddaddb132c94d72c50718a2e31e37a5f5e4caa60f40406a0eebf5",
+          "92748fdf142b0d717d2ecb29acbbfa113f23287a0873809cc613a3da7342ac4b",
+          "db1547b5c259236036db982a8a79c77d03cad6f29b75d43fd8961dc368a4f961"
+        ]
+      },
+      "s474": {
+        "command": [
+          "build/shared-eval",
+          "outputs/shared/shared-v3/s474-selected",
+          "21001",
+          "8",
+          "24",
+          "2",
+          "json"
+        ],
+        "families": [
+          {
+            "family": 0,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 56,
+            "steps": 65348,
+            "contact_decisions": 20462,
+            "collision_events": 2431,
+            "blocked_decisions": 31914,
+            "requested_arrival_rate": 0.7777777777777778,
+            "available_arrival_rate": 0.7777777777777778
+          },
+          {
+            "family": 1,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 61,
+            "steps": 64039,
+            "contact_decisions": 16156,
+            "collision_events": 143,
+            "blocked_decisions": 24047,
+            "requested_arrival_rate": 0.8472222222222222,
+            "available_arrival_rate": 0.8472222222222222
+          },
+          {
+            "family": 2,
+            "attempted": 24,
+            "unavailable": 0,
+            "arrivals": 19,
+            "steps": 25787,
+            "contact_decisions": 9208,
+            "collision_events": 11,
+            "blocked_decisions": 15188,
+            "requested_arrival_rate": 0.7916666666666666,
+            "available_arrival_rate": 0.7916666666666666
+          },
+          {
+            "family": 3,
+            "attempted": 48,
+            "unavailable": 0,
+            "arrivals": 43,
+            "steps": 5707,
+            "contact_decisions": 5,
+            "collision_events": 5,
+            "blocked_decisions": 141,
+            "requested_arrival_rate": 0.8958333333333334,
+            "available_arrival_rate": 0.8958333333333334
+          },
+          {
+            "family": 4,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 56,
+            "steps": 102894,
+            "contact_decisions": 9123,
+            "collision_events": 121,
+            "blocked_decisions": 21491,
+            "requested_arrival_rate": 0.7777777777777778,
+            "available_arrival_rate": 0.7777777777777778
+          }
+        ],
+        "hashes": [
+          "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+          "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+          "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+          "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+          "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce"
+        ]
+      },
+      "s575": {
+        "command": [
+          "build/shared-eval",
+          "outputs/shared/shared-v3/s575-selected",
+          "21001",
+          "8",
+          "24",
+          "2",
+          "json"
+        ],
+        "families": [
+          {
+            "family": 0,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 60,
+            "steps": 59120,
+            "contact_decisions": 8567,
+            "collision_events": 361,
+            "blocked_decisions": 24208,
+            "requested_arrival_rate": 0.8333333333333334,
+            "available_arrival_rate": 0.8333333333333334
+          },
+          {
+            "family": 1,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 63,
+            "steps": 62434,
+            "contact_decisions": 1423,
+            "collision_events": 104,
+            "blocked_decisions": 15843,
+            "requested_arrival_rate": 0.875,
+            "available_arrival_rate": 0.875
+          },
+          {
+            "family": 2,
+            "attempted": 24,
+            "unavailable": 0,
+            "arrivals": 22,
+            "steps": 13586,
+            "contact_decisions": 6261,
+            "collision_events": 45,
+            "blocked_decisions": 7311,
+            "requested_arrival_rate": 0.9166666666666666,
+            "available_arrival_rate": 0.9166666666666666
+          },
+          {
+            "family": 3,
+            "attempted": 48,
+            "unavailable": 0,
+            "arrivals": 43,
+            "steps": 10799,
+            "contact_decisions": 4,
+            "collision_events": 4,
+            "blocked_decisions": 3087,
+            "requested_arrival_rate": 0.8958333333333334,
+            "available_arrival_rate": 0.8958333333333334
+          },
+          {
+            "family": 4,
+            "attempted": 72,
+            "unavailable": 0,
+            "arrivals": 59,
+            "steps": 97723,
+            "contact_decisions": 5727,
+            "collision_events": 573,
+            "blocked_decisions": 18374,
+            "requested_arrival_rate": 0.8194444444444444,
+            "available_arrival_rate": 0.8194444444444444
+          }
+        ],
+        "hashes": [
+          "3ac02a613f82fedca0444f05cf8eca0d6780ac2502a3a0b485f416ca11989dbe",
+          "94d389c817cc93e10549e6eea140f6a2e7993001e9abacc5c26510a35dfeffe0",
+          "60927286dccd174da2a5642bc98843cc964ddee1be8ebabd4d04b9fdfea0b544",
+          "22a5d4b3e4469aa784468487e3137119d38845b8bbab008b65f284b99ef32cc9",
+          "2f483cbe1bbfb56a0dababf48cddcc1188652f6404fd252ffebe1d7d01c8d1c6"
+        ]
+      }
     }
-  ],
-  "results": [
-    {
-      "family": 0,
-      "name": "Ground",
-      "evaluation": {
-        "policy": {
-          "family": 0,
-          "episodes": 128,
-          "successes": 95,
-          "steps": 26153,
-          "contact_steps": 441
-        },
-        "reference": {
-          "family": 0,
-          "episodes": 128,
-          "successes": 91,
-          "steps": 28319,
-          "contact_steps": 17597
-        },
-        "random": {
-          "family": 0,
-          "episodes": 128,
-          "successes": 0,
-          "steps": 64000,
-          "contact_steps": 974
-        }
-      }
+  },
+  "validation": {
+    "shared_contracts": {
+      "mission_route": "MISSION_ROUTE_TEST wing_replay=PASS wing_tracker=PASS points=181 sensor_equipment=PASS synchronous_collision=PASS invalid_goal=PASS map_unchanged=PASS",
+      "shared_adapter": "SHARED_ADAPTER policies=5 agents=12 available=12 terminal_and_reward_reset=PASS independent_state=PASS no_step_reset_allocations=PASS finite_invalid_actions=PASS valid_spawns=PASS",
+      "command_fleet": "COMMAND_FLEET valid_goal=PASS preserve_pose_momentum=PASS rejected_goal_retains_mission=PASS pause=PASS equipment_changes_observation=PASS map_unchanged=PASS",
+      "policy": "SHARED_POLICY families=5 recurrent_decisions=500 categorical_actions=2000 finite=PASS digest=6586e0b4"
     },
-    {
-      "family": 1,
-      "name": "Surface boats",
-      "evaluation": {
-        "policy": {
-          "family": 1,
-          "episodes": 128,
-          "successes": 86,
-          "steps": 35496,
-          "contact_steps": 778
+    "joint_gather": "JOINT_GATHER five_disjoint_families=PASS unequal_populations=PASS two_buffers=PASS recurrent_state_layout=PASS",
+    "training_audit": {
+      "stages": [
+        {
+          "run": "shared-v3-s373-c0",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "d6a0d17779ad2755133d911fc5c9166ce59b63016209265f7dd296423dbd2575",
+              "final_sha256": "9fb40ec487585f0bb67509e59fadc7b6f3b14adcb12a3606b13ef727d130af01",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "f2d73152dd4e89521f2fd2d00c1a4a8f152c7c8214963b7ea1899340fb0a638c",
+              "final_sha256": "be80fe45e6ab6a775f1ee6f548c6951dfa5113951063894e5eb7ee6cde53e9af",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "e5fa0c9d5120946040aee2291053bb19b45b4d189b0a600270c696ac3557ca60",
+              "final_sha256": "17c4484e41e253c0c471d2ee6643d2f048ea51c80013a180c5199df9cd416d52",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "e83f4adfabf833aa8789562ba9cf5f3457496424af053ce45d34e6744c9992a6",
+              "final_sha256": "7184b844657156df121b468750f337f8607811a74284b4b5b55d000771533812",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "499186b4f05e2019e842f6c56c4bdcf2ab477caf8d36e48da5e3cf389ee7d33c",
+              "final_sha256": "0b63ea14a78643ad948a80913dcc4d957a6b3288fca187df9da8a20fe54738e1",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 84
         },
-        "reference": {
-          "family": 1,
-          "episodes": 128,
-          "successes": 75,
-          "steps": 39267,
-          "contact_steps": 21518
+        {
+          "run": "shared-v3-s373-c1",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "9fb40ec487585f0bb67509e59fadc7b6f3b14adcb12a3606b13ef727d130af01",
+              "final_sha256": "ce2bf507d3e76647e9075b4e8cf2c2a860a23c3188666d1622985a2633e3132c",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "be80fe45e6ab6a775f1ee6f548c6951dfa5113951063894e5eb7ee6cde53e9af",
+              "final_sha256": "c054bbc35337773ba967dbe171a7556d17b0ad5a5850c3fc56404be9ab6bed3b",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "17c4484e41e253c0c471d2ee6643d2f048ea51c80013a180c5199df9cd416d52",
+              "final_sha256": "fe31833d2e4f90fa7b8aa3c342a55979f8eb134a8505f67937880e82f5ea9e67",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "7184b844657156df121b468750f337f8607811a74284b4b5b55d000771533812",
+              "final_sha256": "a58a903a9567e9070f3b8178a52bbee8012571b620be07f020959c214c6d41a7",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "0b63ea14a78643ad948a80913dcc4d957a6b3288fca187df9da8a20fe54738e1",
+              "final_sha256": "db1547b5c259236036db982a8a79c77d03cad6f29b75d43fd8961dc368a4f961",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 132
         },
-        "random": {
-          "family": 1,
-          "episodes": 128,
-          "successes": 0,
-          "steps": 64000,
-          "contact_steps": 275
+        {
+          "run": "shared-v3-s373-c2",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "ce2bf507d3e76647e9075b4e8cf2c2a860a23c3188666d1622985a2633e3132c",
+              "final_sha256": "43377fce89d8e6fdb442fdc969cd1a68850d7b0a9c713d58f9e1830ec0b9576f",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "c054bbc35337773ba967dbe171a7556d17b0ad5a5850c3fc56404be9ab6bed3b",
+              "final_sha256": "ed3e78dd7e40b0f7b1292c05277df30ef6489e6517a50ef284d255a8f94de6d8",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "fe31833d2e4f90fa7b8aa3c342a55979f8eb134a8505f67937880e82f5ea9e67",
+              "final_sha256": "91139ec6c76ddaddb132c94d72c50718a2e31e37a5f5e4caa60f40406a0eebf5",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "a58a903a9567e9070f3b8178a52bbee8012571b620be07f020959c214c6d41a7",
+              "final_sha256": "92748fdf142b0d717d2ecb29acbbfa113f23287a0873809cc613a3da7342ac4b",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "db1547b5c259236036db982a8a79c77d03cad6f29b75d43fd8961dc368a4f961",
+              "final_sha256": "6ac0a3b1267020272736ff55b845c3f9669d0b67411283f306c9c3285d89ac1b",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 228
+        },
+        {
+          "run": "shared-v3-s474-c0",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "883563853e1ec16b6c341e2c0c5a0634bba4e104c5f1b6ea94fc1b0d1709f9de",
+              "final_sha256": "8fb6246e379164b6945d15d10ca6f872e1c7cd62b1bf945c5dc4f5f6dd4c4867",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "fb4e2d723073884495ff128a33481b288817313fd08b0400533a83f4a222e1c6",
+              "final_sha256": "4b998b82fa89ef32a05228504409071cd81bf044ab73c6fc082607030bb7cba3",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "11ba605b32481381361c5c3cbc52a059bb846b7ccc46b2b5fe520077b1eeebc5",
+              "final_sha256": "38a414c4424ad6691a7a21218e0644165cc6bc110025eebbaddb675efc26bdbf",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "569bc016ca8abd5a30e2f5227234a55aa34cc3ea6b4bd52090b7b6afa46e1c1e",
+              "final_sha256": "2c40d9b08638f5872863d818cbc1ff29085b69dcd080c477643e53796d8c642d",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "dbb6597c5729a1d2cec53f52e26ff40ea8a34e51ac2e3630e86c7fd7b811d487",
+              "final_sha256": "cdd7eb6a8135c27214c433ddf1ce7506a25d6eccffce4e9182471b1a52f42d12",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 90
+        },
+        {
+          "run": "shared-v3-s474-c1",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "8fb6246e379164b6945d15d10ca6f872e1c7cd62b1bf945c5dc4f5f6dd4c4867",
+              "final_sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "4b998b82fa89ef32a05228504409071cd81bf044ab73c6fc082607030bb7cba3",
+              "final_sha256": "552ca2beb3963f0aa723d93d6550bf481957d21b8678da87b81a4409b308d174",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "38a414c4424ad6691a7a21218e0644165cc6bc110025eebbaddb675efc26bdbf",
+              "final_sha256": "b1160aa27969c23ab98d23604a7fa41c61b05a686f01cbd501b62076ecd11701",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "2c40d9b08638f5872863d818cbc1ff29085b69dcd080c477643e53796d8c642d",
+              "final_sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "cdd7eb6a8135c27214c433ddf1ce7506a25d6eccffce4e9182471b1a52f42d12",
+              "final_sha256": "356f4bdb88322cebe386dfc204abe69ea196826adc53155f04086359e20e5539",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 132
+        },
+        {
+          "run": "shared-v3-s474-c2",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+              "final_sha256": "093b2620909307df3acd98af3a8f926afb47a014e5ece533c978cdce7951c63e",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "552ca2beb3963f0aa723d93d6550bf481957d21b8678da87b81a4409b308d174",
+              "final_sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "b1160aa27969c23ab98d23604a7fa41c61b05a686f01cbd501b62076ecd11701",
+              "final_sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+              "final_sha256": "d93dfe7b4abd182583893b9cc241dee4c9534ad80c6d97a5d806f2789cbbfd26",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "356f4bdb88322cebe386dfc204abe69ea196826adc53155f04086359e20e5539",
+              "final_sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 252
+        },
+        {
+          "run": "shared-v3-s575-c0",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "083ec57cb146d91c49e88c7a3280bc604d6533bb474adcacd8ad0b8f3fc9f3e3",
+              "final_sha256": "6623a72b6a330a9eeba27e4b54327222d6f77e27a6ab3a22718b0a4b5eb9bd9e",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "1f8b6abcbdb93be83b4628d608856a184ed715cd015efbda2348f1a8f7f4a5a6",
+              "final_sha256": "d281494621233aaf9b760c84ac092d0cb34d4675ac49a60e12e6ff0dc416dc10",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "441976f70abb6464bdfb2da74a1e00f9468729f8d9abd29b2037b487cb85623f",
+              "final_sha256": "09794b5f4f02bfc94d9f07c4b42ba6057a6906fb2c46c36badbd821d237c0d05",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "6a5a6d5546351203d1f19f72ba14f658bebb1c4e9b6c42e34056da197268e14f",
+              "final_sha256": "d551aa518a0fa86a292c92f33f48821c67b120b403aad9b79defbf5c17fdb9fd",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "58d759ff3432839263c358f49c251558273fe6a33de43f4be2f097d0334dfff1",
+              "final_sha256": "662bbf782296775af34087b0dba7433904c83046ef21654e27b73a2d7ca1a91f",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 83
+        },
+        {
+          "run": "shared-v3-s575-c1",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "6623a72b6a330a9eeba27e4b54327222d6f77e27a6ab3a22718b0a4b5eb9bd9e",
+              "final_sha256": "3ac02a613f82fedca0444f05cf8eca0d6780ac2502a3a0b485f416ca11989dbe",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "d281494621233aaf9b760c84ac092d0cb34d4675ac49a60e12e6ff0dc416dc10",
+              "final_sha256": "ddb296782fc6e0876c780107491f452a9bc433392e0b2241140825078c5933cf",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "09794b5f4f02bfc94d9f07c4b42ba6057a6906fb2c46c36badbd821d237c0d05",
+              "final_sha256": "2833aa3426ff0ec8ba7ca852497d9d763793ce4837e823e49da15cba7d9eeea5",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "d551aa518a0fa86a292c92f33f48821c67b120b403aad9b79defbf5c17fdb9fd",
+              "final_sha256": "22a5d4b3e4469aa784468487e3137119d38845b8bbab008b65f284b99ef32cc9",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "662bbf782296775af34087b0dba7433904c83046ef21654e27b73a2d7ca1a91f",
+              "final_sha256": "3cb0d13582be45d90c90b5241a425a48927b3496c1ee57f2376786bb2c52268d",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 132
+        },
+        {
+          "run": "shared-v3-s575-c2",
+          "source_commit": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "families": [
+            {
+              "family": 0,
+              "initial_sha256": "3ac02a613f82fedca0444f05cf8eca0d6780ac2502a3a0b485f416ca11989dbe",
+              "final_sha256": "55f4fc68c4a09fb7ab48c221e75511e78c252a747eb0c7ba91e1ec1c023647a9",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 1,
+              "initial_sha256": "ddb296782fc6e0876c780107491f452a9bc433392e0b2241140825078c5933cf",
+              "final_sha256": "94d389c817cc93e10549e6eea140f6a2e7993001e9abacc5c26510a35dfeffe0",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 2,
+              "initial_sha256": "2833aa3426ff0ec8ba7ca852497d9d763793ce4837e823e49da15cba7d9eeea5",
+              "final_sha256": "60927286dccd174da2a5642bc98843cc964ddee1be8ebabd4d04b9fdfea0b544",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 3,
+              "initial_sha256": "22a5d4b3e4469aa784468487e3137119d38845b8bbab008b65f284b99ef32cc9",
+              "final_sha256": "e3550e4662abb4d79a534dba9f6db2cddca2ec351dd4875351ca23539df0342b",
+              "finite_weights": true,
+              "weights_changed": true
+            },
+            {
+              "family": 4,
+              "initial_sha256": "3cb0d13582be45d90c90b5241a425a48927b3496c1ee57f2376786bb2c52268d",
+              "final_sha256": "2f483cbe1bbfb56a0dababf48cddcc1188652f6404fd252ffebe1d7d01c8d1c6",
+              "finite_weights": true,
+              "weights_changed": true
+            }
+          ],
+          "metric_records": 229
         }
-      }
+      ],
+      "all_finite": true,
+      "all_five_learners_updated": true,
+      "warm_initialization_exact": true
     },
-    {
-      "family": 2,
-      "name": "Quadcopters",
-      "evaluation": {
-        "policy": {
-          "family": 2,
-          "episodes": 128,
-          "successes": 128,
-          "steps": 9748,
-          "contact_steps": 6
-        },
-        "reference": {
-          "family": 2,
-          "episodes": 128,
-          "successes": 80,
-          "steps": 34988,
-          "contact_steps": 23674
-        },
-        "random": {
-          "family": 2,
-          "episodes": 128,
-          "successes": 0,
-          "steps": 64000,
-          "contact_steps": 116
-        }
+    "single_policy_regression_agent_steps": 8192,
+    "terrain": "256 native/WASM seeds, 48 same-settings diversity worlds, mountain/tunnel/bridge geometry, winding and lighting checks passed.",
+    "browser_commands": "Selection, group movement, invalid destination, momentum preservation, sensor equipment/overlays, outside release and twelve active units passed in Chrome.",
+    "endurance_complete": true,
+    "endurance_summary": "Chrome endurance: 604.0 simulated seconds in 620.9 wall seconds; 0 runtime/GL errors, 2 stopped aircraft after impact, 6 other units moved less than one world unit during the last minute.",
+    "endurance_simulated_seconds": 604,
+    "endurance_wall_seconds": 620.92,
+    "endurance_runtime_errors": [],
+    "endurance_impact_units": [
+      7,
+      8
+    ],
+    "endurance_idle_units_last_minute": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "endurance_final_units": [
+      {
+        "unit": 0,
+        "values": [
+          3,
+          1.399999976158142,
+          1.159999966621399,
+          1.2000000476837158,
+          20,
+          0,
+          1,
+          4,
+          6,
+          53,
+          0,
+          1,
+          272.46624755859375,
+          0,
+          604,
+          113,
+          16.799999237060547,
+          103,
+          0,
+          1,
+          0,
+          0,
+          969,
+          1238,
+          26,
+          1077
+        ],
+        "pose": [
+          17.494237899780273,
+          15.300004005432129,
+          46.10203552246094,
+          -52.961952209472656,
+          0,
+          0,
+          0,
+          1302.0245361328125,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 1,
+        "values": [
+          2.5,
+          1,
+          1.5199999809265137,
+          2.0399999618530273,
+          16,
+          0,
+          0,
+          3,
+          17,
+          53,
+          0,
+          2,
+          206.33651733398438,
+          0,
+          604,
+          25,
+          16.049999237060547,
+          37,
+          0,
+          1,
+          0,
+          0,
+          185,
+          1215,
+          179,
+          1217
+        ],
+        "pose": [
+          85.40806579589844,
+          6.532010078430176,
+          105.38128662109375,
+          -14.851452827453613,
+          0,
+          0,
+          2.3398540019989014,
+          1077.6197509765625,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 2,
+        "values": [
+          2.0999999046325684,
+          0.6499999761581421,
+          1.5199999809265137,
+          2.5999999046325684,
+          26,
+          0,
+          0,
+          2,
+          41,
+          49,
+          0,
+          4,
+          46.33912658691406,
+          0,
+          604,
+          13,
+          16.799999237060547,
+          31,
+          0,
+          1,
+          0,
+          0,
+          171,
+          1612,
+          40,
+          2890
+        ],
+        "pose": [
+          17.722915649414062,
+          15.300004005432129,
+          48.70583724975586,
+          109.06156921386719,
+          0,
+          0,
+          9.5367431640625e-05,
+          841.5548095703125,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 3,
+        "values": [
+          2.799999952316284,
+          0.550000011920929,
+          0.800000011920929,
+          2.0999999046325684,
+          18,
+          0,
+          1,
+          1,
+          1,
+          10,
+          0,
+          8,
+          171.7104034423828,
+          0,
+          604,
+          23,
+          -0.12000000476837158,
+          11,
+          1,
+          1,
+          0,
+          0,
+          5355,
+          5401,
+          2,
+          5391
+        ],
+        "pose": [
+          -29.949522018432617,
+          -0.11999999731779099,
+          154.09033203125,
+          -111.7115249633789,
+          0,
+          0,
+          0,
+          175.4683074951172,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 4,
+        "values": [
+          2.3999998569488525,
+          0.45000001788139343,
+          1.1200000047683716,
+          3.059999942779541,
+          26,
+          0,
+          1,
+          2,
+          1,
+          11,
+          0,
+          16,
+          196.13587951660156,
+          0,
+          604,
+          151,
+          -0.12000000476837158,
+          155,
+          1,
+          1,
+          0,
+          0,
+          4138,
+          4254,
+          1,
+          4192
+        ],
+        "pose": [
+          -4.000513553619385,
+          -0.11999999731779099,
+          100.19171142578125,
+          46.978023529052734,
+          0,
+          0,
+          0,
+          396.7916259765625,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 5,
+        "values": [
+          2,
+          0.3500000238418579,
+          1.440000057220459,
+          4.019999980926514,
+          34,
+          0,
+          0,
+          1,
+          2,
+          9,
+          0,
+          32,
+          143.59521484375,
+          0,
+          604,
+          23,
+          -0.12000000476837158,
+          -7,
+          1,
+          1,
+          0,
+          0,
+          4291,
+          4775,
+          83,
+          5115
+        ],
+        "pose": [
+          134.0017547607422,
+          -0.11999999731779099,
+          24.595216751098633,
+          156.40232849121094,
+          0,
+          0,
+          0.06659485399723053,
+          209.25181579589844,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 6,
+        "values": [
+          2.200000047683716,
+          1.2999999523162842,
+          1.8799999952316284,
+          1.8799999952316284,
+          20,
+          0,
+          1,
+          2,
+          1,
+          6,
+          0,
+          64,
+          64.5050048828125,
+          0,
+          604,
+          77,
+          15.300000190734863,
+          101,
+          2,
+          1,
+          0,
+          0,
+          4184,
+          4830,
+          2,
+          4273
+        ],
+        "pose": [
+          39.22106170654297,
+          22.56371307373047,
+          43.76692199707031,
+          18.084672927856445,
+          -45.000003814697266,
+          0,
+          0,
+          561.5134887695312,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 7,
+        "values": [
+          7.5,
+          0.3199999928474426,
+          3.299999952316284,
+          2.5,
+          40,
+          1,
+          1,
+          9,
+          38,
+          196,
+          3,
+          128,
+          78.65553283691406,
+          0,
+          604,
+          95.89665222167969,
+          21.700674057006836,
+          73.89106750488281,
+          3,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          37
+        ],
+        "pose": [
+          38.44297409057617,
+          21.73727798461914,
+          46.469627380371094,
+          141.1844482421875,
+          -1.3668371438980103,
+          0,
+          0,
+          951.8268432617188,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 8,
+        "values": [
+          6.5,
+          0.25,
+          4.900000095367432,
+          3.299999952316284,
+          48,
+          1,
+          0,
+          13,
+          121,
+          241,
+          3,
+          256,
+          53.65370178222656,
+          0,
+          604,
+          84.9863052368164,
+          27.570554733276367,
+          36.05609893798828,
+          3,
+          1,
+          0,
+          0,
+          1,
+          1207,
+          1,
+          113
+        ],
+        "pose": [
+          34.66121292114258,
+          21.89982795715332,
+          47.20813751220703,
+          130.29002380371094,
+          -7.761380195617676,
+          0,
+          0,
+          2500.671142578125,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 9,
+        "values": [
+          2.0999999046325684,
+          0.5,
+          1.0800000429153442,
+          2.4000000953674316,
+          20,
+          0,
+          0,
+          3,
+          10,
+          14,
+          0,
+          512,
+          79.40750122070312,
+          0,
+          604,
+          133,
+          -2.325000047683716,
+          105,
+          4,
+          1,
+          0,
+          0,
+          164,
+          495,
+          33,
+          1068
+        ],
+        "pose": [
+          133.00015258789062,
+          -2.324997663497925,
+          25.592498779296875,
+          -0.0030189433600753546,
+          -9.006842446979135e-05,
+          0,
+          2.0999908447265625,
+          1019.054931640625,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 10,
+        "values": [
+          1.8499999046325684,
+          0.42000001668930054,
+          1.4000000953674316,
+          3.200000047683716,
+          30,
+          0,
+          0,
+          3,
+          3,
+          14,
+          0,
+          1024,
+          217.07107543945312,
+          0,
+          604,
+          137,
+          -4.574999809265137,
+          69,
+          4,
+          1,
+          0,
+          0,
+          36,
+          424,
+          4,
+          402
+        ],
+        "pose": [
+          -5.072577953338623,
+          -2.178492546081543,
+          -1.025882601737976,
+          179.14625549316406,
+          -7.016487121582031,
+          0,
+          1.8598989248275757,
+          906.3651123046875,
+          604.1000366210938
+        ]
+      },
+      {
+        "unit": 11,
+        "values": [
+          1.5999999046325684,
+          0.3400000035762787,
+          1.7200000286102295,
+          4,
+          40,
+          0,
+          0,
+          2,
+          9,
+          14,
+          0,
+          2048,
+          96.04978942871094,
+          0,
+          604,
+          141,
+          -6.824999809265137,
+          3,
+          4,
+          1,
+          0,
+          0,
+          1,
+          484,
+          1,
+          1348
+        ],
+        "pose": [
+          52.5539665222168,
+          -4.575004577636719,
+          -9.013850212097168,
+          90.01100158691406,
+          0.00023644168686587363,
+          0,
+          1.5998845100402832,
+          802.45263671875,
+          604.1000366210938
+        ]
       }
-    },
-    {
-      "family": 3,
-      "name": "Fixed wings",
-      "evaluation": {
-        "policy": {
-          "family": 3,
-          "episodes": 128,
-          "successes": 105,
-          "steps": 7783,
-          "contact_steps": 23
-        },
-        "reference": {
-          "family": 3,
-          "episodes": 128,
-          "successes": 21,
-          "steps": 7149,
-          "contact_steps": 104
-        },
-        "random": {
-          "family": 3,
-          "episodes": 128,
-          "successes": 5,
-          "steps": 7067,
-          "contact_steps": 123
-        }
-      }
-    },
-    {
-      "family": 4,
-      "name": "Submarines",
-      "evaluation": {
-        "policy": {
-          "family": 4,
-          "episodes": 128,
-          "successes": 96,
-          "steps": 32553,
-          "contact_steps": 738
-        },
-        "reference": {
-          "family": 4,
-          "episodes": 128,
-          "successes": 65,
-          "steps": 42538,
-          "contact_steps": 24421
-        },
-        "random": {
-          "family": 4,
-          "episodes": 128,
-          "successes": 0,
-          "steps": 64000,
-          "contact_steps": 478
-        }
+    ],
+    "browser_build_hashes": {
+      "maplab.wasm": {
+        "bytes": 471512,
+        "sha256": "6a7adb10a979efa3593d0547c9d806fd606a3dd64f5b6fd78ffb49ebe91fa6c5"
+      },
+      "maplab.data": {
+        "bytes": 3653120,
+        "sha256": "63500fcca54cc4cdcb33ac7925fc1004abf4b22485befac91ef3c4b4cd459b8b"
+      },
+      "maplab.js": {
+        "bytes": 240020,
+        "sha256": "a70859e5ef21ddeb3bc965c1711cfaac5265f29eff9bed52d242e488c2bed858"
+      },
+      "maplab.html": {
+        "bytes": 44960,
+        "sha256": "3d9b85597fb14c50fee96f8c79fd1e96a26704c943c798a8392b23287b3966ba"
       }
     }
-  ],
-  "policies": [
-    {
-      "family": 0,
-      "name": "Ground",
-      "run": "family-0-profiles-273",
-      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-      "sha256": "cd629c5f62946eb1639699ae6c13c9c1351c585797f631b4ff92daadb59d7616",
-      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-0.bin"
-    },
-    {
-      "family": 1,
-      "name": "Surface boats",
-      "run": "family-1-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "sha256": "ab3fcc5697098affe18c3ebaa01b50679becedbe29af99d6e2bd4b8e6acd2ef9",
-      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-1.bin"
-    },
-    {
-      "family": 2,
-      "name": "Quadcopters",
-      "run": "family-2-traffic-273",
-      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-      "sha256": "ab7b7b5d3061b2fe1cb59669af66c3fa99b1393d1b23b530a173bb8fe5bd2663",
-      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-2.bin"
-    },
-    {
-      "family": 3,
-      "name": "Fixed wings",
-      "run": "family-3-profiles-273",
-      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-      "sha256": "9d7fdbac8e82b701b1e73427468e437592a6be8bd922df5c38c2ef049fba8d1f",
-      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-3.bin"
-    },
-    {
-      "family": 4,
-      "name": "Submarines",
-      "run": "family-4-profiles-273",
-      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-      "sha256": "f7b3b9ffdc62322f0642d83c802529ba059b9e5902e616fb4025c0f1170b0e31",
-      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-4.bin"
-    }
-  ],
-  "total_training_steps": 59768832,
-  "total_trainer_seconds": 1204.22092627,
-  "hardware": "NVIDIA RTX 4090, one GPU; CPU environment and CUDA PPO learner",
-  "precision": "bf16 native learner; flat fp32 checkpoint export",
-  "toolchain": "Clang 18.1.3; CUDA 13.0.88; NVIDIA driver 580.173.02",
-  "full_fleet_probe": {
-    "seed": 73,
-    "seconds": 120,
-    "aircraft_collisions": 1,
-    "limitations": "The hauler also stalled; completed local tests do not establish reliable indefinite fleet operation."
   },
   "limitations": [
-    "One training seed; no robustness claim.",
-    "Local route sections, not end-to-end learned global planning.",
-    "Other vehicles in training are kinematic, not jointly learning.",
-    "Positional flight A* does not guarantee curvature-feasible routes.",
-    "Ideal waypoint location and visible target velocity; cosmetic props are not colliders.",
-    "Controller inputs are fixed range/neighbor profiles, separate from sensor preview equipment."
-  ],
-  "inference_rng_seed": 9092,
-  "random_baseline_rng": "aw_hash(9091 ^ 3917)"
+    "The 95% full-mission arrival target was not met in any family by the deployed set on the final maps.",
+    "Ground and boat arrivals improved over the route tracker in this test; quadcopter, fixed-wing and submarine arrivals did not. Learned overrides are not uniformly better than the baseline.",
+    "Narrow-passage deadlocks, route-tracking failures and aircraft impacts still occur. Group commands do not reserve space or coordinate formations.",
+    "Route localization and odometry are ideal. Cosmetic trees and rocks do not collide with vehicles or occlude sensors.",
+    "Bounded flight search can reject feasible requests. Zero unavailable routes in this test does not establish planner completeness.",
+    "Mission evaluation starts from prepared scenarios; indefinite browser patrols and arbitrary user commands are a broader distribution."
+  ]
 }

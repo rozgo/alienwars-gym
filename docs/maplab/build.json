@@ -1,78 +1,85 @@
 {
   "generator_version": 10,
-  "source_commit": "0db1680e59bb790ccb597fe0b7e76a4d47b37217",
+  "source_commit": "f3c32c92dc82856e542c859343ec885167a19f54",
   "source_dirty": false,
   "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
   "raylib": "5.5",
   "artifacts": {
     "index.html": {
-      "bytes": 42644,
-      "sha256": "b64713cd2704c541c4b14a8d774d1ad8eb912464ee302d36a75a8e6a9f22f21b"
+      "bytes": 44960,
+      "sha256": "3d9b85597fb14c50fee96f8c79fd1e96a26704c943c798a8392b23287b3966ba"
     },
     "maplab.js": {
-      "bytes": 239086,
-      "sha256": "7705a40d400855de8f5c1d2683ad745dbdd76434963e0bcc1780692ad3cf1381"
+      "bytes": 240020,
+      "sha256": "a70859e5ef21ddeb3bc965c1711cfaac5265f29eff9bed52d242e488c2bed858"
     },
     "maplab.wasm": {
-      "bytes": 452086,
-      "sha256": "84c963398bdc7045d0038be9d8eb9c869addec0411e946d58509b3f250337619"
+      "bytes": 471512,
+      "sha256": "6a7adb10a979efa3593d0547c9d806fd606a3dd64f5b6fd78ffb49ebe91fa6c5"
     },
     "maplab.data": {
-      "bytes": 2245120,
-      "sha256": "24cee6281ae932b5693f37fc09cc535ac6b72341c29e5b3a51e5447dc7163fd5"
+      "bytes": 3653120,
+      "sha256": "63500fcca54cc4cdcb33ac7925fc1004abf4b22485befac91ef3c4b4cd459b8b"
     }
   },
   "controllers": {
-    "contract": 1,
-    "observations": 96,
+    "contract": 2,
+    "observations": 645,
     "actions": [
-      3,
+      4,
       3,
       3,
       3
     ],
     "hidden": 128,
     "layers": 2,
+    "training": "five independent PPO learners in shared worlds",
+    "selection_map_seeds": [
+      11001,
+      11002,
+      11003
+    ],
+    "selected_training_seed": 474,
     "policies": [
       {
         "family": 0,
         "name": "Ground",
-        "run": "family-0-profiles-273",
-        "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-        "sha256": "cd629c5f62946eb1639699ae6c13c9c1351c585797f631b4ff92daadb59d7616",
-        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-0.bin"
+        "run": "shared-v3-s474-c1",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-0.bin"
       },
       {
         "family": 1,
         "name": "Surface boats",
-        "run": "family-1-traffic-273",
-        "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-        "sha256": "ab3fcc5697098affe18c3ebaa01b50679becedbe29af99d6e2bd4b8e6acd2ef9",
-        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-1.bin"
+        "run": "shared-v3-s474-c2",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-1.bin"
       },
       {
         "family": 2,
         "name": "Quadcopters",
-        "run": "family-2-traffic-273",
-        "source": "64bedcff2c361688146459688d7ca24a421f5a12",
-        "sha256": "ab7b7b5d3061b2fe1cb59669af66c3fa99b1393d1b23b530a173bb8fe5bd2663",
-        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-2.bin"
+        "run": "shared-v3-s474-c2",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-2.bin"
       },
       {
         "family": 3,
         "name": "Fixed wings",
-        "run": "family-3-profiles-273",
-        "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-        "sha256": "9d7fdbac8e82b701b1e73427468e437592a6be8bd922df5c38c2ef049fba8d1f",
-        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-3.bin"
+        "run": "shared-v3-s474-c1",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-3.bin"
       },
       {
         "family": 4,
         "name": "Submarines",
-        "run": "family-4-profiles-273",
-        "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
-        "sha256": "f7b3b9ffdc62322f0642d83c802529ba059b9e5902e616fb4025c0f1170b0e31",
-        "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-4.bin"
+        "run": "shared-v3-s474-c2",
+        "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+        "sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce",
+        "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-4.bin"
       }
     ]
   }
