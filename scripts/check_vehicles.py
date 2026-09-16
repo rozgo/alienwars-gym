@@ -3,6 +3,7 @@
 from pathlib import Path
 import os,subprocess,json
 ROOT=Path(__file__).resolve().parents[1];os.chdir(ROOT)
+Path('build').mkdir(exist_ok=True);Path('outputs').mkdir(exist_ok=True)
 emcc=str(ROOT/'.local/emsdk/upstream/emscripten/emcc')
 report={}
 for name in ['vehicle','patrol','local_adapter']:

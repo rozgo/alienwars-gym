@@ -71,3 +71,34 @@ recurrent state for every vehicle. Missing development checkpoints use a visibly
 labeled reference controller. This is not joint multiagent training: curriculum
 traffic is kinematic, and other learned controllers are not optimized in the
 same rollout.
+
+To train a family on the GPU machine, first establish route following, then
+initialize a separate traffic run from its exact checkpoint (weights only;
+optimizer and recurrence restart):
+
+```sh
+./build.sh alienwars_local build/puffer-local
+./build/puffer-local train --base.run_id=local-ground-clear-unique --env.family=0
+./build/puffer-local train --base.run_id=local-ground-traffic-unique \
+  --env.family=0 --env.difficulty=1 --train.learning_rate=0.012 \
+  --base.load_model_path=checkpoints/alienwars_local/local-ground-clear-unique/0000000004194304.bin
+```
+
+Family IDs are 0 ground, 1 boats, 2 quadcopters, 3 fixed wings and 4 submarines.
+Use a new run ID every time. The native evaluator accepts `reference`, `random`,
+or an exact flat checkpoint; it uses a separate action RNG so all controllers
+receive the same sequence of evaluation scenarios:
+
+```sh
+clang -O2 -std=c11 -I. -Isrc -Ivendor -Iraylib-5.5_linux_amd64/include \
+  ocean/alienwars_local/local_eval.c ocean/alienwars_local/local_api.c -lm -o build/local-eval
+./build/local-eval CHECKPOINT.bin 0 20001 8 128 1
+python3 scripts/check_vehicles.py
+```
+
+The generic 24-beam/visible-neighbor controller input is separate from the
+613-float attachable-sensor experiment and its overlay equipment controls.
+Changing preview overlays or preview equipment does not change this policy's
+fixed sensor profile. Sensor ranges still vary by vehicle profile. Shared ray
+and body geometry keeps these headless queries inexpensive; RGB inference and
+noisy tracking are not part of this task.

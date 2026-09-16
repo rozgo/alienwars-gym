@@ -8,6 +8,7 @@ with native C, Raylib and WebAssembly.
 [Watch the 59-second showcase](https://rozgo.github.io/alienwars-gym/demo/)
 · [Navigation Lab](https://rozgo.github.io/alienwars-gym/navigation/?kind=1)
 · [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
+· [Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html)
 
 Explore terrain, sensors, ground/sea/air units, tunnels and bridges, then watch
 the trained scout and inspect recorded native training metrics.
@@ -59,7 +60,7 @@ For the browser build, install the isolated Emscripten SDK described in
 [the web guide](docs/WEB.md), then:
 
 ```sh
-./scripts/build_maplab.sh
+python3 scripts/build_fleet_site.py  # five selected PPO checkpoints
 python3 scripts/check_maplab.py
 python3 scripts/check_sensors.py
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs

@@ -124,6 +124,7 @@ AW_EXPORT void aw_option(int option,int value) {
     if(option==10){baked_occlusion=!!value;aw_set_occlusion(&scene,baked_occlusion);}
     if(option==11){surface_detail=!!value;aw_set_detail(&scene,surface_detail);}
     if(option==12)patrol_mode=aw_clamp(value,0,2);
+    if(option==13){aw_fleet_init(&fleet,&world,&patrols);for(int i=0;i<AW_UNITS;i++)aw_sensor_teleport(&sensors,i);unit_paused=0;patrol_mode=0;aw_sensor_update_poses(0);}
     aw_publish();
 }
 

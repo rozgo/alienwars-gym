@@ -1,0 +1,54 @@
+{
+  "contract": 1,
+  "observations": 96,
+  "actions": [
+    3,
+    3,
+    3,
+    3
+  ],
+  "hidden": 128,
+  "layers": 2,
+  "policies": [
+    {
+      "family": 0,
+      "name": "Ground",
+      "run": "family-0-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "sha256": "cd629c5f62946eb1639699ae6c13c9c1351c585797f631b4ff92daadb59d7616",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-0.bin"
+    },
+    {
+      "family": 1,
+      "name": "Surface boats",
+      "run": "family-1-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "sha256": "ab3fcc5697098affe18c3ebaa01b50679becedbe29af99d6e2bd4b8e6acd2ef9",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-1.bin"
+    },
+    {
+      "family": 2,
+      "name": "Quadcopters",
+      "run": "family-2-traffic-273",
+      "source": "64bedcff2c361688146459688d7ca24a421f5a12",
+      "sha256": "ab7b7b5d3061b2fe1cb59669af66c3fa99b1393d1b23b530a173bb8fe5bd2663",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-2.bin"
+    },
+    {
+      "family": 3,
+      "name": "Fixed wings",
+      "run": "family-3-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "sha256": "9d7fdbac8e82b701b1e73427468e437592a6be8bd922df5c38c2ef049fba8d1f",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-3.bin"
+    },
+    {
+      "family": 4,
+      "name": "Submarines",
+      "run": "family-4-profiles-273",
+      "source": "96e241c72364b963afe2d4d378d82e2dc4871eec",
+      "sha256": "f7b3b9ffdc62322f0642d83c802529ba059b9e5902e616fb4025c0f1170b0e31",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/vehicles-2026-09-15/local-4.bin"
+    }
+  ]
+}

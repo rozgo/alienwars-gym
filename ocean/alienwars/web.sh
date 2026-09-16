@@ -1,5 +1,6 @@
 # Sourced by build.sh --web. Optional development builds disclose reference
 # controllers; a published policy release supplies all five family checkpoints.
+rm -f build/web/alienwars/maplab.data
 LOCAL_PRELOAD=()
 if [ -n "${AW_LOCAL_MODELS:-}" ]; then
     for family in 0 1 2 3 4; do

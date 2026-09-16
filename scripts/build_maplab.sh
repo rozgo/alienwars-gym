@@ -9,7 +9,12 @@ command -v emcc >/dev/null || { echo 'Install Emscripten 6.0.9; see docs/WEB.md.
 mkdir -p docs/maplab
 cp build/web/alienwars/maplab.html docs/maplab/index.html
 cp build/web/alienwars/maplab.js build/web/alienwars/maplab.wasm docs/maplab/
-if [ -f build/web/alienwars/maplab.data ]; then cp build/web/alienwars/maplab.data docs/maplab/; chmod 644 docs/maplab/maplab.data; fi
+if [ -f build/web/alienwars/maplab.data ]; then
+    cp build/web/alienwars/maplab.data docs/maplab/
+    chmod 644 docs/maplab/maplab.data
+else
+    rm -f docs/maplab/maplab.data
+fi
 chmod 644 docs/maplab/index.html docs/maplab/maplab.js docs/maplab/maplab.wasm
 python3 - <<'PY'
 import hashlib, json, pathlib, subprocess
