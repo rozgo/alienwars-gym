@@ -12,7 +12,7 @@ Ground routes preserve separate cave/bridge floors. Surface boats require draft
 and mast clearance. Submarines remain below water and above the seabed, within
 sea-connected water. The local controller follows successive route targets.
 
-The 96-float local input contains body-relative lookahead and next waypoint,
+The 96-float local input contains body-relative unit direction / distance to lookahead and next waypoint,
 ideal local velocity/angular rate, vehicle limits and identity, 24 terrain/body
 range beams, and up to four visible body tracks. Tracks provide ideal relative
 position and velocity; noisy velocity estimation is not implemented. Ranges and

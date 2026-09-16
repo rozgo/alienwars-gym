@@ -39,7 +39,8 @@ static float aw_body_ray(AwBody b,AwSVec origin,AwSVec direction,float limit){
 static void aw_local_observe(AwLocalEpisode*e,const AwMap*m,const AwRayWorld*rays,const AwBody*bodies,int count,int self,float dt){
     float*o=e->observation;memset(o,0,sizeof(e->observation));AwVehicle*v=&e->vehicle;AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);
     AwSVec p=v->position,g=aw_sv_add(aw_local_target(e),aw_sv_scale(p,-1));float cy=cosf(v->yaw),sy=sinf(v->yaw),distance=aw_sv_length(g);
-    o[0]=(g.x*cy-g.z*sy)/32;o[1]=(g.x*sy+g.z*cy)/32;o[2]=g.y/16;o[3]=fminf(1,distance/32);
+    float goal_scale=fmaxf(1,distance);
+    o[0]=(g.x*cy-g.z*sy)/goal_scale;o[1]=(g.x*sy+g.z*cy)/goal_scale;o[2]=g.y/goal_scale;o[3]=fminf(1,distance/32);
     o[4]=(v->velocity.x*cy-v->velocity.z*sy)/8;o[5]=(v->velocity.x*sy+v->velocity.z*cy)/8;o[6]=v->velocity.y/4;o[7]=v->yaw_rate/2;
     o[8]=v->pitch;o[9]=s.width/3;o[10]=s.length/3;o[11]=s.speed/8;o[12]=s.turn/2;o[13]=v->variant*.5f;o[14]=v->contact;o[15]=(float)(e->limit-e->ticks)/e->limit;
     for(int i=0;i<AW_VEHICLE_FAMILIES;i++)o[16+i]=v->family==i;

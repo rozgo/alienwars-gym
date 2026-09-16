@@ -92,7 +92,7 @@ static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float 
     v->pitch=atan2f(v->velocity.y,fmaxf(.1f,fabsf(forward)));
     int valid=aw_vehicle_clear(m,v);AwBody body=aw_vehicle_body(v);
     for(int i=0;valid&&i<count;i++)if(i!=self&&aw_bodies_overlap(body,bodies[i],.04f))valid=0;
-    if(!valid){v->position=old.position;v->contact=1;
+    if(!valid){v->position=old.position;v->yaw=old.yaw;v->pitch=old.pitch;v->yaw_rate=0;v->contact=1;
         if(v->family==AW_VEHICLE_WING)v->failed=1;else v->velocity=(AwSVec){0};}
 }
 #endif
