@@ -39,6 +39,10 @@ int main(void){
     assert(a[0].contact&&a[1].contact);
     assert(memcmp(&a[0],&b[1],sizeof(AwVehicle))==0&&memcmp(&a[1],&b[0],sizeof(AwVehicle))==0);
     assert(!aw_bodies_overlap(aw_vehicle_body(&a[0]),aw_vehicle_body(&a[1]),0));
+    /* Projection past a segment end must not stop beside the goal. */
+    AwMissionRoute finish={.count=2,.point={{0,-5,0},{0,-5,10}},.distance={0,10}};
+    AwMissionAgent near={.route=&finish,.cursor=1,.along=10,.remaining=0,.vehicle={.family=AW_VEHICLE_SUB,.position={2,-5,10},.yaw=-AW_MOTION_PI/2}};
+    AwDrive correction=aw_mission_control(&near,actions[0]);assert(correction.speed>0);
     assert(map.hash==hash);aw_mission_planner_close(&planner);
     printf("MISSION_ROUTE_TEST wing_replay=PASS wing_tracker=PASS points=%d sensor_equipment=PASS synchronous_collision=PASS invalid_goal=PASS map_unchanged=PASS\n",wing_points);
 }

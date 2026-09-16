@@ -52,7 +52,23 @@ static int aw_shared_prepare(AwSharedMap*w,AwMissionPlanner*p,int curriculum){
         AwVehicle vehicle={.family=family,.variant=variant,.position=r->point[first],.yaw=atan2f(delta.x,delta.z)};
         if(family==AW_VEHICLE_WING){float speed=aw_vehicle_spec(family,variant).reverse;vehicle.velocity=(AwSVec){sinf(vehicle.yaw)*speed,0,cosf(vehicle.yaw)*speed};}
         AwMissionRoute*out=&w->route[scenario][unit];
-        int planned=aw_mission_plan(p,&vehicle,r->point[last],out);
+        int planned=0;
+        /* Independent parking destinations must leave room for actual hulls.
+         * A shared corridor is useful traffic; overlapping terminal poses are
+         * an impossible task and must never be counted as a learning failure. */
+        static const int offsets[13][2]={{0,0},{-1,0},{1,0},{0,-1},{0,1},{-1,-1},{1,1},{-1,1},{1,-1},{-2,0},{2,0},{0,-2},{0,2}};
+        for(int attempt=0;attempt<13&&!planned;attempt++){
+            AwSVec goal=r->point[last];goal.x+=offsets[attempt][0]*5;goal.z+=offsets[attempt][1]*5;
+            if(family==AW_VEHICLE_GROUND)goal.y=aw_support_q(&w->map,goal.x*.5f,goal.z*.5f,(goal.y+1.2f)/.75f)*.75f-1.2f;
+            if(!aw_mission_plan(p,&vehicle,goal,out))continue;
+            planned=1;AwSVec end=out->point[out->count-1];float radius=aw_vehicle_spec(family,variant).length;
+            for(int j=0;j<unit;j++)if(w->route[scenario][j].count>1){
+                const AwMissionRoute*other=&w->route[scenario][j];AwSVec other_end=other->point[other->count-1];
+                float clearance=radius+aw_vehicle_spec(other->family,other->variant).length+2;
+                if(aw_sv_length(aw_sv_add(end,aw_sv_scale(other_end,-1)))<clearance){planned=0;break;}
+            }
+            if(!planned)out->count=0;
+        }
 #ifdef AW_MISSION_TRACE
         fprintf(stderr,"MISSION_PLAN scenario=%d unit=%d count=%d expanded=%d\n",scenario,unit,out->count,family==3?p->expanded:p->search.expanded);
 #endif

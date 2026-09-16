@@ -50,7 +50,8 @@ static AwDrive aw_mission_control(AwMissionAgent*a,const float*actions){
     float angle=aw_motion_angle(atan2f(delta.x,delta.z)-v->yaw);
     float turn=angle*2.0f-.35f*v->yaw_rate;
     float speed=s.speed*.8f*fmaxf(0,cosf(angle));
-    float stop=sqrtf(fmaxf(0,2*s.accel*a->remaining));speed=fminf(speed,stop);
+    float endpoint=aw_sv_length(aw_sv_add(a->route->point[a->route->count-1],aw_sv_scale(v->position,-1)));
+    float stop=sqrtf(fmaxf(0,2*s.accel*fmaxf(a->remaining,endpoint)));speed=fminf(speed,stop);
     AwDrive drive={speed,turn,delta.y*1.8f-v->velocity.y*.3f,0};
     if(v->family==AW_VEHICLE_QUAD){
         float sy=sinf(v->yaw),cy=cosf(v->yaw);

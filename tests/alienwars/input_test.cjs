@@ -15,9 +15,9 @@ class MouseEvent {
   stopImmediatePropagation(){this.stopped=true;}
 }
 const window=new Target(),document=new Target(),canvas=new Target(),ui=new Target();
-let captured=null,focuses=0,enabled=true,zooms=[];const backend=new Set();
-Object.assign(canvas,{clientHeight:900,focus(){focuses++;},setPointerCapture(id){captured=id;},hasPointerCapture(id){return captured===id;},releasePointerCapture(){captured=null;}});
-vm.runInNewContext(code+'\ninstallMapInput(canvas,delta=>zooms.push(delta),()=>enabled());',{window,document,canvas,MouseEvent,zooms,enabled:()=>enabled});
+let captured=null,focuses=0,enabled=true,zooms=[],commands=[];const backend=new Set();
+Object.assign(canvas,{clientHeight:900,width:1600,height:900,getBoundingClientRect(){return {left:100,top:100,width:800,height:450};},focus(){focuses++;},setPointerCapture(id){captured=id;},hasPointerCapture(id){return captured===id;},releasePointerCapture(){captured=null;}});
+vm.runInNewContext(code+'\ninstallMapInput(canvas,delta=>zooms.push(delta),()=>enabled(),(...args)=>commands.push(args));',{window,document,canvas,MouseEvent,zooms,commands,enabled:()=>enabled});
 canvas.addEventListener('mousedown',e=>backend.add(e.button));
 canvas.addEventListener('mouseup',e=>backend.delete(e.button));
 const emit=(target,type,init={})=>{const e=new MouseEvent(type,init);target.dispatchEvent(e);return e;};
@@ -36,6 +36,12 @@ let event=emit(canvas,'wheel',{deltaY:100,deltaMode:0});assert(Math.abs(zooms[0]
 emit(canvas,'wheel',{deltaY:1,deltaMode:1});assert.equal(zooms.at(-1),.024);
 emit(canvas,'wheel',{deltaY:1,deltaMode:2});assert.equal(zooms.at(-1),.35);
 emit(canvas,'wheel',{deltaY:-2,deltaMode:0,ctrlKey:true});assert.equal(zooms.at(-1),-.01);
+function pointerClick(x,y,extra={}){emit(canvas,'pointerdown',{isPrimary:true,pointerType:'mouse',pointerId:1,clientX:200,clientY:200,button:0,...extra});emit(canvas,'pointerup',{clientX:x,clientY:y,...extra});}
+pointerClick(201,200,{ctrlKey:true});assert.deepEqual(Array.from(commands.pop()),[202,200,0,1]);
+pointerClick(901,200);assert.equal(commands.length,0);
+pointerClick(200,200,{shiftKey:true});assert.equal(commands.length,0);
+emit(canvas,'pointerdown',{clientX:200,clientY:200,button:2});emit(canvas,'pointermove',{clientX:208,clientY:200});emit(canvas,'pointerup',{clientX:200,clientY:200});assert.equal(commands.length,0);
+emit(canvas,'pointerdown',{clientX:200,clientY:200,button:0});emit(window,'blur');emit(canvas,'pointerup',{clientX:200,clientY:200});assert.equal(commands.length,0);
 const count=zooms.length;emit(canvas,'wheel',{deltaY:NaN});enabled=false;emit(canvas,'wheel',{deltaY:20});assert.equal(zooms.length,count);
 assert(focuses>0);
 console.log('INPUT_TEST release_outside=PASS capture/cancel=PASS blur/hidden=PASS chorded_buttons=PASS stale_recovery=PASS trackpad/line/page/pinch=PASS no_double_wheel=PASS');

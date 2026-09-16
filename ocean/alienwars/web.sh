@@ -2,10 +2,10 @@
 # controllers; a published policy release supplies all five family checkpoints.
 rm -f build/web/alienwars/maplab.data
 LOCAL_PRELOAD=()
-if [ -n "${AW_LOCAL_MODELS:-}" ]; then
+if [ -n "${AW_MISSION_MODELS:-}" ]; then
     for family in 0 1 2 3 4; do
-        test -f "$AW_LOCAL_MODELS/local-$family.bin"
-        LOCAL_PRELOAD+=(--preload-file "$AW_LOCAL_MODELS/local-$family.bin@resources/alienwars/local-$family.bin")
+        test -f "$AW_MISSION_MODELS/mission-$family.bin"
+        LOCAL_PRELOAD+=(--preload-file "$AW_MISSION_MODELS/mission-$family.bin@resources/alienwars/mission-$family.bin")
     done
 fi
 mkdir -p build/web/alienwars

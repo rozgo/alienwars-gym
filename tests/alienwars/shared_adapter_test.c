@@ -26,6 +26,11 @@ int main(void){
         env.task->world.agents[i].limit=2;
         aw_shared_reference(env.task,i,actions[i],0);
     }
+    for(int i=0;i<12;i++)if(env.task->world.active[i])for(int j=i+1;j<12;j++)if(env.task->world.active[j]){
+        const AwMissionRoute*a=env.task->world.agents[i].route,*b=env.task->world.agents[j].route;
+        float clearance=aw_vehicle_spec(a->family,a->variant).length+aw_vehicle_spec(b->family,b->variant).length+2;
+        assert(aw_sv_length(aw_sv_add(a->point[a->count-1],aw_sv_scale(b->point[b->count-1],-1)))>=clearance);
+    }
     assert(available>=5);puf_step(&env);assert(env.log.n==0);puf_step(&env);assert(env.log.n==available);
     for(int i=0;i<12;i++)assert(terminals[i]==1);
     puf_step(&env);assert(env.task->world.ticks==0&&env.log.n==available);
