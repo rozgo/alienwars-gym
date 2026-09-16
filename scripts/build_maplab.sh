@@ -18,7 +18,7 @@ fi
 chmod 644 docs/maplab/index.html docs/maplab/maplab.js docs/maplab/maplab.wasm
 python3 - <<'PY'
 import hashlib, json, pathlib, subprocess
-paths=['build.sh','ocean/alienwars','web/maplab','scripts/build_maplab.sh']
+paths=['build.sh','ocean/alienwars','web/maplab','scripts/build_maplab.sh','scripts/build_fleet_site.py','web/training']
 dirty=bool(subprocess.check_output(['git','status','--porcelain','--',*paths]))
 artifacts={}
 for name in ['index.html','maplab.js','maplab.wasm','maplab.data']:

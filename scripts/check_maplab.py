@@ -16,7 +16,8 @@ PAGES = ROOT / 'docs/maplab'
 BUILD.mkdir(exist_ok=True)
 
 def run(args, **kwargs):
-    return subprocess.check_output(args, cwd=ROOT, text=True, timeout=600, **kwargs).strip()
+    kwargs.setdefault('cwd',ROOT)
+    return subprocess.check_output(args, text=True, timeout=600, **kwargs).strip()
 
 emcc = shutil.which('emcc') or str(ROOT / '.local/emsdk/upstream/emscripten/emcc')
 env = os.environ.copy()
@@ -146,7 +147,7 @@ run(['node','--check','docs/maplab/maplab.js'])
 matches = []
 for seed in [0, 1, 73, 4294967295]:
     native_line = run(['build/maplab','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
-    web_line = run(['node','docs/maplab/maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'])
+    web_line = run(['node','maplab.js','--headless',f'--seed={seed}','--symmetry=0','--floor-a=10','--floor-b=3','--tunnels=1'],cwd=PAGES)
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
 if artifacts_only:

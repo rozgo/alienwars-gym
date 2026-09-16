@@ -149,8 +149,8 @@ units in three generated worlds for 1,800 steps, including an underground scout;
 generation, pose preparation and rendering are outside its timing. Results go to
 `build/sensor-check.json`; published measurements are in `docs/runs/`.
 
-Next: define the actual AlienWars observation/action/reward/reset contract,
-add authoritative prop bodies where gameplay needs them, then introduce seeded
+The compact fleet-controller contract is in [LOCAL_NAVIGATION.md](LOCAL_NAVIGATION.md),
+separate from this module preview interface. Next: add authoritative prop bodies where gameplay needs them, then introduce seeded
 sensor noise/dropout and task-specific resolution. Keep exact pose available for
 debugging and privileged training without accidentally granting it to a partially
 observed policy. RGB should be an optional, separately budgeted batched render

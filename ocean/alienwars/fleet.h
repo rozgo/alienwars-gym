@@ -17,7 +17,7 @@ static int aw_fleet_local_end(const AwLocalRoute*r,int start){
     while(end<r->count-1&&r->distance[end]-r->distance[start]<length)end++;return end;
 }
 static void aw_fleet_scout_route(AwFleet*f,const AwMap*m,int start){
-    AwPatrol p={.layer=0,.variant=0,.count=m->path_length};memcpy(p.route,m->path,p.count*sizeof(int));if(start==0&&m->path[0]==m->spawns[0]&&m->path[m->path_length-1]==m->spawns[1])aw_patrol_scout(m,&p,m->spawns[0],m->spawns[1]);
+    AwPatrol p={.layer=0,.variant=0,.count=m->path_length};memcpy(p.route,m->path,p.count*sizeof(int));if(p.count>=2&&start==0&&m->path[0]==m->spawns[0]&&m->path[m->path_length-1]==m->spawns[1])aw_patrol_scout(m,&p,m->spawns[0],m->spawns[1]);
     aw_local_route(m,&p,&f->route[0]);
     AwLocalRoute*r=&f->route[0];if(r->count<2){f->active[0]=0;return;}
     start=aw_clamp(start,0,r->count-2);AwSVec d=aw_sv_add(r->point[start+1],aw_sv_scale(r->point[start],-1));
@@ -37,6 +37,7 @@ static void aw_fleet_init(AwFleet*f,const AwMap*m,const AwPatrols*p){
         if(i){aw_local_route(m,&p->units[i-1],&f->route[i]);AwLocalRoute*r=&f->route[i];if(r->count<2)continue;
             int start=(i*19)%(r->count-1);AwSVec d=aw_sv_add(r->point[start+1],aw_sv_scale(r->point[start],-1));
             aw_local_reset(&f->unit[i],r,start,aw_fleet_local_end(r,start),atan2f(d.x,d.z),500);f->active[i]=1;}
+        if(!f->active[i])continue;
         AwVehicle*v=&f->unit[i].vehicle;f->body[i]=aw_vehicle_body(v);f->previous[i]=*v;f->terminal[i]=1;
         Weights*w=f->weights[v->family];if(w){w->idx=0;f->net[i]=make_puffernet(w,1,AW_LOCAL_INPUTS,128,2,sizes,4);}
     }f->ready=1;

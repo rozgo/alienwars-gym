@@ -56,7 +56,7 @@ current minimal template. Inspect headers before following an older tutorial.
   Map Lab rendering, cosmetic meshes, materials and viewer.
 - `web/maplab/shell.html`, `docs/maplab/`: Map Lab source and compiled Pages output.
 - `docs/index.html`: authored site-entry redirect to Map Lab.
-- `docs/maplab/index.html`, `maplab.js`, `maplab.wasm`, `build.json`: deliberate
+- `docs/maplab/index.html`, `maplab.js`, `maplab.wasm`, `maplab.data`, `build.json`: deliberate
   compiled Pages artifacts; regenerate with `scripts/build_maplab.sh`, never hand-edit.
 
 ## Environment implementation

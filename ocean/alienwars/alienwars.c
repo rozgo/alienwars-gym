@@ -200,7 +200,7 @@ static Vector3 aw_scout_position_at(float progress,int report) {
 }
 
 static Vector3 aw_unit_position(void){
-    if(!fleet.ready)return aw_scout_position_at(unit_progress,1);
+    if(!fleet.ready||!fleet.active[0]||fleet.route[0].count<2)return aw_scout_position_at(unit_progress,1);
     AwSVec p=aw_fleet_pose(&fleet,0).position;scout_floor=(p.y+1.2f)/3;
     int cursor=aw_clamp(fleet.unit[0].cursor,0,fleet.route[0].count-1),node=fleet.route[0].node[cursor];
     scout_layer=node>=AW_CELLS&&node<AW_SPAN_START;
@@ -242,7 +242,7 @@ static void aw_publish_sensors(void){
     aw_sensor_report(sensor_selected,values);
     const AwVehicle*v=&fleet.unit[sensor_selected].vehicle;AwVehicleSpec spec=aw_vehicle_spec(v->family,v->variant);
     float profile[10]={spec.speed,spec.turn,spec.width*2,spec.length*2,aw_vehicle_sensor_range(v->family,v->variant),v->failed,v->contact,(float)fleet.arrivals[sensor_selected],(float)fleet.unit[sensor_selected].cursor,(float)fleet.route[sensor_selected].count};
-    aw_fleet_report(fleet.trained,sensor_selected,aw_vehicle_role(v->family,v->variant),profile);
+    aw_fleet_report(fleet.trained,sensor_selected,fleet.active[sensor_selected]?aw_vehicle_role(v->family,v->variant):"Unavailable: no body-clear route",profile);
 #endif
 }
 AW_EXPORT void aw_sensor_control(int action,int value){
