@@ -11,6 +11,17 @@ static float aw_sv_length(AwSVec a){return sqrtf(aw_sv_dot(a,a));}
 static AwSVec aw_sv_normal(AwSVec a){float n=aw_sv_length(a);return aw_sv_scale(a,n>1e-8f?1/n:0);}
 enum {AW_HIT_NONE,AW_HIT_TERRAIN,AW_HIT_UNIT,AW_HIT_WATER,AW_HIT_BOUNDARY};
 typedef struct {float distance;int kind,entity;} AwSensorHit;
+static float aw_ray_box(AwSVec center,AwSVec extent,float yaw,AwSVec origin,AwSVec direction,float limit){
+    float cy=cosf(yaw),sy=sinf(yaw),dx=origin.x-center.x,dz=origin.z-center.z;
+    float o[3]={dx*cy-dz*sy,origin.y-center.y,dx*sy+dz*cy};
+    float d[3]={direction.x*cy-direction.z*sy,direction.y,direction.x*sy+direction.z*cy};
+    float e[3]={extent.x,extent.y,extent.z},near=0,far=limit;
+    for(int i=0;i<3;i++){
+        if(fabsf(d[i])<1e-8f){if(fabsf(o[i])>e[i])return limit;continue;}
+        float a=(-e[i]-o[i])/d[i],b=(e[i]-o[i])/d[i];if(a>b){float tmp=a;a=b;b=tmp;}
+        near=fmaxf(near,a);far=fminf(far,b);if(near>far)return limit;
+    }return near;
+}
 typedef struct {float top[AW_CELLS];} AwRayWorld;
 static void aw_ray_world_init(AwRayWorld*r,const AwMap*m){
     for(int z=0;z<AW_SIZE;z++)for(int x=0;x<AW_SIZE;x++){

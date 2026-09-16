@@ -240,6 +240,9 @@ fi
 if [ "$ENV" = "alienwars_local" ]; then
     EXTRA_SRC="ocean/alienwars_local/local_api.c"
 fi
+if [ "$ENV" = "alienwars_shared" ]; then
+    EXTRA_SRC="ocean/alienwars_shared/shared_api.c"
+fi
 
 if [ "$(uname -m)" = "x86_64" ]; then
     SIMD_FLAGS=(-mavx2 -mfma)
@@ -509,6 +512,13 @@ if [ "$MODE" = "native" ]; then
     fi
     OSRS_RENDER_OBJECT=""
     case "$ENV" in
+        alienwars_shared)
+            OSRS_RENDER_OBJECT="build/alienwars_shared.o"
+            EXTRA_SRC=""
+            $CC $LINK_OPT "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}" -std=c11 \
+                -Wno-unused-function -I. "${INCLUDES[@]}" \
+                -c ocean/alienwars_shared/shared_api.c -o "$OSRS_RENDER_OBJECT"
+            ;;
         alienwars_local)
             OSRS_RENDER_OBJECT="build/alienwars_local.o"
             EXTRA_SRC=""

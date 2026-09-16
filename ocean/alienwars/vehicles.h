@@ -48,21 +48,24 @@ static int aw_vehicle_clear(const AwMap*m,AwVehicle*v){
 /* Actions: forward speed, yaw, vertical speed, lateral speed; each 0/1/2.
  * Only the quad uses lateral thrust. Fixed-wing speed is always positive and
  * the physics clamps turn rate / climb, independently of policy behavior. */
-static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float dt,const AwBody*bodies,int count,int self){
+typedef struct {float speed,turn,climb,strafe;} AwDrive;
+/* Continuous actuator setpoints. Both route primitives and the learned local
+ * controller go through these exact acceleration / turn limits. */
+static void aw_vehicle_drive(const AwMap*m,AwVehicle*v,AwDrive drive,float dt,const AwBody*bodies,int count,int self){
     if(v->failed||!isfinite(dt)||dt<=0||dt>1.0f/30+.00001f)return;
     AwVehicle old=*v;AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);float cy=cosf(v->yaw),sy=sinf(v->yaw);
     float forward=v->velocity.x*sy+v->velocity.z*cy,lateral=v->velocity.x*cy-v->velocity.z*sy;
-    float target=action[0]==0?-s.reverse:action[0]==1?0:s.speed;
+    float target=aw_motion_clamp(drive.speed,-s.reverse,s.speed);
     if(v->family==AW_VEHICLE_GROUND){int c=aw_clamp((int)(v->position.z*.5f),0,63)*64+aw_clamp((int)(v->position.x*.5f),0,63);target*=aw_ground_traction(v->variant,m->cells[c].material);}
-    if(v->family==AW_VEHICLE_WING)target=s.reverse+(s.speed-s.reverse)*action[0]*.5f;
+    if(v->family==AW_VEHICLE_WING)target=fmaxf(s.reverse,target);
     forward+=aw_motion_clamp(target-forward,-s.accel*dt,s.accel*dt);
     if(v->family==AW_VEHICLE_WING)forward=fmaxf(s.reverse,forward);
-    float side=v->family==AW_VEHICLE_QUAD?(action[3]-1)*s.speed:0;
+    float side=v->family==AW_VEHICLE_QUAD?aw_motion_clamp(drive.strafe,-s.speed,s.speed):0;
     lateral+=aw_motion_clamp(side-lateral,-s.accel*dt,s.accel*dt);if(v->family!=AW_VEHICLE_QUAD)lateral=0;
-    float turn=(action[1]-1)*s.turn;
+    float turn=aw_motion_clamp(drive.turn,-s.turn,s.turn);
     v->yaw_rate+=aw_motion_clamp(turn-v->yaw_rate,-s.turn_accel*dt,s.turn_accel*dt);
     v->yaw=aw_motion_angle(v->yaw+v->yaw_rate*dt);cy=cosf(v->yaw);sy=sinf(v->yaw);
-    float up=(action[2]-1)*s.vertical;
+    float up=aw_motion_clamp(drive.climb,-s.vertical,s.vertical);
     if(v->family==AW_VEHICLE_WING)up=aw_motion_clamp(up,-forward*.30f,forward*.30f);
     v->velocity.y+=aw_motion_clamp(up-v->velocity.y,-s.accel*dt,s.accel*dt);
     v->velocity.x=sy*forward+cy*lateral;v->velocity.z=cy*forward-sy*lateral;
@@ -72,5 +75,29 @@ static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float 
     for(int i=0;valid&&i<count;i++)if(i!=self&&aw_bodies_overlap(body,bodies[i],.04f))valid=0;
     if(!valid){v->position=old.position;v->yaw=old.yaw;v->pitch=old.pitch;v->yaw_rate=0;v->contact=1;
         if(v->family==AW_VEHICLE_WING)v->failed=1;else v->velocity=(AwSVec){0};}
+}
+static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float dt,const AwBody*bodies,int count,int self){
+    AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);
+    float speed=action[0]==0?-s.reverse:action[0]==1?0:s.speed;
+    if(v->family==AW_VEHICLE_WING)speed=s.reverse+(s.speed-s.reverse)*action[0]*.5f;
+    aw_vehicle_drive(m,v,(AwDrive){speed,(action[1]-1)*s.turn,(action[2]-1)*s.vertical,(action[3]-1)*s.speed},dt,bodies,count,self);
+}
+/* Synchronous body resolution: every proposal sees the same old world. A
+ * rejected proposal can block another vehicle's proposal, so propagate until
+ * stable. No vehicle gets priority from its index in the array. */
+static void aw_vehicles_step(const AwMap*m,AwVehicle*v,const AwDrive*drive,const unsigned char*active,int count,float dt){
+    AwVehicle before[16];unsigned char blocked[16]={0};
+    if(count<0||count>16)return;
+    for(int i=0;i<count;i++){before[i]=v[i];if(active[i])aw_vehicle_drive(m,&v[i],drive[i],dt,NULL,0,-1);}
+    for(int pass=0;pass<count;pass++){
+        int changed=0;
+        for(int i=0;i<count;i++)if(active[i])for(int j=i+1;j<count;j++)if(active[j]){
+            AwBody a=aw_vehicle_body(&v[i]),b=aw_vehicle_body(&v[j]);
+            if(!aw_bodies_overlap(a,b,.04f))continue;
+            if(!blocked[i]){blocked[i]=1;changed=1;}if(!blocked[j]){blocked[j]=1;changed=1;}
+        }
+        for(int i=0;i<count;i++)if(blocked[i]){v[i]=before[i];v[i].contact=1;v[i].velocity=(AwSVec){0};v[i].yaw_rate=0;if(v[i].family==AW_VEHICLE_WING)v[i].failed=1;}
+        if(!changed)break;
+    }
 }
 #endif

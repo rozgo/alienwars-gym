@@ -26,6 +26,8 @@ typedef struct {
 } AwSensorReading;
 typedef struct {
     int active,initialized,layer;float radius;AwSensorPose pose,previous;
+    /* Optional physical hull. Zero extents preserve legacy spherical fixtures. */
+    AwSVec body_center,body_extent;float body_yaw;
     AwOdometry odometry;AwSensorConfig config[AW_SENSOR_TYPES];
     AwSensorReading reading[AW_SENSOR_TYPES];
 } AwSensorUnit;
@@ -83,6 +85,11 @@ static void aw_sensor_teleport(AwSensors*s,int unit){
 static AwSensorHit aw_sensor_cast(AwSensors*s,const AwMap*m,int owner,AwSVec o,AwSVec d,float range,int water){
     s->ray_queries++;AwSensorHit hit=aw_ray_terrain(m,&s->rays,o,d,range,water);
     for(int i=0;i<s->count;i++)if(i!=owner&&s->units[i].active){
+        const AwSensorUnit*body=&s->units[i];
+        if(body->body_extent.x>0){
+            float t=aw_ray_box(body->body_center,body->body_extent,body->body_yaw,o,d,range);
+            if(t<hit.distance)hit=(AwSensorHit){t,AW_HIT_UNIT,i};continue;
+        }
         AwSVec center=s->units[i].pose.position;if(s->units[i].layer==0)center.y+=.5f;
         AwSVec delta=aw_sv_add(o,aw_sv_scale(center,-1));float b=aw_sv_dot(delta,d),c=aw_sv_dot(delta,delta)-s->units[i].radius*s->units[i].radius;
         float discriminant=b*b-c;if(discriminant<0)continue;

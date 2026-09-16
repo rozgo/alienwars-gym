@@ -523,6 +523,8 @@ typedef struct {
 typedef struct PuffeRL {
     Policy* policies;        // [num_policies]; policies[0] trainable, rest frozen
     int num_policies;
+    bool joint_training;         // synchronous CPU worlds, all policies learn
+    struct PuffeRL** learners;   // compact, policy-specific PPO workspaces
     Weights actor_weights; // async rollout snapshot of policies[0]; unused when async=0
     Activations train_activs;
     Allocator weight_alloc;      // async actor weights
@@ -1039,7 +1041,9 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         int env_start = vec->env_starts[buf];
         int env_count = vec->env_counts[buf];
         int frozen_start = env_count;
-        if (vec->num_policies > 1 && frozen_pct > 0.0f) {
+        if (dict_get(vk, "train_all_policies") != 0) {
+            frozen_start = 0;
+        } else if (vec->num_policies > 1 && frozen_pct > 0.0f) {
             frozen_start = env_count - (int)(frozen_pct * env_count);
         }
         int* counts = (int*)calloc(vec->num_policies, sizeof(int));
@@ -1568,7 +1572,13 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
     puf_stamp<<<1, 1, 0, stream>>>(st + TE_E);
 }
 
+static void train_joint(PuffeRL* pufferl);
 void train_impl(PuffeRL* pufferl, RolloutBuf* src_arg) {
+    if (pufferl->joint_training) {
+        assert(src_arg == NULL && "joint training requires synchronous rollouts");
+        train_joint(pufferl);
+        return;
+    }
     Hypers* hypers = &pufferl->hypers;
     RolloutBuf src = src_arg ? *src_arg : pufferl->rollouts;
     cudaStream_t train_stream = pufferl->train_stream;
@@ -1720,8 +1730,8 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
     return out;
 }
 
-void puf_save_weights(PuffeRL* p, const char* path) {
-    Float mw = p->policies[0].master_weights;
+static void puf_save_policy(PuffeRL* p, int policy, const char* path) {
+    Float mw = p->policies[policy].master_weights;
     int64_t nbytes = numel(mw.shape) * sizeof(float);
     char* buf = (char*)malloc(nbytes);
     cudaMemcpy(buf, mw.data, nbytes, cudaMemcpyDeviceToHost);
@@ -1734,6 +1744,14 @@ void puf_save_weights(PuffeRL* p, const char* path) {
     fclose(fp);
     free(buf);
     assert(rename(tmp, path) == 0 && "failed to publish weights");
+}
+void puf_save_weights(PuffeRL* p, const char* path) {
+    puf_save_policy(p, 0, path);
+    if (p->joint_training) for (int i = 1; i < p->num_policies; i++) {
+        char sibling[4096];
+        snprintf(sibling, sizeof(sibling), "%s.policy-%d.bin", path, i);
+        puf_save_policy(p, i, sibling);
+    }
 }
 
 void puf_load_weights_into(Float dst, Prec params,
@@ -1783,6 +1801,8 @@ static void master_weights_setup(Float* mw, Prec* param,
     }
 }
 
+#include "joint_train.cuh"
+
 PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     Hypers hypers = {
         .horizon = puf_ini_get(ini, "train", "horizon"),
@@ -1826,6 +1846,14 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
 
     PuffeRL* pufferl = (PuffeRL*)calloc(1, sizeof(PuffeRL));
     pufferl->hypers = hypers;
+    pufferl->joint_training = dict_get(&vec_kwargs, "train_all_policies") != 0;
+    if (pufferl->joint_training) {
+        assert(PUF_BACKEND == PUF_CPU && !hypers.async && hypers.world_size == 1
+            && "joint training currently supports synchronous single-GPU CPU worlds");
+        assert(!puf_ini_get(ini, "selfplay", "enabled")
+            && puf_ini_get(ini, "base", "eval_episodes") == 0
+            && "joint training uses explicit all-policy evaluation, not the single-policy evaluator");
+    }
     snprintf(pufferl->env_name, sizeof(pufferl->env_name), "%s", PUFFER_ENV_NAME);
 
     cudaSetDevice(hypers.gpu_id);
@@ -1938,13 +1966,13 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     int hist_hidden = dict_get(&vec_kwargs, "hist_policy_hidden_size");
     int hist_layers = dict_get(&vec_kwargs, "hist_policy_num_layers");
     pufferl->num_policies = vec->num_policies;
-    assert(!(pufferl->num_policies > 1 && (hist_hidden <= 0 || hist_layers <= 0))
+    assert(!(!pufferl->joint_training && pufferl->num_policies > 1 && (hist_hidden <= 0 || hist_layers <= 0))
         && "num_policies > 1 requires hist_policy_hidden_size and hist_policy_num_layers > 0");
     pufferl->policies = (Policy*)calloc(1, pufferl->num_policies * sizeof(Policy));
 
     for (int b = 0; b < pufferl->num_policies; b++) {
         Policy* pol = &pufferl->policies[b];
-        pol->frozen = (b > 0);
+        pol->frozen = (b > 0 && !pufferl->joint_training);
         int h = pol->frozen ? hist_hidden : hidden_size;
         int L = pol->frozen ? hist_layers : num_layers;
         int slice = vec->policy_layout[b + 1] - vec->policy_layout[b];
@@ -2028,8 +2056,11 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     }
 
     ulong init_seed = hypers.seed;
-    weights_init(&primary->arch,
-        primary->weights, &init_seed, pufferl->default_stream);
+    for (int b = 0; b < pufferl->num_policies; b++) {
+        Policy* pol = &pufferl->policies[b];
+        if (!pol->frozen) weights_init(&pol->arch,
+            pol->weights, &init_seed, pufferl->default_stream);
+    }
     // Primary: cast param→master now. Frozen: load later via pufferl_load_policy.
     for (int b = 0; b < pufferl->num_policies; b++) {
         Policy* pol = &pufferl->policies[b];
@@ -2080,6 +2111,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         }
     }
 
+    if (pufferl->joint_training) joint_setup(pufferl);
     env_start(pufferl);
 
     if (hypers.profile) {
@@ -3055,6 +3087,24 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     char initial_model_buf[4096];
     const char* initial_model = puf_checkpoint_path_key(ini,
         "load_model_path", initial_model_buf, sizeof(initial_model_buf));
+    assert(!(pufferl->joint_training && initial_model)
+        && "joint initialization requires base.load_model_dir with all family weights");
+    const char* initial_directory = puf_ini_get_str(ini, "base", "load_model_dir");
+    if (pufferl->joint_training && initial_directory && strcmp(initial_directory, "None") != 0) {
+        for (int family = 0; family < pufferl->num_policies; family++) {
+            char model_path[4096];
+            snprintf(model_path, sizeof(model_path), "%s/mission-%d.bin", initial_directory, family);
+            pufferl_load_policy(pufferl, family, model_path);
+        }
+        if (live_log) {
+            char initial_path[4096];
+            snprintf(initial_path, sizeof(initial_path), "%s/initial.bin", checkpoint_dir);
+            puf_save_weights(pufferl, initial_path);
+            fputs("{\"type\":\"joint_initialization\",\"directory\":", live_log);
+            puf_json_string(live_log, initial_directory);
+            fputs(",\"optimizer_reset\":true}\n", live_log);fflush(live_log);
+        }
+    }
     if (initial_model) {
         pufferl_load_policy(pufferl, 0, initial_model);
         if (pufferl->hypers.async) {
@@ -3071,6 +3121,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             puf_json_string(live_log, initial_model);
             fputs(",\"optimizer_reset\":true}\n", live_log); fflush(live_log);
         }
+    }
+    if (pufferl->joint_training && live_log) {
+        char initial_path[4096];
+        snprintf(initial_path, sizeof(initial_path), "%s/initial.bin", checkpoint_dir);
+        puf_save_weights(pufferl, initial_path);
     }
     Selfplay selfplay = {0};
     if (use_selfplay) {
@@ -3200,9 +3255,21 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
         vec_log(pufferl->vec, &new_log, 1);
 
-        float losses_host[NUM_LOSSES];
-        cudaMemcpy(losses_host, pufferl->losses, sizeof(losses_host),
-            cudaMemcpyDeviceToHost);
+        float losses_host[NUM_LOSSES] = {0};
+        if (pufferl->joint_training) {
+            for (int family = 0; family < pufferl->num_policies; family++) {
+                float family_losses[NUM_LOSSES];
+                PuffeRL* learner = pufferl->learners[family];
+                cudaMemcpy(family_losses, learner->losses, sizeof(family_losses), cudaMemcpyDeviceToHost);
+                float inv = family_losses[LOSS_N] > 0 ? 1.0f / family_losses[LOSS_N] : 0;
+                for (int i = 0; i < NUM_LOSSES; i++) losses_host[i] += family_losses[i];
+                for (int i = 0; i < LOSS_N; i++) {
+                    char key[128];snprintf(key, sizeof(key), "policy_%d/%s", family, LOSS_NAMES[i]);
+                    dict_set(&new_log, key, family_losses[i] * inv);
+                }
+                cudaMemset(learner->losses, 0, NUM_LOSSES * sizeof(float));
+            }
+        } else cudaMemcpy(losses_host, pufferl->losses, sizeof(losses_host), cudaMemcpyDeviceToHost);
         float inv_n = losses_host[LOSS_N] > 0 ? 1.0f / losses_host[LOSS_N] : 0.0f;
         for (int i = 0; i < LOSS_N; i++) {
             dict_set(&new_log, LOSS_NAMES[i], losses_host[i] * inv_n);
