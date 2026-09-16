@@ -19,7 +19,7 @@ static int aw_fleet_local_end(const AwLocalRoute*r,int start){
 static void aw_fleet_scout_route(AwFleet*f,const AwMap*m,int start){
     AwPatrol p={.layer=0,.variant=0,.count=m->path_length};memcpy(p.route,m->path,p.count*sizeof(int));if(p.count>=2&&start==0&&m->path[0]==m->spawns[0]&&m->path[m->path_length-1]==m->spawns[1])aw_patrol_scout(m,&p,m->spawns[0],m->spawns[1]);
     aw_local_route(m,&p,&f->route[0]);
-    AwLocalRoute*r=&f->route[0];if(r->count<2){f->active[0]=0;return;}
+    AwLocalRoute*r=&f->route[0];if(r->count<2){f->active[0]=0;f->body[0].active=0;return;}
     start=aw_clamp(start,0,r->count-2);AwSVec d=aw_sv_add(r->point[start+1],aw_sv_scale(r->point[start],-1));
     aw_local_reset(&f->unit[0],r,start,aw_fleet_local_end(r,start),atan2f(d.x,d.z),500);f->active[0]=1;f->terminal[0]=1;f->body[0]=aw_vehicle_body(&f->unit[0].vehicle);f->previous[0]=f->unit[0].vehicle;
 }

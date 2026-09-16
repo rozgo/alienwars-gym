@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1];os.chdir(ROOT)
 Path('build').mkdir(exist_ok=True);Path('outputs').mkdir(exist_ok=True)
 emcc=str(ROOT/'.local/emsdk/upstream/emscripten/emcc')
 report={}
-for name in ['vehicle','patrol','local_adapter']:
+for name in ['vehicle','patrol','local_adapter','fleet']:
     source=f'tests/alienwars/{name}_test.c'
     includes=['-I.','-Isrc','-Ivendor','-Iraylib-5.5_macos/include','-Iraylib-5.5_linux_amd64/include']
     subprocess.run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined',*includes,source,'-lm','-o',f'build/{name}-test'],check=True)
