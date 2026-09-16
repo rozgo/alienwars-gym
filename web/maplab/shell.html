@@ -139,7 +139,7 @@
       </div>
       <div class="viewport-footer">
         <div><div class="legend" id="surface-legend"><span><i class="swatch cyan"></i>Base A</span><span><i class="swatch orange"></i>Base B</span><span><i class="swatch violet"></i>Tunnel entrances</span><span><i class="swatch gold"></i>Scout route</span></div><div class="legend" id="tunnel-legend" hidden><span><i class="swatch cyan"></i>Entrances</span><span><i class="swatch gold"></i>Passage layout</span></div><p class="gesture-help">Drag to pan · Shift-drag to orbit · Scroll to zoom</p></div>
-        <div class="scout"><div id="scout-heading">NAVIGATION SCOUT / A ↔ B</div><span id="scout-status">Scripted path · Terrain validation</span></div>
+        <div class="scout"><div id="scout-heading">NAVIGATION SCOUT / A ↔ B</div><span id="scout-status">A* routes · Local navigation</span></div>
       </div>
       <div class="loading" id="loading" role="status"><p id="loading-text">Preparing the map…</p><progress aria-label="Loading map runtime"></progress><small>Generated and rendered on your device.</small></div>
     </section>
@@ -169,7 +169,8 @@
       <section class="panel-section">
         <h2 class="section-title">Unit sensors <small>03 / PERCEPTION</small></h2>
         <label for="sensor-unit">Selected unit</label>
-        <div class="sensor-select"><select id="sensor-unit"><option value="0">Inspection scout</option><option value="1">Tracked rover</option><option value="2">Cargo hauler</option><option value="3">Skiff</option><option value="4">Patrol boat</option><option value="5">Cutter</option><option value="6">Quadrotor</option><option value="7">Gunship</option><option value="8">Air transport</option></select><button id="sensor-focus">Focus</button></div>
+        <div class="sensor-select"><select id="sensor-unit"><option value="0">Inspection scout</option><option value="1">Tracked rover</option><option value="2">Cargo hauler</option><option value="3">Skiff</option><option value="4">Patrol boat</option><option value="5">Cutter</option><option value="6">Quadrotor</option><option value="7">Recon wing</option><option value="8">Air transport</option><option value="9">Recon submarine</option><option value="10">Patrol submarine</option><option value="11">Heavy submarine</option></select><button id="sensor-focus">Focus</button></div>
+        <p class="seed-note" id="unit-profile"></p>
         <div class="sensor-layers" role="group" aria-label="Sensor range overlays">
           <label class="sensor-chip" style="--sensor:#68e6b4">LiDAR<input id="sensor-show-0" type="checkbox" aria-label="Show LiDAR ranges" checked></label>
           <label class="sensor-chip" style="--sensor:#58b8f5">Sonar<input id="sensor-show-1" type="checkbox" aria-label="Show sonar ranges"></label>
@@ -207,9 +208,9 @@
         <p class="seed-note" id="ocean-key" hidden>Blue: sea-connected water · 16-tile outer belt. Naval patrols stay in sea-connected water and respect their draft.</p>
         <label class="toggle" for="walkability">Walkability overlay<input type="checkbox" id="walkability"></label>
         <label class="toggle" for="path"><span id="path-toggle-label">Scout route</span><input type="checkbox" id="path" checked></label>
-        <label for="patrol-mode">Patrol traffic</label><select id="patrol-mode"><option value="0">Live · ground, naval &amp; air</option><option value="1">Paused</option><option value="2">Hidden</option></select>
-        <button id="find-patrol">Find next patrol</button><p class="seed-note" id="patrol-note">3 ground · 3 naval · 3 air · scripted traffic</p>
-        <details><summary>Nine unit types</summary><p>Ground: inspection scout, tracked rover, cargo hauler.<br>Naval: skiff, patrol boat, cutter.<br>Air: quadrotor, gunship, transport.<br>Scripted patrols follow terrain clearance and water depth. No combat or learned policies yet.</p></details>
+        <label for="patrol-mode">Patrol traffic</label><select id="patrol-mode"><option value="0">Live · ground, naval, air &amp; subs</option><option value="1">Paused</option><option value="2">Hidden</option></select>
+        <button id="find-patrol">Find next patrol</button><p class="seed-note" id="patrol-note">3 ground · 3 naval · 3 air · 3 submarines · physical navigation</p>
+        <details><summary>Twelve unit types</summary><p>Ground: inspection scout, tracked rover, cargo hauler.<br>Naval: skiff, patrol boat, cutter.<br>Air: quadrotor, recon wing, transport.<br>Underwater: recon, patrol, heavy submarine.<br>Global routes use A* with terrain, altitude, water depth and hull clearance. Variants trade speed, turning space, size and sensor reach. Fixed wings maintain forward airspeed; quadcopters hover and strafe. No combat yet.</p></details>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
         <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
         <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Horizontal section</option><option value="0">Off · solid terrain</option></select>
@@ -239,7 +240,7 @@
         </dl>
       </section>
       <section class="panel-section">
-        <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity guide naval patrols, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>Broad seeded hills add rolling ground between roads while cliff bands retain their sharper contours. Bridges fit existing banks over water, with graded decks and separate walkable floors above the unchanged bed. Cross a bridge follows a validated crossing.</p><p>The landscape is completed first. Directional WFC sockets fit optional passages and shallow surface bypasses to existing hills, with compatible grades and eight arch profiles. No peaks or route foundations are added to force a crossing; unsuitable worlds keep their original terrain. Walkable floor spans connect chambers, ramps and natural surface openings; stacked floors remain separate. Mountain passage and Mountain bypass let the scout explore each route.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>The scout follows a validated path. This terrain study does not include combat or a trained AlienWars policy.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
+        <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity guide naval patrols, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>Broad seeded hills add rolling ground between roads while cliff bands retain their sharper contours. Bridges fit existing banks over water, with graded decks and separate walkable floors above the unchanged bed. Cross a bridge follows a validated crossing.</p><p>The landscape is completed first. Directional WFC sockets fit optional passages and shallow surface bypasses to existing hills, with compatible grades and eight arch profiles. No peaks or route foundations are added to force a crossing; unsuitable worlds keep their original terrain. Walkable floor spans connect chambers, ramps and natural surface openings; stacked floors remain separate. Mountain passage and Mountain bypass let the scout explore each route.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>A* supplies global route targets. Separate local controllers operate ground vehicles, boats, quadcopters, fixed wings and submarines using shared collision and sensing. The controller status identifies whether checkpoints are loaded. Combat is not implemented.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
         <p class="provenance">Generator v10 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
@@ -303,7 +304,7 @@
     if(patrolParam==='0'||patrolParam==='1'||patrolParam==='2')$('patrol-mode').value=patrolParam;
     const sensorLayerMask=Number(params.get('sensors')??1)&15;
     for(let t=0;t<4;t++)$('sensor-show-'+t).checked=!!(sensorLayerMask&(1<<t));
-    $('sensor-unit').value=String(Math.max(0,Math.min(8,Number(params.get('unit'))||0)));
+    $('sensor-unit').value=String(Math.max(0,Math.min(11,Number(params.get('unit'))||0)));
     $('sensor-all').checked=params.get('sensorsAll')==='1';
     $('sensor-xray').checked=params.get('sensorXray')!=='0';
     document.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
@@ -418,7 +419,7 @@
       $('mountain-note').textContent=report.mountains?'Follow a passage through the existing rock, or take its surface bypass.':report.tunnels?'No suitable mountain crossing in this world. The underground network can still be explored.':'Enable the underground network to explore passages.';
       $('cut-status').textContent=$('isolate-tunnels').checked?`Tunnels isolated · ceilings ${$('tunnel-ceilings').checked?'shown':'hidden'}`:$('cutaway').value==='0'?'Solid terrain · cutaway off':report.cut?'Cutaway active · scout visible':'Clear line of sight';
       $('fps').textContent=`${report.fps} fps`;
-      $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${report.floor} · Scripted scout`;
+      $('scout-status').textContent=`${report.layer?'Tunnel':'Surface'} · Floor ${Number(report.floor).toFixed(1)} · Local navigation`;
       if(!progressChanged) return;
       $('resolved').textContent=`${report.resolved.toLocaleString()} / 4,096`;
       $('assembly-progress').value=report.resolved;
@@ -428,6 +429,12 @@
       $('pause').textContent=report.paused?'Resume':'Pause';
     };
     const depthPixels=Array.from({length:48},()=>{const pixel=document.createElement('i');$('depth-preview').appendChild(pixel);return pixel;});
+    window.maplabFleet=report=>{
+      window.lastFleetReport=report;
+      const v=report.values;
+      $('unit-profile').textContent=`${report.role} · Speed ${v[0].toFixed(1)} · Turn ${(v[1]*180/Math.PI).toFixed(0)}°/s · Range ${v[4].toFixed(0)}`;
+      $('patrol-note').textContent=`12 vehicles · A* routes · ${report.trained?'PPO local controllers':'Reference controllers'}${v[5]?' · Selected aircraft stopped after collision':''}`;
+    };
     window.maplabSensors=(unit,data)=>{
       if(rebuilding)return;
       $('sensor-unit').value=String(unit);
@@ -510,7 +517,7 @@
     $('tile-boundaries').addEventListener('change',()=>{Module._aw_option(6,Number($('tile-boundaries').checked));syncUrl();});
     $('walkability').addEventListener('change',()=>{Module._aw_option(0,Number($('walkability').checked));$('overlay-key').hidden=!$('walkability').checked;syncUrl();});
     $('path').addEventListener('change',()=>{Module._aw_option(1,Number($('path').checked));syncUrl();});
-    $('find-patrol').addEventListener('click',()=>{const i=Module._aw_inspect_patrol();if(i>=0){$('patrol-note').textContent=['Tracked rover','Cargo hauler','Skiff','Patrol boat','Cutter','Quadrotor','Gunship','Air transport'][i];$('follow').checked=false;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();}});
+    $('find-patrol').addEventListener('click',()=>{const i=Module._aw_inspect_patrol();if(i>=0){$('patrol-note').textContent=['Tracked rover','Cargo hauler','Skiff','Patrol boat','Cutter','Quadrotor','Recon wing','Air transport','Recon submarine','Patrol submarine','Heavy submarine'][i];$('follow').checked=false;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();}});
     $('patrol-mode').addEventListener('change',()=>{Module._aw_option(12,Number($('patrol-mode').value));syncUrl();});
     $('scout-pause').addEventListener('change',()=>Module._aw_option(2,Number($('scout-pause').checked)));
     $('overlay-key').hidden=!$('walkability').checked;

@@ -2,7 +2,9 @@
 
 [Open Strata Frontier](https://rozgo.github.io/alienwars-gym/?seed=73).
 Shared C generation, collision and navigation, rendered with Raylib/WebAssembly.
-The scout is scripted; combat and an AlienWars RL policy are not implemented.
+The fleet has twelve physical vehicles and an A* / local-controller interface.
+Controller training and limitations are documented in [LOCAL_NAVIGATION.md](LOCAL_NAVIGATION.md).
+Combat is not implemented.
 The site root opens Map Lab; existing `/maplab/` seed links continue to work.
 Units carry attachable LiDAR, sonar, RF and depth cameras, with ideal odometry,
 separate exact pose and optional range overlays. See the [sensor contract and
@@ -162,43 +164,41 @@ checks run in native C and WASM alongside the existing terrain and cave suites.
 
 ## Patrol traffic
 
-The inspection scout is joined by eight ambient patrols: a tracked rover and
-cargo hauler on land; a skiff, patrol boat and cutter at sea; and a quadrotor,
-gunship and transport in the air. These are nine procedural unit silhouettes,
-with different speeds and navigation constraints. **Patrol traffic** selects
-live, paused or hidden traffic. **Find next patrol** frames each background
-vehicle in turn without changing its route. **Pause scout** and the route inspection controls
-still operate the original scout independently. Reduced-motion preference starts
-both the scout and background patrols paused. Isolation hides background traffic.
+Twelve procedural models share +Z forward: scout, tracked rover, cargo hauler;
+skiff, patrol boat, cutter; quadcopter, recon wing, air transport; and recon,
+patrol and heavy submarines. Their physical dimensions, speed, turning,
+traction, draft/depth access and sensor ranges differ. The selected-unit profile
+shows its role and limits. All units remain visible through water and terrain
+using a unit-only shaded silhouette pass; it does not alter terrain shadows,
+collision, sensing or generation.
 
-`motion.h` eases body yaw and pitch with bounded angular speed and acceleration.
-Heavier boats and aircraft turn more gradually. Ground units and boats slow
-through sharp turns; aircraft retain forward progress. Motion remains on the
-validated route, including tunnel floors and bridge decks. Models, sensor mounts
-and odometry consume the same orientation. Pausing freezes steering; new worlds
-and inspection-route changes reset it. `python3 scripts/check_motion.py` checks
-rate/acceleration limits, reversals, angle wrapping and 30/60/120 Hz agreement in
-native C and WASM.
+`vehicles.h` owns action-driven pose and velocity. Fixed wings retain positive
+forward airspeed with bounded turning and climb; quadcopters can hover, reverse
+and strafe. Ground and naval bodies use shared terrain/medium clearance plus
+oriented vehicle boxes. Renderer and sensors consume the same physical pose.
+The procedural models have front lamps/cockpits and rear exhaust or propellers.
+They are kinematic vehicles, not aerodynamic/hydrodynamic simulations.
 
-Aircraft cruise settings are 0.65 route segments/second for the quadrotor, 2.55
-for the fixed-wing gunship and 1.9 for the transport. The quadrotor is therefore
-about a quarter of the gunship's pace and a third of the transport's. Actual
-world speed varies with diagonal segments, climbs and turn easing.
+`patrols.h` prepares global A* route banks without altering the world hash.
+Ground routes validate body clearance along surface, bridge and cave edges.
+Boat routes enforce sea connectivity, draft and mast clearance; submarines
+search four depth levels and aircraft sixteen altitude levels. A* travel costs
+reflect ground traction. The local controller acts on short successive route
+sections. See [the local navigation contract](LOCAL_NAVIGATION.md) for the
+96-input policy, training, evaluation, and the positional flight-planner limit.
 
-Heavy ground patrols use the large-body surface/span graph and validate the
-space between waypoints. A rover crosses the first accepted bridge when one
-exists; the hauler patrols from Base B. Naval routes require sea connectivity,
-drafts of 100/250/500 hundredths of a quarter floor, extra clearance around larger
-hulls and mast clearance below bridge decks. They do not enter enclosed lakes.
-Aircraft sample a terrain/bridge clearance envelope along closed routes, with
-separate flight heights and bounded climbs/descents. Their clearance is based on
-authoritative terrain, not decorative trees. Patrol generation preserves the
-world hash and the inspection route. `patrol_test.c` checks continuous ground
-support, boat depth/headroom and aircraft clearance in native C and WASM.
+**Patrol traffic** selects live, paused or hidden background vehicles. **Find
+next patrol** frames the next unit without modifying its route. **Pause scout**
+and inspection routes control the scout independently. Motion runs by default,
+regardless of the operating system's reduced-motion preference. Isolation hides
+background traffic while preserving the camera and simulation state.
 
-These are scripted patrols, without combat, learned policies, mutual collision
-avoidance, flight dynamics or vessel buoyancy physics. Models use procedural
-geometry; dynamic units are not part of the baked terrain-shadow texture.
+`check_vehicles.py` checks A*, physical movement limits, variant tradeoffs,
+collision, submersion and route clearance in native C and WebAssembly.
+`check_sensors.py` covers all twelve units. The prior eased scripted motion
+helper remains available for the historical Navigation Lab experiment; it does
+not override physical vehicle heading in Map Lab. Dynamic units do not write
+into the baked terrain-shadow texture.
 
 The slope mesher now orients faces using the strongest positive and negative
 field samples in each tetrahedron. The former first-sample direction could be

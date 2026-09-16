@@ -110,26 +110,26 @@ static void contract_tests(void){
     aw_sensor_sample(&sensors,&m,0,AW_SENSOR_RF);assert(sensors.units[0].reading[AW_SENSOR_RF].peers[1].strength<open);
     sensors.units[1].config[AW_SENSOR_RF].enabled=0;aw_sensor_sample(&sensors,&m,0,AW_SENSOR_RF);assert(!sensors.units[0].reading[AW_SENSOR_RF].peers[1].detected);
 }
-static AwSensorPose frames[600][9];
+static AwSensorPose frames[600][AW_UNITS];
 static void benchmark(void){
     static AwPatrols patrols;double total=0;uint64_t queries=0,samples=0;int finite=0;
     for(int seed=0;seed<3;seed++){
-        assert(aw_generate(&m,seed+71)&&aw_patrol_build(&m,&patrols));before=m;aw_sensors_init(&sensors,&m,9);aw_sensor_equip(&sensors,0,0,.65f);
-        for(int i=0;i<8;i++)aw_sensor_equip(&sensors,i+1,patrols.units[i].layer,1);
+        assert(aw_generate(&m,seed+71)&&aw_patrol_build(&m,&patrols));before=m;aw_sensors_init(&sensors,&m,AW_UNITS);aw_sensor_equip(&sensors,0,0,.65f);
+        for(int i=0;i<AW_PATROLS;i++)aw_sensor_equip(&sensors,i+1,patrols.units[i].layer,1);
         for(int f=0;f<600;f++){
             int c=m.cave_hubs[0];AwCaveNode*n=&m.cave[c];frames[f][0]=(AwSensorPose){.position={(n->x+.5f)*2,(n->q+1)*.75f-1.2f,(n->z+.5f)*2},.yaw=f*.01f};
-            for(int i=0;i<8;i++){AwPatrol*p=&patrols.units[i];AwPatrolPoint a=aw_patrol_position(&m,p,p->progress+f*p->speed/60),b=aw_patrol_position(&m,p,p->progress+f*p->speed/60+.05f);
+            for(int i=0;i<AW_PATROLS;i++){AwPatrol*p=&patrols.units[i];AwPatrolPoint a=aw_patrol_position(&m,p,p->progress+f*p->speed/60),b=aw_patrol_position(&m,p,p->progress+f*p->speed/60+.05f);
                 frames[f][i+1]=(AwSensorPose){.position={a.x*2,a.q*.75f-1.2f,a.z*2},.yaw=atan2f(b.x-a.x,b.z-a.z)};
             }
         }
         double start=(double)clock()/CLOCKS_PER_SEC;forbid_alloc=1;
         for(int f=0;f<600;f++){
-            for(int i=0;i<9;i++)sensors.units[i].pose=frames[f][i];aw_sensors_step(&sensors,&m,1.0f/60);
-            for(int i=0;i<9;i++)for(int k=0;k<AW_SENSOR_OBS;k++)assert(isfinite(sensors.observations[i][k]));
+            for(int i=0;i<AW_UNITS;i++)sensors.units[i].pose=frames[f][i];aw_sensors_step(&sensors,&m,1.0f/60);
+            for(int i=0;i<AW_UNITS;i++)for(int k=0;k<AW_SENSOR_OBS;k++)assert(isfinite(sensors.observations[i][k]));
         }forbid_alloc=0;total+=(double)clock()/CLOCKS_PER_SEC-start;queries+=sensors.ray_queries;samples+=sensors.samples;finite++;
         assert(!memcmp(&m,&before,sizeof(m)));
     }
-    printf("SENSOR_BENCH worlds=%d units=9 steps=1800 simulation_seconds=30 cpu_ms=%.3f ms_per_world_step=%.4f rays=%llu samples=%llu state_bytes=%zu obs_floats=%d no_step_alloc=PASS map_unchanged=PASS\n",finite,total*1000,total*1000/1800,(unsigned long long)queries,(unsigned long long)samples,sizeof(AwSensors),AW_SENSOR_OBS);
+    printf("SENSOR_BENCH worlds=%d units=12 steps=1800 simulation_seconds=30 cpu_ms=%.3f ms_per_world_step=%.4f rays=%llu samples=%llu state_bytes=%zu obs_floats=%d no_step_alloc=PASS map_unchanged=PASS\n",finite,total*1000,total*1000/1800,(unsigned long long)queries,(unsigned long long)samples,sizeof(AwSensors),AW_SENSOR_OBS);
 }
 int main(int argc,char**argv){
     if(argc>1&&!strcmp(argv[1],"--bench")){benchmark();return 0;}

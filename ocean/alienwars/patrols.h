@@ -2,6 +2,7 @@
 #define ALIENWARS_PATROLS_H
 #include "map.h"
 #include "volume_routes.h"
+#include "vehicle_profiles.h"
 /* Prepared route banks for three ground, three naval, three air and three
  * submarine variants. Route generation does not change the map fingerprint. */
 #define AW_PATROLS 11
@@ -36,13 +37,17 @@ static AwRoutePoint aw_patrol_node(const AwPatrolGraph*g,int n){
     if(g->layer==AW_PATROL_NAVAL)return (AwRoutePoint){n%96-16+.5f,1.44f,n/96-16+.5f};
     int c=aw_node_cell(g->m,n);return (AwRoutePoint){c%64+.5f,aw_patrol_floor(g->m,n),c/64+.5f};
 }
-static float aw_patrol_estimate(void*ctx,int a,int b){AwPatrolGraph*g=ctx;return aw_route_distance(aw_patrol_node(g,a),aw_patrol_node(g,b));}
+static float aw_patrol_estimate(void*ctx,int a,int b){AwPatrolGraph*g=ctx;return aw_route_distance(aw_patrol_node(g,a),aw_patrol_node(g,b))/(g->layer==AW_PATROL_GROUND?aw_vehicle_spec(AW_VEHICLE_GROUND,g->variant).speed:1);}
 static int aw_patrol_edges(void*ctx,int a,AwAStarEdge*out){
     AwPatrolGraph*g=ctx;int count=0;
     for(int d=0;d<(g->layer==AW_PATROL_NAVAL?4:AW_LINKS);d++){
         int b=g->layer==AW_PATROL_NAVAL?aw_ocean_neighbor(a,d):aw_open(g->m,a,d);
         if(b<0||!g->allowed[b]||(g->layer==AW_PATROL_GROUND&&!aw_patrol_ground_edge_size(g->m,a,b,g->variant!=0)))continue;
-        float cost=aw_patrol_estimate(g,a,b);if(g->layer==AW_PATROL_GROUND)cost*=fmaxf(1,aw_move_cost(g->m,a,b)/10.0f);
+        float cost=aw_patrol_estimate(g,a,b);if(g->layer==AW_PATROL_GROUND){
+            int ca=aw_node_cell(g->m,a),cb=aw_node_cell(g->m,b);
+            float traction=.5f*(aw_ground_traction(g->variant,g->m->cells[ca].material)+aw_ground_traction(g->variant,g->m->cells[cb].material));
+            cost*=(1+.03f*fabsf(aw_patrol_floor(g->m,a)-aw_patrol_floor(g->m,b)))/traction;
+        }
         out[count++]=(AwAStarEdge){b,cost};
     }return count;
 }

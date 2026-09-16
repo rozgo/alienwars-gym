@@ -18,11 +18,12 @@ up to ten floors high. Volumetric tunnels descend through ramp entrances, while
 regional WFC fits optional mountain passages and exposed bypasses to existing
 terrain. Bridges cross suitable water gaps without changing the landscape.
 
-Three ground, three naval and three air unit types patrol the world using
-body clearance, water depth and terrain-aware flight routes. Tunnel isolation
-and automatic cutaways expose the underground structure. These are scripted
-patrols. A separate experimental navigation task trains one action-driven scout
-with native PufferLib; combat remains future work.
+Three ground, three naval, three air and three submarine variants traverse the
+world with A* global routes and physical local control. Fixed wings fly forward;
+quadcopters hover and strafe. Traction, clearance, turning, depth and sensing
+create tradeoffs between variants. Units remain visible through terrain and
+water. The five-family local navigation task is documented separately from the
+historical trained-scout Navigation Lab; combat remains future work.
 
 Units now carry ideal odometry and attachable LiDAR, sonar, RF and depth-camera
 modules. Toggle their range overlays, inspect cached returns through terrain
@@ -32,6 +33,7 @@ rendering, with fixed observation buffers used by the navigation RL task.
 - [Agent instructions](AGENTS.md)
 - [Map Lab specification and validation](docs/MAPLAB.md)
 - [Sensor architecture, observations and benchmarks](docs/SENSORS.md)
+- [Vehicle profiles and local navigation contract](docs/LOCAL_NAVIGATION.md)
 - [Navigation RL contract, training statistics and policy viewer](docs/NAVIGATION_RL.md)
 - [Development and GPU workflow](docs/DEVELOPMENT.md)
 - [Raylib web build and GitHub Pages](docs/WEB.md)

@@ -49,11 +49,11 @@ static AwSVec aw_sensor_rotate(AwSVec v,AwSensorPose p){
 }
 static AwSensorConfig aw_sensor_default(int type,int layer){
     AwSensorConfig c={.enabled=1,.range=24,.period=.2f,.hfov=2*AW_SENSOR_PI,
-        .mount={.position={0,layer==2?0:1,0}}};
-    if(type==AW_SENSOR_SONAR){c.range=32;c.period=.5f;c.hfov=AW_SENSOR_PI*.85f;c.vfov=AW_SENSOR_PI*.25f;c.mount.position.y=-.55f;c.mount.pitch=-.55f;}
+        .mount={.position={0,layer>=2?0:1,0}}};
+    if(type==AW_SENSOR_SONAR){c.range=32;c.period=.5f;c.hfov=AW_SENSOR_PI*.85f;c.vfov=AW_SENSOR_PI*.25f;c.mount.position.y=-.55f;c.mount.pitch=layer==3?0:-.55f;}
     if(type==AW_SENSOR_RF){c.range=64;c.period=.5f;}
     if(type==AW_SENSOR_CAMERA){c.range=36;c.period=.5f;c.hfov=AW_SENSOR_PI*.5f;c.vfov=AW_SENSOR_PI*.34f;c.mount.pitch=layer==2?-.65f:-.12f;}
-    c.enabled=type==AW_SENSOR_SONAR?layer==1:type==AW_SENSOR_LIDAR?layer!=1:1;return c;
+    c.enabled=type==AW_SENSOR_SONAR?(layer==1||layer==3):type==AW_SENSOR_LIDAR?(layer!=1&&layer!=3):1;return c;
 }
 static void aw_sensors_init(AwSensors*s,const AwMap*m,int count){
     memset(s,0,sizeof(*s));s->count=aw_clamp(count,0,AW_SENSOR_UNITS);aw_ray_world_init(&s->rays,m);

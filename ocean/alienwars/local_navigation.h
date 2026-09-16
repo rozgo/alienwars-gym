@@ -7,7 +7,7 @@
 #define AW_LOCAL_BEAMS 24
 /* Local policy contract: physical vehicle state + A* lookahead + scheduled
  * terrain range beams and observed neighboring bodies. No optimal actions. */
-typedef struct {int count,family,variant;AwSVec point[AW_NODES];float distance[AW_NODES];} AwLocalRoute;
+typedef struct {int count,family,variant;int node[AW_NODES];AwSVec point[AW_NODES];float distance[AW_NODES];} AwLocalRoute;
 typedef struct {
     AwVehicle vehicle;const AwLocalRoute*route;int cursor,end,ticks,limit,contacts,success,timeout,invalid;
     float reward,total,last_remaining;float observation[AW_LOCAL_INPUTS];
@@ -15,7 +15,7 @@ typedef struct {
 } AwLocalEpisode;
 static AwSVec aw_route_vector(AwRoutePoint p){return (AwSVec){p.x*2,p.q*.75f-1.2f,p.z*2};}
 static void aw_local_route(const AwMap*m,const AwPatrol*p,AwLocalRoute*r){
-    memset(r,0,sizeof(*r));r->count=p->count;r->family=aw_vehicle_family(p->layer,p->variant);r->variant=p->variant;
+    memset(r,0,sizeof(*r));r->count=p->count;r->family=aw_vehicle_family(p->layer,p->variant);r->variant=p->variant;memcpy(r->node,p->route,p->count*sizeof(int));
     for(int i=0;i<p->count;i++){
         AwRoutePoint a;if(p->layer==AW_PATROL_NAVAL||p->layer==AW_PATROL_SUB)a=(AwRoutePoint){p->route[i]%96-16+.5f,p->layer==AW_PATROL_SUB?p->altitude[i]:1.44f,p->route[i]/96-16+.5f};
         else if(p->layer==AW_PATROL_AIR)a=(AwRoutePoint){p->route[i]%64+.5f,p->altitude[i],p->route[i]/64+.5f};
@@ -64,6 +64,7 @@ static void aw_local_observe(AwLocalEpisode*e,const AwMap*m,const AwRayWorld*ray
     for(int k=0;k<AW_LOCAL_PEERS;k++)if(ids[k]>=0){const AwBody*b=&bodies[ids[k]];AwSVec d=aw_sv_add(b->position,aw_sv_scale(origin,-1)),vel=aw_sv_add(b->velocity,aw_sv_scale(v->velocity,-1));float*z=o+48+k*10;
         z[0]=1;z[1]=(d.x*cy-d.z*sy)/24;z[2]=(d.x*sy+d.z*cy)/24;z[3]=d.y/16;z[4]=(vel.x*cy-vel.z*sy)/12;z[5]=(vel.x*sy+vel.z*cy)/12;z[6]=vel.y/4;z[7]=b->width/3;z[8]=b->length/3;z[9]=b->height/3;}
     o[88]=s.accel/6;o[89]=s.vertical/2;o[90]=s.reverse/8;o[91]=s.height/3;o[92]=fminf(1,aw_local_remaining(e)/256);o[93]=range/48;
+    if(v->family==AW_VEHICLE_GROUND){int c=aw_clamp((int)(p.z*.5f),0,63)*64+aw_clamp((int)(p.x*.5f),0,63);o[94]=aw_ground_traction(v->variant,m->cells[c].material);}
     for(int i=0;i<AW_LOCAL_INPUTS;i++)o[i]=fminf(1,fmaxf(-1,o[i]));(void)dt;
 }
 static void aw_local_reset(AwLocalEpisode*e,const AwLocalRoute*r,int start,int end,float heading,int limit){

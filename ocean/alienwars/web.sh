@@ -1,5 +1,12 @@
-# Sourced by the upstream build.sh --web hook. No trained weights are required
-# by the Map Lab; this viewer runs the shared procedural terrain core.
+# Sourced by build.sh --web. Optional development builds disclose reference
+# controllers; a published policy release supplies all five family checkpoints.
+LOCAL_PRELOAD=()
+if [ -n "${AW_LOCAL_MODELS:-}" ]; then
+    for family in 0 1 2 3 4; do
+        test -f "$AW_LOCAL_MODELS/local-$family.bin"
+        LOCAL_PRELOAD+=(--preload-file "$AW_LOCAL_MODELS/local-$family.bin@resources/alienwars/local-$family.bin")
+    done
+fi
 mkdir -p build/web/alienwars
 emcc ocean/alienwars/alienwars.c -o build/web/alienwars/maplab.html \
     -std=c11 -O3 -Wall -Wextra -Wno-unused-function \
@@ -8,14 +15,14 @@ emcc ocean/alienwars/alienwars.c -o build/web/alienwars/maplab.html \
     -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=1MB \
     -sASSERTIONS=1 -sENVIRONMENT=web,node \
-    --shell-file web/maplab/shell.html
+    --shell-file web/maplab/shell.html "${LOCAL_PRELOAD[@]}"
 # Keep each page paired with its compiled runtime even when Pages or the
 # browser still caches the previous build under the same asset filenames.
 python3 - <<'PY'
 import hashlib,re
 from pathlib import Path
 root=Path('build/web/alienwars')
-version=hashlib.sha256((root/'maplab.js').read_bytes()+(root/'maplab.wasm').read_bytes()).hexdigest()[:16]
+version=hashlib.sha256(b''.join((root/name).read_bytes() for name in ['maplab.js','maplab.wasm','maplab.data'] if (root/name).exists())).hexdigest()[:16]
 page=root/'maplab.html'
 html=page.read_text()
 assert '__MAPLAB_ASSET_VERSION__' in html

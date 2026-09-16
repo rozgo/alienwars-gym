@@ -1,7 +1,7 @@
 # Unit sensors
 
 Sensor contract v1 is a renderer-independent C module in
-[`sensors.h`](../ocean/alienwars/sensors.h). The nine scripted Map Lab units carry
+[`sensors.h`](../ocean/alienwars/sensors.h). The twelve physical Map Lab units carry
 the same modules that a future PufferLib environment can sample without Raylib,
 WebGL, image readback or Python. This is not yet an AlienWars training task.
 
@@ -123,7 +123,7 @@ explicit calibration features in a future version of the observation contract.
 
 ## Browser overlays
 
-The **Unit sensors** panel selects any of the nine units. **Focus** is an explicit
+The **Unit sensors** panel selects any of the twelve units. **Focus** is an explicit
 camera action; changing sensor visibility does not change the camera. Four
 independent colored toggles show LiDAR scans, sonar fans, RF range/links and
 camera frustums/returns. **All units** expands the display; **See through** adds a
@@ -144,7 +144,7 @@ Run `python3 scripts/check_sensors.py`. Native ASan/UBSan and WASM tests compare
 roofs, bridges, breaches and slopes. They also cover sea boundaries, bathymetry,
 body hits, mount transforms, RF attenuation, odometry wrap/reset, fixed cadence,
 cache immutability, invalid configuration, finite observations, disabled slots,
-determinism and an allocation guard during stepping. The benchmark samples nine
+determinism and an allocation guard during stepping. The benchmark samples twelve
 units in three generated worlds for 1,800 steps, including an underground scout;
 generation, pose preparation and rendering are outside its timing. Results go to
 `build/sensor-check.json`; published measurements are in `docs/runs/`.

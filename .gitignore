@@ -209,3 +209,6 @@ vendor/fast-nle/
 *.dSYM/
 .env.*
 !.env.example
+
+# Local copies of the selected vehicle policy release
+/resources/alienwars/local-*.bin

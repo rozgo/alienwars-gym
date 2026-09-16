@@ -3,6 +3,9 @@
 #include "render.h"
 #include "sensor_render.h"
 #include "camera_zoom.h"
+#include "patrol_render.h"
+#include "unit_visibility.h"
+#include "unit_lighting.h"
 typedef struct {
     AwScene scene;
     const AwNavWorld *world;
@@ -117,12 +120,13 @@ void aw_nav_render(AwNav *nav){
     DrawCylinder((Vector3){g.x,g.y+.7f,g.z},.05f,.05f,1.4f,8,GOLD);
     aw_sensor_ring(g,.9f,GOLD,0);DrawSphereEx((Vector3){g.x,g.y+1.5f,g.z},.18f,6,8,GOLD);
     rlDrawRenderBatchActive();rlEnableDepthTest();
-    rlPushMatrix();rlTranslatef(p.x,p.y,p.z);rlRotatef(e->unit.motion.yaw*RAD2DEG,0,1,0);
-    rlRotatef(-e->unit.motion.pitch*RAD2DEG,1,0,0);
-    DrawCube((Vector3){0,.36f,0},.65f,.45f,.85f,(Color){213,171,84,255});
-    for(int side=-1;side<=1;side+=2)DrawCube((Vector3){side*.37f,.20f,0},.16f,.28f,.85f,DARKGRAY);
-    DrawCylinder((Vector3){0,.6f,0},.16f,.18f,.15f,10,SKYBLUE);
-    DrawCube((Vector3){0,.43f,.44f},.4f,.10f,.02f,RAYWHITE);rlPopMatrix();
+    for(int pass=0;pass<2;pass++){
+        if(pass==0)aw_units_through_begin();else aw_units_lit_begin();
+        rlPushMatrix();rlTranslatef(p.x,p.y,p.z);rlRotatef(e->unit.motion.yaw*RAD2DEG,0,1,0);
+        rlRotatef(-e->unit.motion.pitch*RAD2DEG,1,0,0);rlScalef(.85f,.85f,.85f);
+        aw_patrol_model(AW_PATROL_GROUND,0,(float)GetTime());rlPopMatrix();
+        if(pass==0)aw_units_through_end();else aw_units_lit_end();
+    }
     if(v->sensors)aw_sensors_draw(&e->sensors,0,1|8,0,1,(float)GetTime(),0,0);
     EndMode3D();
 #ifndef PLATFORM_WEB

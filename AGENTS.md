@@ -5,9 +5,10 @@
 This is a source-based PufferLib 5.0 project. Start with `README.md`,
 `docs/DEVELOPMENT.md`, and `docs/UPSTREAM.md`. Check `git status` before edits and
 preserve unrelated work. Follow explicit user instructions over this guide.
-AlienWars has a procedural 3D Map Lab with scripted ground, naval and air
-patrols; the separate navigation MVP trains a small scout through the native
-PufferLib interface. Combat is not implemented. See `docs/NAVIGATION_RL.md`.
+AlienWars has a procedural 3D Map Lab with twelve physical ground, naval, air
+and submarine units. `alienwars_local` trains five local-controller families
+behind global A* routes; see `docs/LOCAL_NAVIGATION.md`. A separate historical
+navigation MVP trains a small scout through the native PufferLib interface. Combat is not implemented. See `docs/NAVIGATION_RL.md`.
 Do not describe
 scripted patrols as trained policies. The Breakout bootstrap experiment was
 retired on September 15, 2026; do not restore its demo or project tooling.
@@ -204,11 +205,20 @@ unchanged water beds. Validate both bank joins, both body sizes, headroom below
 low decks, meaningful water gaps and rotational pairs. Never fill the channel
 or reposition a lake to force a bridge. Decorative trusses are not collision.
 
-`patrols.h` adds scripted ground/naval/air traffic without changing generation,
-the world hash or the inspection path. Keep heavy ground clearance, naval draft
-and mast checks, and the aircraft terrain envelope in native/WASM parity tests.
-The original inspection scout counts as one of the three ground types. Patrols
-are not trained policies and currently have no mutual collision avoidance.
+`patrols.h` prepares route banks for twelve physical vehicles without changing
+world generation or its hash. `vehicle_profiles.h`, `vehicles.h`,
+`local_navigation.h` and `fleet.h` own profile tradeoffs, physics, policy inputs
+and viewer control. Preserve fixed-wing forward airspeed and slow turns,
+quad hover/strafe, submarine submersion, boat draft/mast, and body clearance.
+Use +Z forward in every model. Ground traction must affect both physical speed
+and A* route cost. Keep rendered heading/sensor mounts tied to physical pose;
+interpolate display poses without altering the fixed simulation timestep.
+Each vehicle has independent recurrence; parameter sharing is within a family.
+Disclose development reference control, trained checkpoints, and evaluation
+limits. Do not call kinematic curriculum traffic joint multiagent training.
+Unit-only see-through rendering must restore GL depth state and never change
+terrain shadows, sensors, collision or map generation. Run vehicle, local adapter
+and sensor checks in native/WASM, then inspect the actual browser roster.
 Surface-triangle winding must use a reliable signed-field direction; retain the
 sloped-mesh regression so near-zero samples cannot invert visible triangles.
 
@@ -229,7 +239,8 @@ otherwise. Run `scripts/check_sensors.py` for sensor changes; retain the
 independent triangle-intersection, reset/cadence, finite-data and native/WASM
 checks. Do not call scripted traffic a trained sensor-driven policy.
 
-`motion.h` owns eased body yaw/pitch for both rendering and sensors. Keep its
+`motion.h` retains historical eased yaw/pitch helpers. Physical Map Lab vehicle
+heading comes from `vehicles.h`, shared by rendering and sensors. Keep its
 rate/acceleration bounds, shortest-angle turning, pause/reset behavior and
 30/60/120 Hz tests (`scripts/check_motion.py`). Retain validated support paths
 through tunnels and bridges when changing motion. The quadrotor's cruise pace

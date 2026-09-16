@@ -3,31 +3,8 @@
 #include "patrols.h"
 #include "sensor_rays.h"
 #include "motion.h"
-enum {AW_VEHICLE_GROUND,AW_VEHICLE_BOAT,AW_VEHICLE_QUAD,AW_VEHICLE_WING,AW_VEHICLE_SUB,AW_VEHICLE_FAMILIES};
-typedef struct {float width,length,height,speed,reverse,accel,turn,turn_accel,vertical;} AwVehicleSpec;
 typedef struct {int family,variant,contact,failed;AwSVec position,velocity;float yaw,yaw_rate,pitch; } AwVehicle;
 typedef struct {AwSVec position,velocity;float yaw,width,length,height;int active;} AwBody;
-static AwVehicleSpec aw_vehicle_spec(int f,int v){
-    if(f==AW_VEHICLE_GROUND){static const AwVehicleSpec a[3]={{.58f,.60f,.85f,3,1.4f,5,1.4f,4,0},{.76f,1.02f,1.0f,2.5f,1,3,1.0f,2,0},{.76f,1.30f,1.15f,2.1f,.8f,2,.65f,1.5f,0}};return a[aw_clamp(v,0,2)];}
-    if(f==AW_VEHICLE_BOAT)return (AwVehicleSpec){.4f+.16f*v,1.05f+.48f*v,.9f+.28f*v,2.8f-.4f*v,.6f,1.0f,.55f-.1f*v,.8f,0};
-    if(f==AW_VEHICLE_QUAD)return (AwVehicleSpec){.94f,.94f,.65f,2.2f,2.2f,2.8f,1.3f,3,1.6f};
-    if(f==AW_VEHICLE_WING)return (AwVehicleSpec){v==1?1.65f:2.45f,v==1?1.25f:1.65f,1.2f,v==1?7.5f:6.5f,v==1?5.0f:4.5f,1.7f,v==1?.32f:.25f,.45f,1.8f};
-    return (AwVehicleSpec){.54f+.16f*v,1.20f+.4f*v,1.35f+.4f*v,2.1f-.25f*v,.6f,.8f,.50f-.08f*v,.6f,.75f};
-}
-static float aw_vehicle_sensor_range(int family,int variant){
-    if(family==AW_VEHICLE_GROUND)return (float[]){20,16,26}[aw_clamp(variant,0,2)];
-    if(family==AW_VEHICLE_BOAT)return 18+variant*8;
-    if(family==AW_VEHICLE_QUAD)return 20;
-    if(family==AW_VEHICLE_WING)return variant==1?40:30;
-    return 20+variant*10;
-}
-static const char*aw_vehicle_role(int family,int variant){
-    if(family==AW_VEHICLE_GROUND)return (const char*[]){"Scout: agile, narrow access","Rover: steady, broad tracks","Hauler: slow, wide clearance"}[aw_clamp(variant,0,2)];
-    if(family==AW_VEHICLE_BOAT)return (const char*[]){"Skiff: fast, shallow draft","Patrol boat: balanced reach","Cutter: deep draft, long range"}[aw_clamp(variant,0,2)];
-    if(family==AW_VEHICLE_QUAD)return "Quadcopter: hover, strafe, tight access";
-    if(family==AW_VEHICLE_WING)return variant==1?"Recon wing: fast, wide sensor reach":"Transport: larger, wider turns";
-    return (const char*[]){"Recon sub: compact, agile","Patrol sub: balanced reach","Heavy sub: slow, long-range sonar"}[aw_clamp(variant,0,2)];
-}
 static int aw_vehicle_family(int layer,int variant){return layer==0?AW_VEHICLE_GROUND:layer==1?AW_VEHICLE_BOAT:layer==3?AW_VEHICLE_SUB:variant==0?AW_VEHICLE_QUAD:AW_VEHICLE_WING;}
 static AwBody aw_vehicle_body(const AwVehicle*v){AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);AwSVec p=v->position;if(v->family==AW_VEHICLE_GROUND)p.y+=s.height*.5f;if(v->family==AW_VEHICLE_BOAT)p.y+=.2f;return (AwBody){p,v->velocity,v->yaw,s.width,s.length,s.height*.5f,1};}
 /* Yaw-oriented boxes, shared by collision and local sensing. Width/length are
@@ -76,6 +53,7 @@ static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float 
     AwVehicle old=*v;AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);float cy=cosf(v->yaw),sy=sinf(v->yaw);
     float forward=v->velocity.x*sy+v->velocity.z*cy,lateral=v->velocity.x*cy-v->velocity.z*sy;
     float target=action[0]==0?-s.reverse:action[0]==1?0:s.speed;
+    if(v->family==AW_VEHICLE_GROUND){int c=aw_clamp((int)(v->position.z*.5f),0,63)*64+aw_clamp((int)(v->position.x*.5f),0,63);target*=aw_ground_traction(v->variant,m->cells[c].material);}
     if(v->family==AW_VEHICLE_WING)target=s.reverse+(s.speed-s.reverse)*action[0]*.5f;
     forward+=aw_motion_clamp(target-forward,-s.accel*dt,s.accel*dt);
     if(v->family==AW_VEHICLE_WING)forward=fmaxf(s.reverse,forward);

@@ -41,6 +41,6 @@ report = {'sensor_version': 1, 'generator_version': 10,
           'compiler': run(['clang', '--version']).splitlines()[0],
           'node': run(['node', '--version']), 'native': native, 'wasm': wasm,
           'native_benchmark': native_metrics, 'wasm_benchmark': wasm_metrics,
-          'scope': 'Sensor sampling and observation packing only. 9 units, 3 generated worlds, 1800 steps at 60 Hz, including an underground scout. Generation, route/pose preparation, rendering and training are excluded. Finite-observation checks are included. Optimized native timing uses process CPU time; Node timing is Emscripten clock(). No CUDA throughput claim.'}
+          'scope': 'Sensor sampling and observation packing only. 12 units, 3 generated worlds, 1800 steps at 60 Hz, including an underground scout. Generation, route/pose preparation, rendering and training are excluded. Finite-observation checks are included. Optimized native timing uses process CPU time; Node timing is Emscripten clock(). No CUDA throughput claim.'}
 Path('build/sensor-check.json').write_text(json.dumps(report, indent=2) + '\n')
 print('PASS: sensors in native C and WASM', flush=True)
