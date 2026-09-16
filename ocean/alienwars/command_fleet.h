@@ -1,0 +1,128 @@
+#ifndef ALIENWARS_COMMAND_FLEET_H
+#define ALIENWARS_COMMAND_FLEET_H
+#include "missions.h"
+#include "local_navigation.h"
+#include "../../src/puffercpu.c"
+enum {AW_MISSION_TRAVELLING,AW_MISSION_ARRIVED,AW_MISSION_UNAVAILABLE,AW_MISSION_IMPACT,AW_MISSION_STALLED};
+typedef struct {
+    AwMissionWorld world;
+    AwMissionAgent*unit;
+    unsigned char*active;
+    AwMissionRoute route[AW_UNITS],candidate;
+    AwMissionPlanner planner;
+    AwLocalRoute scratch;
+    AwVehicle previous[AW_UNITS];
+    AwSVec home[AW_UNITS],destination[AW_UNITS];
+    PufferNet*net[AW_UNITS];Weights*weights[AW_VEHICLE_FAMILIES];
+    float accumulator,terminal[AW_UNITS];
+    int ready,trained,arrivals[AW_UNITS],automatic[AW_UNITS],status[AW_UNITS],arrival_handled[AW_UNITS];
+    int selection,command_result,command_requested;
+} AwCommandFleet;
+static void aw_command_fleet_close(AwCommandFleet*f){
+    for(int i=0;i<AW_UNITS;i++)if(f->net[i])free_puffernet(f->net[i]);
+    for(int i=0;i<AW_VEHICLE_FAMILIES;i++)free(f->weights[i]);
+    aw_mission_planner_close(&f->planner);memset(f,0,sizeof(*f));
+}
+static int aw_command_fleet_destination(AwCommandFleet*f,const AwMap*m,int i,AwSVec goal,int automatic){
+    if(i<0||i>=AW_UNITS||!f->active[i]||f->unit[i].vehicle.failed)return 0;
+    AwVehicle vehicle=f->unit[i].vehicle;
+    if(!aw_mission_plan(&f->planner,&vehicle,goal,&f->candidate)){
+        f->status[i]=AW_MISSION_UNAVAILABLE;return 0;
+    }
+    f->route[i]=f->candidate;
+    aw_mission_agent_reset(&f->unit[i],&f->route[i],6000);
+    f->unit[i].vehicle=vehicle; /* new command preserves momentum and pose */
+    f->unit[i].previous_potential=aw_mission_project(&f->unit[i]);
+    if(!automatic)f->home[i]=vehicle.position;
+    f->destination[i]=f->route[i].point[f->route[i].count-1];f->automatic[i]=automatic;f->terminal[i]=1;f->status[i]=AW_MISSION_TRAVELLING;f->arrival_handled[i]=0;
+    aw_mission_observe(&f->world);(void)m;return 1;
+}
+static void aw_command_fleet_scout_route(AwCommandFleet*f,const AwMap*m,int start){
+    AwPatrol patrol={.layer=0,.variant=0,.count=m->path_length};memcpy(patrol.route,m->path,patrol.count*sizeof(int));
+    aw_local_route(m,&patrol,&f->scratch);const AwLocalRoute*r=&f->scratch;
+    if(r->count<2){f->active[0]=0;return;}
+    start=aw_clamp(start,0,r->count-2);AwSVec delta=aw_sv_add(r->point[start+1],aw_sv_scale(r->point[start],-1));
+    AwVehicle vehicle={.family=0,.variant=0,.position=r->point[start],.yaw=atan2f(delta.x,delta.z)};
+    if(!aw_mission_plan(&f->planner,&vehicle,r->point[r->count-1],&f->route[0])){f->active[0]=0;return;}
+    f->active[0]=1;aw_mission_agent_reset(&f->unit[0],&f->route[0],6000);
+    f->previous[0]=vehicle;f->home[0]=vehicle.position;f->destination[0]=r->point[r->count-1];f->automatic[0]=1;f->terminal[0]=1;
+}
+static void aw_command_fleet_init(AwCommandFleet*f,const AwMap*m,const AwPatrols*p){
+    AwSensorConfig equipment[AW_UNITS][4];int preserve=f->ready;
+    if(preserve)for(int i=0;i<AW_UNITS;i++)memcpy(equipment[i],f->world.sensors.units[i].config,sizeof(equipment[i]));
+    aw_command_fleet_close(f);f->unit=f->world.agents;f->active=f->world.active;f->world.count=AW_UNITS;f->selection=1;
+    if(!aw_mission_planner_init(&f->planner,m))return;
+    aw_sensors_init(&f->world.sensors,m,AW_UNITS);
+    aw_command_fleet_scout_route(f,m,0);
+    for(int i=1;i<AW_UNITS;i++){
+        aw_local_route(m,&p->units[i-1],&f->scratch);const AwLocalRoute*r=&f->scratch;if(r->count<2)continue;
+        int start=(i*13)%(r->count-1),end=r->family==AW_VEHICLE_WING||r->family==AW_VEHICLE_QUAD||r->family==AW_VEHICLE_SUB?(start+r->count/2)%(r->count-1):r->count-1;
+        if(start==end)start=0;
+        AwSVec delta=aw_sv_add(r->point[start+1],aw_sv_scale(r->point[start],-1));
+        AwVehicle vehicle={.family=r->family,.variant=r->variant,.position=r->point[start],.yaw=atan2f(delta.x,delta.z)};
+        if(r->family==AW_VEHICLE_WING){float speed=aw_vehicle_spec(r->family,r->variant).reverse;vehicle.velocity=(AwSVec){sinf(vehicle.yaw)*speed,0,cosf(vehicle.yaw)*speed};}
+        int planned=0;
+        for(int attempt=0;attempt<12&&!planned;attempt++){
+            if(attempt){start=(start+3)%(r->count-1);vehicle.position=r->point[start];
+                delta=aw_sv_add(r->point[start+1],aw_sv_scale(vehicle.position,-1));vehicle.yaw=atan2f(delta.x,delta.z);}
+            if(aw_vehicle_clear(m,&vehicle))planned=aw_mission_plan(&f->planner,&vehicle,r->point[end],&f->route[i]);
+        }
+        if(!planned){f->status[i]=AW_MISSION_UNAVAILABLE;continue;}
+        int overlap=0;for(int j=0;j<i;j++)if(f->active[j]&&aw_bodies_overlap(aw_vehicle_body(&vehicle),aw_vehicle_body(&f->unit[j].vehicle),.2f))overlap=1;
+        if(overlap){f->status[i]=AW_MISSION_UNAVAILABLE;continue;}
+        aw_mission_agent_reset(&f->unit[i],&f->route[i],6000);f->active[i]=1;f->home[i]=vehicle.position;f->destination[i]=r->point[end];f->automatic[i]=1;
+    }
+    int sizes[]={4,3,3,3};f->trained=1;
+    for(int family=0;family<5;family++){
+        char file[128];snprintf(file,sizeof(file),"resources/alienwars/mission-%d.bin",family);Weights*w=f->weights[family]=load_weights(file);
+        int expected=128*AW_MISSION_INPUTS+14*128+2*3*128*128;
+        if(!w){f->trained=0;continue;}
+        int valid=w->size-7==expected;for(int j=0;valid&&j<expected;j++)if(!isfinite(w->data[j]))valid=0;
+        if(!valid){free(w);f->weights[family]=NULL;f->trained=0;}
+    }
+    for(int i=0;i<AW_UNITS;i++)if(f->active[i]){
+        f->previous[i]=f->unit[i].vehicle;f->terminal[i]=1;aw_mission_equip(&f->world,i);
+        if(preserve)for(int t=0;t<4;t++)aw_sensor_attach(&f->world.sensors,i,t,equipment[i][t]);
+        Weights*w=f->weights[f->unit[i].vehicle.family];if(w){w->idx=0;f->net[i]=make_puffernet(w,1,AW_MISSION_INPUTS,128,2,sizes,4);}
+    }
+    aw_mission_sense(&f->world,m,.1f);f->ready=1;
+}
+static AwVehicle aw_command_fleet_pose(const AwCommandFleet*f,int i){
+    AwVehicle pose=f->unit[i].vehicle;const AwVehicle*old=&f->previous[i];float t=fminf(1,fmaxf(0,f->accumulator/.1f));
+    pose.position=aw_sv_add(old->position,aw_sv_scale(aw_sv_add(pose.position,aw_sv_scale(old->position,-1)),t));
+    pose.yaw=aw_motion_angle(old->yaw+aw_motion_angle(pose.yaw-old->yaw)*t);pose.pitch=aw_lerp(old->pitch,pose.pitch,t);return pose;
+}
+/* Planning is outside the fixed simulation tick and reuses its prepared
+ * scratch. A rejected user command leaves the current mission intact. */
+static void aw_command_fleet_continue(AwCommandFleet*f,const AwMap*m){
+    for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&f->unit[i].arrived&&!f->arrival_handled[i]){
+        f->arrivals[i]++;f->status[i]=AW_MISSION_ARRIVED;f->arrival_handled[i]=1;
+        if(f->automatic[i]||f->unit[i].vehicle.family==AW_VEHICLE_WING){
+            AwSVec target=f->home[i],previous=f->destination[i];
+            if(aw_command_fleet_destination(f,m,i,target,1))f->home[i]=previous;
+        }
+    }
+}
+static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int scout_live,int others_live){
+    if(!f->ready)return;
+    aw_command_fleet_continue(f,m);
+    f->accumulator+=dt;
+    while(f->accumulator>=.1f){f->accumulator-=.1f;float actions[16][4];
+        for(int i=0;i<AW_UNITS;i++){
+            f->previous[i]=f->unit[i].vehicle;f->world.paused[i]=!(i?others_live:scout_live);
+            actions[i][0]=2;actions[i][1]=actions[i][2]=actions[i][3]=1;
+            if(!f->active[i]||f->world.paused[i])continue;
+            AwMissionAgent*a=&f->unit[i];
+            if(f->net[i]&&!a->arrived&&!a->timeout&&!a->vehicle.failed){
+                forward_puffernet(f->net[i],a->observation,actions[i],NULL,&f->terminal[i]);
+                multidiscrete(f->net[i]->multidiscrete,f->net[i]->decoder->output,actions[i],1,NULL);
+            }f->terminal[i]=0;
+        }
+        aw_mission_tick(&f->world,m,actions);
+        for(int i=0;i<AW_UNITS;i++)if(f->active[i]){
+            if(f->unit[i].vehicle.failed)f->status[i]=AW_MISSION_IMPACT;
+            else if(f->unit[i].timeout)f->status[i]=AW_MISSION_STALLED;
+        }
+    }
+}
+#endif

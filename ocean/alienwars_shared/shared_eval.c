@@ -17,7 +17,7 @@ int main(int argc,char**argv){
     }for(int i=0;i<12;i++){Weights*w=weights[aw_shared_family(i)];w->idx=0;net[i]=make_puffernet(w,1,AW_SHARED_OBS,128,2,sizes,4);}}
     int attempted[5]={0},unavailable[5]={0},wins[5]={0},contacts[5]={0},events[5]={0},blocked[5]={0},steps[5]={0};
     for(int episode=0;episode<scenarios;episode++){
-        aw_shared_reset(t);float terminal[12];int present[12];
+        aw_shared_reset_at(t,(episode/3)%maps,episode%3);float terminal[12];int present[12];
         for(int i=0;i<12;i++){terminal[i]=1;present[i]=t->world.active[i];attempted[aw_shared_family(i)]++;unavailable[aw_shared_family(i)]+=!present[i];}
         while(!t->reset_pending){
             for(int i=0;i<12;i++){

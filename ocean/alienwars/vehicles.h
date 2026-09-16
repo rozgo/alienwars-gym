@@ -28,12 +28,29 @@ static int aw_vehicle_clear(const AwMap*m,AwVehicle*v){
         float bed=aw_ocean_bed_q(m,p.x*.5f,p.z*.5f);
         if(h<1.44f&&bed<1.44f&&fabsf(h-bed)<.5f)return 0;
         if(!aw_body_fits(m,p.x*.5f,h,p.z*.5f,v->variant!=0))return 0;
+        /* The graph's circular clearance is a broad filter. Check the actual
+         * oriented wheel/hull footprint too, including the scout's corners. */
+        float cy=cosf(v->yaw),sy=sinf(v->yaw);
+        for(int z=-1;z<=1;z++)for(int x=-1;x<=1;x++){
+            float gx=(p.x+x*s.width*cy+z*s.length*sy)*.5f,gz=(p.z-x*s.width*sy+z*s.length*cy)*.5f;
+            float support=aw_support_q(m,gx,gz,h);
+            if(fabsf(support-h)>(v->variant?1.05f:.6f))return 0;
+            if(aw_density(m,gx,support+.45f,gz)>0||aw_density(m,gx,support+s.height/.75f,gz)>0)return 0;
+        }
         v->position.y=h*.75f-1.2f;return 1;
     }
     if(v->family==AW_VEHICLE_BOAT){
         v->position.y=-.12f;
         int cell=((int)floorf(p.z*.5f)+16)*96+(int)floorf(p.x*.5f)+16;
-        return cell>=0&&cell<AW_OCEAN_CELLS&&aw_patrol_water_cell(m,cell,v->variant);
+        if(cell<0||cell>=AW_OCEAN_CELLS||!aw_patrol_water_cell(m,cell,v->variant))return 0;
+        static const float draft[3]={1,2.5f,5},mast[3]={.8f,1.7f,2.4f};
+        float cy=cosf(v->yaw),sy=sinf(v->yaw);
+        for(int z=-1;z<=1;z++)for(int x=-1;x<=1;x++){
+            float gx=(p.x+x*s.width*cy+z*s.length*sy)*.5f,gz=(p.z-x*s.width*sy+z*s.length*cy)*.5f;
+            int ox=(int)floorf(gx)+16,oz=(int)floorf(gz)+16;
+            if(ox<0||oz<0||ox>=96||oz>=96||!m->ocean_connected[oz*96+ox]||aw_ocean_bed_q(m,gx,gz)>1.44f-draft[v->variant])return 0;
+            if(gx>=0&&gz>=0&&gx<64&&gz<64)for(float q=1.64f;q<1.44f+mast[v->variant];q+=.25f)if(aw_density(m,gx,q,gz)>0)return 0;
+        }return 1;
     }
     AwBody box=aw_vehicle_body(v);float cy=cosf(v->yaw),sy=sinf(v->yaw);
     for(int z=-1;z<=1;z++)for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++){
@@ -85,10 +102,10 @@ static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float 
 /* Synchronous body resolution: every proposal sees the same old world. A
  * rejected proposal can block another vehicle's proposal, so propagate until
  * stable. No vehicle gets priority from its index in the array. */
-static void aw_vehicles_step(const AwMap*m,AwVehicle*v,const AwDrive*drive,const unsigned char*active,int count,float dt){
+static void aw_vehicles_step_masked(const AwMap*m,AwVehicle*v,const AwDrive*drive,const unsigned char*active,const unsigned char*frozen,int count,float dt){
     AwVehicle before[16];unsigned char blocked[16]={0};
     if(count<0||count>16)return;
-    for(int i=0;i<count;i++){before[i]=v[i];if(active[i])aw_vehicle_drive(m,&v[i],drive[i],dt,NULL,0,-1);}
+    for(int i=0;i<count;i++){before[i]=v[i];if(active[i]&&(!frozen||!frozen[i]))aw_vehicle_drive(m,&v[i],drive[i],dt,NULL,0,-1);}
     for(int pass=0;pass<count;pass++){
         int changed=0;
         for(int i=0;i<count;i++)if(active[i])for(int j=i+1;j<count;j++)if(active[j]){
@@ -96,8 +113,11 @@ static void aw_vehicles_step(const AwMap*m,AwVehicle*v,const AwDrive*drive,const
             if(!aw_bodies_overlap(a,b,.04f))continue;
             if(!blocked[i]){blocked[i]=1;changed=1;}if(!blocked[j]){blocked[j]=1;changed=1;}
         }
-        for(int i=0;i<count;i++)if(blocked[i]){v[i]=before[i];v[i].contact=1;v[i].velocity=(AwSVec){0};v[i].yaw_rate=0;if(v[i].family==AW_VEHICLE_WING)v[i].failed=1;}
+        for(int i=0;i<count;i++)if(blocked[i]){v[i]=before[i];if(frozen&&frozen[i])continue;v[i].contact=1;v[i].velocity=(AwSVec){0};v[i].yaw_rate=0;if(v[i].family==AW_VEHICLE_WING)v[i].failed=1;}
         if(!changed)break;
     }
+}
+static void aw_vehicles_step(const AwMap*m,AwVehicle*v,const AwDrive*drive,const unsigned char*active,int count,float dt){
+    aw_vehicles_step_masked(m,v,drive,active,NULL,count,dt);
 }
 #endif

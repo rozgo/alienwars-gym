@@ -18,6 +18,7 @@ typedef struct {
     int count,ticks;
     AwMissionAgent agents[AW_SENSOR_UNITS];
     unsigned char active[AW_SENSOR_UNITS];
+    unsigned char paused[AW_SENSOR_UNITS];
     AwSensors sensors;
 } AwMissionWorld;
 
@@ -68,9 +69,12 @@ static AwDrive aw_mission_control(AwMissionAgent*a,const float*actions){
     else if(action[0]==0){drive.speed=-s.reverse;drive.strafe=0;}
     else if(action[0]==1){drive.speed=0;drive.strafe=0;}
     else if(action[0]==3){drive.speed*=1.25f;drive.strafe*=1.25f;}
-    drive.turn+=(action[1]-1)*s.turn*.7f;
-    drive.climb+=(action[2]-1)*s.vertical*.6f;
-    if(v->family==AW_VEHICLE_QUAD)drive.strafe+=(action[3]-1)*s.speed*.6f;
+    /* Neutral follows the route. Overrides give the policy enough authority
+     * to leave the centreline and pass a hull, rather than converge to a
+     * small offset that cannot resolve a head-on encounter. */
+    if(action[1]!=1)drive.turn=(action[1]-1)*s.turn;
+    if(action[2]!=1)drive.climb=(action[2]-1)*s.vertical;
+    if(v->family==AW_VEHICLE_QUAD&&action[3]!=1)drive.strafe=(action[3]-1)*s.speed;
     return drive;
 }
 static void aw_mission_agent_reset(AwMissionAgent*a,const AwMissionRoute*r,int limit){
@@ -87,15 +91,9 @@ static void aw_mission_equip(AwMissionWorld*w,int i){
         aw_sensor_attach(&w->sensors,i,t,c);
     }
 }
-static void aw_mission_sense(AwMissionWorld*w,const AwMap*m,float dt){
+static void aw_mission_observe(AwMissionWorld*w){
     for(int i=0;i<w->count;i++){
-        AwVehicle*v=&w->agents[i].vehicle;w->sensors.units[i].active=w->active[i];
-        w->sensors.units[i].pose=(AwSensorPose){.position=v->position,.yaw=v->yaw,.pitch=v->pitch};
-        AwBody body=aw_vehicle_body(v);w->sensors.units[i].body_center=body.position;
-        w->sensors.units[i].body_extent=(AwSVec){body.width,body.height,body.length};w->sensors.units[i].body_yaw=v->yaw;
-    }
-    aw_sensors_step(&w->sensors,m,dt);
-    for(int i=0;i<w->count;i++){
+        aw_sensor_pack(&w->sensors,i);
         AwMissionAgent*a=&w->agents[i];float*o=a->observation;memset(o,0,sizeof(a->observation));if(!w->active[i])continue;
         AwVehicle*v=&a->vehicle;AwVehicleSpec spec=aw_vehicle_spec(v->family,v->variant);
         AwSVec goal=aw_sv_add(aw_mission_lookahead(a,v->family==AW_VEHICLE_WING?6:2,NULL),aw_sv_scale(v->position,-1));
@@ -112,17 +110,26 @@ static void aw_mission_sense(AwMissionWorld*w,const AwMap*m,float dt){
         for(int j=0;j<32;j++)o[j]=fminf(1,fmaxf(-1,o[j]));
     }
 }
+static void aw_mission_sense(AwMissionWorld*w,const AwMap*m,float dt){
+    for(int i=0;i<w->count;i++){
+        AwVehicle*v=&w->agents[i].vehicle;w->sensors.units[i].active=w->active[i];
+        w->sensors.units[i].pose=(AwSensorPose){.position=v->position,.yaw=v->yaw,.pitch=v->pitch};
+        AwBody body=aw_vehicle_body(v);w->sensors.units[i].body_center=body.position;
+        w->sensors.units[i].body_extent=(AwSVec){body.width,body.height,body.length};w->sensors.units[i].body_yaw=v->yaw;
+    }
+    aw_sensors_step(&w->sensors,m,dt);aw_mission_observe(w);
+}
 static void aw_mission_tick(AwMissionWorld*w,const AwMap*m,const float actions[][4]){
     AwVehicle vehicle[AW_SENSOR_UNITS];AwDrive drive[AW_SENSOR_UNITS];unsigned char moving[AW_SENSOR_UNITS];
     for(int i=0;i<w->count;i++){
         AwMissionAgent*a=&w->agents[i];vehicle[i]=a->vehicle;vehicle[i].contact=0;a->reward=0;
         moving[i]=w->active[i];drive[i]=(AwDrive){0};
-        if(moving[i]&&!a->arrived&&!a->timeout&&!a->vehicle.failed)drive[i]=aw_mission_control(a,actions[i]);
+        if(moving[i]&&!w->paused[i]&&!a->arrived&&!a->timeout&&!a->vehicle.failed)drive[i]=aw_mission_control(a,actions[i]);
     }
-    for(int t=0;t<3;t++)aw_vehicles_step(m,vehicle,drive,moving,w->count,1.0f/30);
+    for(int t=0;t<3;t++)aw_vehicles_step_masked(m,vehicle,drive,moving,w->paused,w->count,1.0f/30);
     w->ticks++;
     for(int i=0;i<w->count;i++)if(w->active[i]){
-        AwMissionAgent*a=&w->agents[i];int finished=a->arrived||a->timeout||a->vehicle.failed;
+        AwMissionAgent*a=&w->agents[i];int finished=w->paused[i]||a->arrived||a->timeout||a->vehicle.failed;
         int previous_contact=a->vehicle.contact;a->vehicle=vehicle[i];if(finished)continue;
         a->ticks++;a->contacts+=a->vehicle.contact;
         a->collision_events+=a->vehicle.contact&&!previous_contact;

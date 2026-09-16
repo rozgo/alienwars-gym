@@ -171,6 +171,10 @@
         <label for="sensor-unit">Selected unit</label>
         <div class="sensor-select"><select id="sensor-unit"><option value="0">Inspection scout</option><option value="1">Tracked rover</option><option value="2">Cargo hauler</option><option value="3">Skiff</option><option value="4">Patrol boat</option><option value="5">Cutter</option><option value="6">Quadrotor</option><option value="7">Recon wing</option><option value="8">Air transport</option><option value="9">Recon submarine</option><option value="10">Patrol submarine</option><option value="11">Heavy submarine</option></select><button id="sensor-focus">Focus</button></div>
         <p class="seed-note" id="unit-profile"></p>
+        <div class="sensor-select"><button id="select-family">Select family</button><button id="move-unit">Set destination</button></div>
+        <label id="command-altitude-label" hidden>Destination height <input id="command-altitude" type="number" step="1" placeholder="Current height"></label>
+        <p class="seed-note" id="command-status" aria-live="polite"></p>
+        <p class="seed-note">Click a unit to select · ⌘/Ctrl-click to add · Right-click to move. Drag to pan. Routes in gold; destinations are rings.</p>
         <div class="sensor-layers" role="group" aria-label="Sensor range overlays">
           <label class="sensor-chip" style="--sensor:#68e6b4">LiDAR<input id="sensor-show-0" type="checkbox" aria-label="Show LiDAR ranges" checked></label>
           <label class="sensor-chip" style="--sensor:#58b8f5">Sonar<input id="sensor-show-1" type="checkbox" aria-label="Show sonar ranges"></label>
@@ -185,7 +189,7 @@
         <div class="sensor-reading"><span style="color:#c09ef7">RF</span><output id="sensor-reading-2">—</output></div>
         <div class="sensor-reading"><span style="color:#f2c26b">Depth camera</span><output id="sensor-reading-3">—</output></div>
         <div id="depth-panel" hidden><div class="depth-preview" id="depth-preview" role="img" aria-label="8 by 6 depth camera. Bright pixels are near; dark pixels are far. Blue is water and mint is another unit."></div><p class="seed-note">8 × 6 depth · bright = near · blue = water</p></div>
-        <details><summary>Sensor preview equipment</summary><p>Attach independently of the range overlays. Sonar needs a submerged mount; dry mounts return no reading.</p>
+        <details><summary>Sensor equipment</summary><p>Attached modules feed the navigation policy. Range overlays only change the visualization. Sonar needs a submerged mount; dry mounts return no reading.</p>
           <label class="toggle" for="sensor-equip-0">LiDAR attached<input id="sensor-equip-0" type="checkbox"></label>
           <label class="toggle" for="sensor-equip-1">Sonar attached<input id="sensor-equip-1" type="checkbox"></label>
           <label class="toggle" for="sensor-equip-2">RF attached<input id="sensor-equip-2" type="checkbox"></label>
@@ -212,7 +216,7 @@
         <div class="seed-actions"><button id="find-patrol">Find next patrol</button><button id="restart-fleet">Restart vehicles</button></div><p class="seed-note" id="patrol-note">3 ground · 3 naval · 3 air · 3 submarines · physical navigation</p>
         <details><summary>Twelve unit types</summary><p>Ground: inspection scout, tracked rover, cargo hauler.<br>Naval: skiff, patrol boat, cutter.<br>Air: quadrotor, recon wing, transport.<br>Underwater: recon, patrol, heavy submarine.<br>Global routes use A* with terrain, altitude, water depth and hull clearance. Variants trade speed, turning space, size and sensor reach. Fixed wings maintain forward airspeed; quadcopters hover and strafe. No combat yet. <a href="../training/fleet.html">Fleet training results ↗</a></p></details>
         <label class="toggle" for="scout-pause">Pause scout<input type="checkbox" id="scout-pause"></label>
-        <label class="toggle" for="follow">Follow scout<input type="checkbox" id="follow"></label>
+        <label class="toggle" for="follow">Follow selected unit<input type="checkbox" id="follow"></label>
         <label for="cutaway">Terrain cutaway</label><select id="cutaway"><option value="1">Auto · when scout is hidden</option><option value="2">Horizontal section</option><option value="0">Off · solid terrain</option></select>
         <div class="floor-row"><button id="inspect-entrance">Inspect entrance</button><button id="inspect-tunnel">Inspect tunnel</button></div>
         <div class="floor-row"><button id="mountain-interior">Mountain passage</button><button id="mountain-bypass">Mountain bypass</button></div>
@@ -246,10 +250,12 @@
     </aside>
   </main>
   <script id="map-input">
-    function installMapInput(canvas, zoom, enabled) {
+    function installMapInput(canvas, zoom, enabled, command = () => {}) {
+      let clickStart=null;
       const held = new Set();
       let pointer = null, position = {clientX:0,clientY:0};
       const release = () => {
+        clickStart=null;
         // Raylib's GLFW backend listens for mouseup on the canvas only.
         // Cancellation/focus loss may not produce a compatibility mouseup.
         for(const button of [...held])canvas.dispatchEvent(new MouseEvent('mouseup',{...position,button,buttons:0,bubbles:true}));
@@ -258,9 +264,17 @@
       };
       canvas.addEventListener('pointerdown',event=>{
         canvas.focus({preventScroll:true});
+        clickStart={x:event.clientX,y:event.clientY,button:event.button,shift:event.shiftKey};
         if(event.isPrimary&&event.pointerType!=='touch'){
           pointer=event.pointerId;canvas.setPointerCapture(pointer);
         }
+      });
+      canvas.addEventListener('pointermove',event=>{if(clickStart&&Math.hypot(event.clientX-clickStart.x,event.clientY-clickStart.y)>5)clickStart=null;});
+      canvas.addEventListener('pointerup',event=>{
+        const start=clickStart;clickStart=null;if(!start||start.shift||!enabled())return;
+        const r=canvas.getBoundingClientRect(),x=event.clientX-r.left,y=event.clientY-r.top;
+        if(x<0||y<0||x>=r.width||y>=r.height)return;
+        command(x*canvas.width/r.width,y*canvas.height/r.height,start.button,Number(event.ctrlKey||event.metaKey));
       });
       canvas.addEventListener('mousedown',event=>{held.add(event.button);position={clientX:event.clientX,clientY:event.clientY};});
       canvas.addEventListener('mouseup',event=>held.delete(event.button));
@@ -432,8 +446,12 @@
     window.maplabFleet=report=>{
       window.lastFleetReport=report;
       const v=report.values;
+      const count=Number(v[11]).toString(2).replace(/0/g,'').length;
+      $('move-unit').textContent=v[21]?'Click a destination…':'Set destination';
+      $('command-status').textContent=`${count} selected · ${['Travelling','Arrived','Route unavailable','Aircraft impact','Mission timed out'][v[10]]||'Ready'} · ${v[12].toFixed(0)}u remaining${v[20]?` · Last command ${v[13]}/${v[20]} routed`:''}`;
+      $('command-altitude-label').hidden=![2,3,4].includes(v[18]);
       $('unit-profile').textContent=`${report.role} · Speed ${v[0].toFixed(1)} · Turn ${(v[1]*180/Math.PI).toFixed(0)}°/s · Range ${v[4].toFixed(0)}`;
-      $('patrol-note').textContent=`12 vehicles · A* routes · ${report.trained?'PPO local controllers':'Reference controllers'}${v[5]?' · Selected aircraft stopped after collision':''}`;
+      $('patrol-note').textContent=`12 vehicles · A* routes · ${report.trained?'Jointly trained PPO':'Reference controllers'}${v[5]?' · Selected aircraft stopped after collision':''}`;
     };
     window.maplabSensors=(unit,data)=>{
       if(rebuilding)return;
@@ -459,6 +477,10 @@
     }
     for(const id of ['sensor-unit','sensor-all','sensor-xray','sensor-show-0','sensor-show-1','sensor-show-2','sensor-show-3'])$(id).addEventListener('change',applySensorView);
     for(let t=0;t<4;t++)$('sensor-equip-'+t).addEventListener('change',()=>Module._aw_sensor_control(5+t,Number($('sensor-equip-'+t).checked)));
+    $('select-family').addEventListener('click',()=>Module._aw_command_control(0,0));
+    $('move-unit').addEventListener('click',()=>Module._aw_command_control(1,Number(!window.lastFleetReport?.values[21])));
+    $('command-altitude').addEventListener('change',()=>Module._aw_command_control(2,$('command-altitude').value===''?NaN:Number($('command-altitude').value)));
+    $('sensor-unit').addEventListener('change',()=>{$('command-altitude').value='';});
     $('sensor-focus').addEventListener('click',()=>{Module._aw_sensor_control(4,0);$('follow').checked=false;$('isolate-tunnels').checked=false;syncIsolation();syncUrl();});
     var Module = {
       locateFile:(file,prefix)=>`${prefix}${file}?v=__MAPLAB_ASSET_VERSION__`,
@@ -526,7 +548,7 @@
     $('ocean-access').addEventListener('change',()=>{Module._aw_option(9,Number($('ocean-access').checked));$('ocean-key').hidden=!$('ocean-access').checked;syncUrl();});
     document.querySelectorAll('[data-camera]').forEach(button=>button.addEventListener('click',()=>{Module._aw_camera_control(Number(button.dataset.camera));if(button.dataset.camera==='0'||button.dataset.camera==='9')$('follow').checked=false;}));
     Module.canvas.addEventListener('contextmenu',event=>event.preventDefault());
-    installMapInput(Module.canvas,delta=>Module._aw_camera_zoom(delta),()=>ready&&!rebuilding);
+    installMapInput(Module.canvas,delta=>Module._aw_camera_zoom(delta),()=>ready&&!rebuilding,(x,y,button,add)=>Module._aw_command_click(x,y,button,add));
     Module.canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fail('WebGL context lost');});
     new ResizeObserver(()=>requestAnimationFrame(resizeCanvas)).observe(document.querySelector('.viewport'));
     window.addEventListener('error',event=>{if(!ready)fail(event.message);});

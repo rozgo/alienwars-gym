@@ -212,3 +212,5 @@ vendor/fast-nle/
 
 # Local copies of the selected vehicle policy release
 /resources/alienwars/local-*.bin
+
+/resources/alienwars/mission-*.bin

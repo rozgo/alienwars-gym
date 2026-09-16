@@ -55,6 +55,18 @@ static int aw_mission_planner_init(AwMissionPlanner*p,const AwMap*m){
         }
         for(int c=0;c<m->span_count;c++)p->ground[v][AW_SPAN_START+c]=!!(m->spans[c].fits&(v?2:1));
         for(int c=0;c<AW_OCEAN_CELLS;c++)p->boat[v][c]=aw_patrol_water_cell(m,c,v);
+        /* A node must have room to change heading. Edge interpolation is
+         * checked separately; this filters body-infeasible graph corners. */
+        for(int layer=0;layer<2;layer++){
+            int count=layer?AW_OCEAN_CELLS:AW_NODES;
+            unsigned char*allowed=layer?p->boat[v]:p->ground[v];
+            AwPatrolGraph graph={m,layer?AW_PATROL_NAVAL:AW_PATROL_GROUND,v,allowed};
+            for(int n=0;n<count;n++)if(allowed[n]){
+                AwRoutePoint point=aw_patrol_node(&graph,n);
+                AwVehicle probe={.family=layer?AW_VEHICLE_BOAT:AW_VEHICLE_GROUND,.variant=v,.position={point.x*2,point.q*.75f-1.2f,point.z*2}};
+                for(int heading=0;heading<4;heading++){probe.yaw=heading*AW_MOTION_PI*.25f;if(!aw_vehicle_clear(m,&probe)){allowed[n]=0;break;}}
+            }
+        }
     }
     for(int i=0;i<4;i++)if(!aw_volume_init(&p->volume[i],m,i!=0,i?i-1:0))goto fail;
     return 1;
@@ -143,10 +155,14 @@ static int aw_mission_segment(const AwMap*m,const AwVehicle*vehicle,AwSVec a,AwS
  * nearby, physically connected endpoints. Requests on the wrong medium fail. */
 static int aw_mission_plan(AwMissionPlanner*p,const AwVehicle*start,AwSVec goal,AwMissionRoute*r){
     if(!isfinite(goal.x)||!isfinite(goal.y)||!isfinite(goal.z)||start->family<0||start->family>=5||start->variant<0||start->variant>2){r->count=0;return 0;}
+    AwVehicle checked_start=*start;
+    if(!aw_vehicle_clear(p->map,&checked_start)){r->count=0;return 0;}
     if(start->family==AW_VEHICLE_WING)return aw_mission_flight(p,start,goal,r);
     memset(r,0,sizeof(*r));r->family=start->family;r->variant=start->variant;r->start=*start;
     AwVehicle target=*start;target.position=goal;
-    if(!aw_vehicle_clear(p->map,&target))return 0;goal=target.position;
+    int exact_goal=aw_vehicle_clear(p->map,&target);
+    if(!exact_goal&&start->family!=AW_VEHICLE_GROUND&&start->family!=AW_VEHICLE_BOAT)return 0;
+    if(exact_goal)goal=target.position;
     int first=-1,last=-1,nodes=0,n=0;float da=INFINITY,db=INFINITY;
     AwPatrolGraph graph={p->map,start->family==AW_VEHICLE_BOAT?AW_PATROL_NAVAL:AW_PATROL_GROUND,start->variant,NULL};
     AwVolumeGraph*volume=NULL;
@@ -159,9 +175,12 @@ static int aw_mission_plan(AwMissionPlanner*p,const AwVehicle*start,AwSVec goal,
         AwSVec point=aw_mission_world(volume?aw_volume_position(volume,i):aw_patrol_node(&graph,i));
         float a=aw_sv_length(aw_sv_add(point,aw_sv_scale(start->position,-1))),b=aw_sv_length(aw_sv_add(point,aw_sv_scale(goal,-1)));
         if(a<da&&a<=(volume?12:4)&&aw_mission_segment(p->map,start,start->position,point)){da=a;first=i;}
-        if(b<db&&b<=(volume?12:4)&&aw_mission_segment(p->map,start,point,goal)){db=b;last=i;}
+        if(b<db&&b<=(volume?12:4)&&
+           (exact_goal?aw_mission_segment(p->map,start,point,goal):
+            start->family==AW_VEHICLE_BOAT||fabsf(point.y-goal.y)<.9f)){db=b;last=i;}
     }
     if(first<0||last<0||da>(volume?12:4)||db>(volume?12:4))return 0;
+    if(!exact_goal)goal=aw_mission_world(aw_patrol_node(&graph,last));
     if(volume)n=aw_astar_path(&p->search,nodes,first,last,volume,aw_volume_edges,aw_volume_estimate,p->path,AW_MISSION_POINTS-2);
     else n=aw_astar_path(&p->search,nodes,first,last,&graph,aw_patrol_edges,aw_patrol_estimate,p->path,AW_MISSION_POINTS-2);
     if(!n)return 0;

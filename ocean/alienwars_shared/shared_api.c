@@ -86,8 +86,8 @@ AwSharedTask*aw_shared_create(int maps,unsigned seed,unsigned instance,int curri
 void aw_shared_destroy(AwSharedTask*t){
     if(!t)return;AwSharedBank*b=t->bank;if(!--b->references){AwSharedBank**link=&banks;while(*link!=b)link=&(*link)->next;*link=b->next;free(b->worlds);free(b);}free(t);
 }
-void aw_shared_reset(AwSharedTask*t){
-    t->map=&t->bank->worlds[aw_shared_rng(&t->rng)%t->bank->maps];t->scenario=aw_shared_rng(&t->rng)%AW_SHARED_SCENARIOS;
+static void aw_shared_reset_at(AwSharedTask*t,int map,int scenario){
+    t->map=&t->bank->worlds[map];t->scenario=scenario;
     memset(&t->world,0,sizeof(t->world));memset(t->event,0,sizeof(t->event));memset(t->terminal,0,sizeof(t->terminal));
     t->world.count=AW_SHARED_AGENTS;t->reset_pending=0;aw_sensors_init(&t->world.sensors,&t->map->map,AW_SHARED_AGENTS);
     for(int i=0;i<AW_SHARED_AGENTS;i++){
@@ -100,6 +100,10 @@ void aw_shared_reset(AwSharedTask*t){
         if(t->bank->curriculum>0&&aw_shared_rng(&t->rng)%5==0){int type=aw_shared_rng(&t->rng)%4;AwSensorConfig c=t->world.sensors.units[i].config[type];c.enabled=0;aw_sensor_attach(&t->world.sensors,i,type,c);}
     }
     aw_mission_sense(&t->world,&t->map->map,.1f);
+}
+void aw_shared_reset(AwSharedTask*t){
+    int map=aw_shared_rng(&t->rng)%t->bank->maps,scenario=aw_shared_rng(&t->rng)%AW_SHARED_SCENARIOS;
+    aw_shared_reset_at(t,map,scenario);
 }
 void aw_shared_action(AwSharedTask*t,int unit,const float*action){if(unit>=0&&unit<AW_SHARED_AGENTS)memcpy(t->actions[unit],action,4*sizeof(float));}
 void aw_shared_step(AwSharedTask*t){
