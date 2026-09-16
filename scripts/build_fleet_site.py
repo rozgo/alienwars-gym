@@ -28,3 +28,10 @@ assert '__FLEET_RESULT_VERSION__' in page
 page=page.replace('__FLEET_RESULT_VERSION__',hashlib.sha256(results).hexdigest()[:16])
 (ROOT/"docs/training/fleet.html").write_text(page)
 (ROOT/"docs/training/fleet.json").write_bytes(results)
+training_manifest=ROOT/'docs/training/manifest.json'
+if training_manifest.exists():
+    training=json.loads(training_manifest.read_text())
+    for name in ['fleet.html','fleet.json']:
+        training['files'][name]=hashlib.sha256((ROOT/'docs/training'/name).read_bytes()).hexdigest()
+    training['fleet_source']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+    training_manifest.write_text(json.dumps(training,separators=(',',':'))+'\n')
