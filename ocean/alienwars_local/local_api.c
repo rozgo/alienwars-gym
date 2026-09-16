@@ -12,7 +12,7 @@ AwLocalTask*aw_local_create(int family,int maps,unsigned seed,unsigned instance,
     while(b&&(b->family!=family||b->maps!=maps||b->seed!=seed))b=b->next;
     if(!b){b=calloc(1,sizeof(*b));if(!b)return NULL;b->family=family;b->maps=maps;b->seed=seed;b->worlds=calloc(maps,sizeof(*b->worlds));if(!b->worlds){free(b);return NULL;}
         clock_t timer=clock();for(int i=0;i<maps;i++){AwLocalWorld*w=&b->worlds[i];AwPatrols*patrol=calloc(1,sizeof(*patrol));
-            if(!patrol||!aw_generate_options(&w->map,seed+i,(AwOptions){i%2,1+(i*3)%10,1+(i*5)%10,i%4,1})||!aw_patrol_build(&w->map,patrol)){free(patrol);free(b->worlds);free(b);return NULL;}
+            if(!patrol||!aw_generate_options(&w->map,seed+i,(AwOptions){i%2,1+(i*3)%10,1+(i*5)%10,AW_TEMPERATE+i%AW_BIOMES,1})||!aw_patrol_build(&w->map,patrol)){free(patrol);free(b->worlds);free(b);return NULL;}
             aw_ray_world_init(&w->rays,&w->map);
             if(family==0){AwPatrol scout={0};if(aw_patrol_scout(&w->map,&scout,w->map.spawns[0],w->map.spawns[1]))aw_local_route(&w->map,&scout,&w->routes[w->count++]);}
             for(int j=0;j<AW_PATROLS;j++)if(patrol->units[j].count>2&&aw_vehicle_family(patrol->units[j].layer,patrol->units[j].variant)==family)aw_local_route(&w->map,&patrol->units[j],&w->routes[w->count++]);

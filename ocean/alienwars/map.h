@@ -17,7 +17,7 @@
 #define AW_SPANS 4096
 #define AW_SPAN_START (AW_CELLS+AW_CAVE_NODES)
 #define AW_NODES (AW_SPAN_START+AW_SPANS)
-#define AW_VERSION 10
+#define AW_VERSION 11
 #define AW_BRIDGES 4
 #define AW_MOUNTAINS 2
 #define AW_MOUNT_GRID 5
@@ -35,7 +35,8 @@
 #define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
 #define AW_TILES 11
-#define AW_BIOMES 4
+#define AW_BIOMES 3
+enum {AW_TEMPERATE=1,AW_DESERT,AW_FROZEN};
 #define AW_ALL ((1u<<AW_TILES)-1)
 enum {AW_GRASS,AW_FOREST,AW_DIRT,AW_SAND,AW_ROCK,AW_SNOW,AW_ICE,AW_MUD,AW_SHALLOW,AW_DEEP,AW_ROAD};
 static const char *aw_terrain_names[AW_TILES]={"Grass","Forest","Soil","Sand","Rock","Snow","Ice","Mud","Shallow water","Deep water","Road"};
@@ -96,7 +97,7 @@ typedef struct {
     int path[AW_NODES],path_length,path_cost,walk_count,reached_count;
     int resources[4],spawns[2],center,valid,tunnel_count,terrain_count[AW_TILES];
 } AwMap;
-static AwOptions aw_defaults(void){return (AwOptions){1,6,6,0,1};}
+static AwOptions aw_defaults(void){return (AwOptions){1,6,6,AW_TEMPERATE,1};}
 static int aw_clamp(int n,int a,int b){return n<a?a:n>b?b:n;}
 static int aw_abs(int n){return n<0?-n:n;}
 static uint32_t aw_hash(uint32_t x){x^=x>>16;x*=0x7feb352du;x^=x>>15;x*=0x846ca68bu;return x^(x>>16);}
@@ -269,24 +270,22 @@ static int aw_material_ok(int a,int b){
 static uint32_t aw_domain(AwMap*m,int c){
     AwCell*t=&m->cells[c];if(t->road||m->cave_access[c])return 1u<<AW_ROAD;if(!(t->q[0]|t->q[1]|t->q[2]|t->q[3]))return 1u<<AW_DEEP;
     int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
-    int climate=aw_noise(m->seed^71391u,x,z,12),wet=aw_noise(m->seed^317u,x,z,7),biome=m->options.biome;
-    if(!biome)biome=climate<145?1:climate<190?2:3;
+    int wet=aw_noise(m->seed^317u,x,z,7),biome=m->options.biome;
     uint32_t mask=1u<<AW_ROCK;
-    if(biome==1)mask|=(1u<<AW_GRASS)|(1u<<AW_DIRT)|(1u<<(wet>130?AW_FOREST:AW_MUD));
-    if(biome==2)mask|=(1u<<AW_SAND)|(1u<<AW_DIRT);
-    if(biome==3)mask|=(1u<<AW_SNOW)|(1u<<AW_ICE);
+    if(biome==AW_TEMPERATE)mask|=(1u<<AW_GRASS)|(1u<<AW_DIRT)|(1u<<(wet>130?AW_FOREST:AW_MUD));
+    if(biome==AW_DESERT)mask|=(1u<<AW_SAND)|(1u<<AW_DIRT);
+    if(biome==AW_FROZEN)mask|=(1u<<AW_SNOW)|(1u<<AW_ICE);
     if(t->q[0]==4&&wet>165)mask|=1u<<AW_SHALLOW;
     return mask;
 }
 static int aw_preferred_material(const AwMap*m,int c){
     int cc=m->options.symmetry&&c>=AW_CELLS/2?AW_CELLS-1-c:c,x=cc%AW_SIZE,z=cc/AW_SIZE;
-    int climate=aw_noise(m->seed^71391u,x,z,12),wet=aw_noise(m->seed^317u,x,z,7),detail=aw_noise(m->seed^715u,x,z,5),biome=m->options.biome;
-    if(!biome)biome=climate<145?1:climate<190?2:3;
+    int wet=aw_noise(m->seed^317u,x,z,7),detail=aw_noise(m->seed^715u,x,z,5),biome=m->options.biome;
     if(m->cells[c].q[0]==4&&wet>180)return AW_SHALLOW;
     if(detail>202)return AW_ROCK;
-    if(biome==1)return wet>155?AW_FOREST:wet<75?AW_MUD:detail>170?AW_DIRT:AW_GRASS;
-    if(biome==2)return wet>85?AW_SAND:AW_DIRT;
-    if(biome==3)return wet>100?AW_SNOW:AW_ICE;
+    if(biome==AW_TEMPERATE)return wet>155?AW_FOREST:wet<75?AW_MUD:detail>170?AW_DIRT:AW_GRASS;
+    if(biome==AW_DESERT)return wet>85?AW_SAND:AW_DIRT;
+    if(biome==AW_FROZEN)return wet>100?AW_SNOW:AW_ICE;
     return AW_ROCK;
 }
 static int aw_propagate(AwMap*m,int start){
@@ -545,8 +544,8 @@ static int aw_cave_approaches(AwMap*m){
 static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     options.symmetry=!!options.symmetry;options.tunnels=!!options.tunnels;
     options.floors_a=aw_clamp(options.floors_a,1,10);options.floors_b=options.symmetry?options.floors_a:aw_clamp(options.floors_b,1,10);
-    /* Retired palette IDs (including old volcanic links) use mixed biomes. */
-    if(options.biome<0||options.biome>=AW_BIOMES)options.biome=0;
+    /* Keep palette IDs stable; retired mixed/volcanic IDs use Temperate. */
+    if(options.biome<AW_TEMPERATE||options.biome>AW_FROZEN)options.biome=AW_TEMPERATE;
     /* Establish a valid world before fitting optional passages to its rock. */
     for(int layout=0;layout<24;layout++){
         memset(m,0,sizeof(*m));m->seed=seed;m->layout_seed=aw_hash(seed^(uint32_t)layout*0x9e3779b9u);m->rng=m->layout_seed;m->options=options;m->attempts=1;m->layout_attempts=layout+1;

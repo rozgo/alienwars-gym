@@ -224,10 +224,12 @@ and sensor checks in native/WASM, then inspect the actual browser roster.
 Surface-triangle winding must use a reliable signed-field direction; retain the
 sloped-mesh regression so near-zero samples cannot invert visible triangles.
 
-Version 10 removes the volcanic palette and lava material from generation,
-rendering and the terrain UI. The four palettes are Mixed, Temperate, Desert
-and Frozen. Retired `biome=4` URLs and out-of-range native palette IDs must fall
-back to Mixed consistently. Keep this fallback covered in native/WASM checks.
+Version 11 removes mixed biomes. Every world uses one palette: Temperate (1),
+Desert (2), or Frozen (3), with Temperate as the default. Preserve these IDs;
+retired Mixed (0), volcanic (4), and invalid palette IDs fall back to Temperate
+in native generation and browser URLs. Keep fallback and single-climate material
+checks in native/WASM validation. Version 10 already removed lava. Historical
+training reports and recordings retain their original generator provenance.
 
 Sensor contract v1 is in `sensors.h` / `sensor_rays.h`; see `docs/SENSORS.md`.
 Keep exact pose separate from policy observations and ideal local odometry.

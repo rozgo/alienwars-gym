@@ -151,9 +151,9 @@ for seed in [0, 1, 73, 4294967295]:
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
 if artifacts_only:
-    report = {'generator_version':10,'scope':'packaged artifacts only','packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,'javascript_syntax':'passed'}
+    report = {'generator_version':11,'scope':'packaged artifacts only','packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,'javascript_syntax':'passed'}
 else:
-    report = {'generator_version':10,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+    report = {'generator_version':11,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
               'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
               'relief_native':relief_native,'relief_wasm':relief_wasm,
               'patrol_native':patrol_native,'patrol_wasm':patrol_wasm,

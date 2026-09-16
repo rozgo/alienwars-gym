@@ -88,7 +88,7 @@ AwSharedTask*aw_shared_create(int maps,unsigned seed,unsigned instance,int curri
         clock_t timer=clock();int family_count[5]={0};
         for(int i=0;i<maps;i++){
             AwSharedMap*w=&b->worlds[i];
-            if(!aw_generate_options(&w->map,seed+i,(AwOptions){i%2,1+(i*3)%10,1+(i*5)%10,i%4,1})||!aw_shared_prepare(w,planner,curriculum)){
+            if(!aw_generate_options(&w->map,seed+i,(AwOptions){i%2,1+(i*3)%10,1+(i*5)%10,AW_TEMPERATE+i%AW_BIOMES,1})||!aw_shared_prepare(w,planner,curriculum)){
                 aw_mission_planner_close(planner);free(planner);free(b->worlds);free(b);return NULL;}
             for(int s=0;s<AW_SHARED_SCENARIOS;s++)for(int u=0;u<AW_SHARED_AGENTS;u++)family_count[aw_shared_family(u)]+=w->route[s][u].count>1;
             fprintf(stderr,"SHARED_MAP seed=%u hash=%08x available=%d,%d,%d\n",w->map.seed,w->map.hash,w->available[0],w->available[1],w->available[2]);

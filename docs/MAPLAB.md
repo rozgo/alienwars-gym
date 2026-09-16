@@ -8,9 +8,9 @@ Combat is not implemented.
 The site root opens Map Lab; existing `/maplab/` seed links continue to work.
 Units carry attachable LiDAR, sonar, RF and depth cameras, with ideal odometry,
 separate exact pose and optional range overlays. See the [sensor contract and
-performance checks](SENSORS.md). Sensor changes do not change generator v10 seeds.
+performance checks](SENSORS.md). Sensor changes do not change generator v11 seeds.
 
-## World contract — generator version 10
+## World contract — generator version 11
 
 The 64 × 64 land region sits inside a 96 × 96 ocean domain, two world units per tile. A floor is three
 world units; elevations use quarter floors. Bases support floors 1–10. Surface
@@ -98,10 +98,11 @@ pass WFC, body/support checks, surface access to each mouth and a cave-only
 crossing between them. Exhaustion reports generation failure; it never silently
 substitutes the old central layout. Seeds, settings and generator version
 identify the world. Version 9 adds lowland relief and fitted bridge crossings,
-changing seeded worlds. Version 10 removes the volcanic palette and lava
-material; mixed worlds combine temperate, desert and frozen terrain. Old
-`biome=4` links and invalid palette IDs fall back to Mixed biomes. Older seed
-URLs regenerate using version 10; use the
+changing seeded worlds. Version 10 removed the volcanic palette and lava.
+Version 11 removes mixed biomes: each world uses Temperate (1), Desert (2), or
+Frozen (3), with Temperate as the default. Retired `biome=0` and `biome=4` links
+and invalid palette IDs now resolve to Temperate. Older seed URLs regenerate
+using version 11; use the
 previous release revision for an exact older world.
 
 This is a bounded, static terrain milestone. It does not yet generate arbitrary

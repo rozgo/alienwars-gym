@@ -8,7 +8,7 @@ int main(int argc,char**argv){
     int entrance_seen[AW_CELLS]={0},depth_seen=0,layouts=0,independent=0;
     for(int i=0;i<seeds;i++){
         uint32_t seed=i<4?(uint32_t[]){0,1,73,UINT32_MAX}[i]:aw_hash(i);
-        AwOptions o={i%2,1+(i/2)%10,1+(i*7)%10,(i/20)%AW_BIOMES,(i/(20*AW_BIOMES))%2};
+        AwOptions o={i%2,1+(i/2)%10,1+(i*7)%10,AW_TEMPERATE+(i/20)%AW_BIOMES,(i/(20*AW_BIOMES))%2};
         if(!aw_generate_options(&map,seed,o)){
             fprintf(stderr,"FAIL seed=%u sym=%d a=%d b=%d biome=%d tunnels=%d resolved=%d reached=%d\n",seed,o.symmetry,o.floors_a,o.floors_b,o.biome,o.tunnels,map.order_count,map.reached_count);return 1;
         }
@@ -42,6 +42,8 @@ int main(int argc,char**argv){
         int seen[AW_CELLS]={0};for(int c=0;c<AW_CELLS;c++){
             assert(map.order[c]>=0&&map.order[c]<AW_CELLS&&!seen[map.order[c]]++);
             AwCell*a=&map.cells[c];terrain_seen|=1<<a->material;
+            if(o.biome!=AW_FROZEN)assert(a->material!=AW_SNOW&&a->material!=AW_ICE);
+            if(o.biome!=AW_TEMPERATE)assert(a->material!=AW_GRASS&&a->material!=AW_FOREST&&a->material!=AW_MUD);
             for(int k=0;k<4;k++){
                 int v=aw_corner_vertex(c,k),x=v%65,z=v/65;
                 if(x<=AW_OCEAN_MARGIN||z<=AW_OCEAN_MARGIN||x>=64-AW_OCEAN_MARGIN||z>=64-AW_OCEAN_MARGIN)assert(a->q[k]==0);
@@ -103,12 +105,13 @@ int main(int argc,char**argv){
     }
     if(seeds>=200){assert(layouts>=10);assert(__builtin_popcount(depth_seen)>=4);assert(independent>=10);}
     assert(terrain_seen==AW_ALL);assert(max_structure>0&&geometry_choices>0);
-    /* Retired and malformed palette IDs agree with the mixed default. */
+    /* Retired mixed/volcanic and malformed IDs match the Temperate default. */
     assert(aw_generate(&repeat,73));
-    for(int i=0;i<3;i++){
-        AwOptions legacy=aw_defaults();legacy.biome=(int[]){4,-1,INT_MAX}[i];
+    assert(aw_defaults().biome==AW_TEMPERATE);
+    for(int i=0;i<4;i++){
+        AwOptions legacy=aw_defaults();legacy.biome=(int[]){0,4,-1,INT_MAX}[i];
         assert(aw_generate_options(&map,73,legacy));
-        assert(map.options.biome==0&&map.hash==repeat.hash);
+        assert(map.options.biome==AW_TEMPERATE&&map.hash==repeat.hash);
         assert(!memcmp(map.cells,repeat.cells,sizeof(map.cells)));
     }
     assert(aw_generate(&map,73));
