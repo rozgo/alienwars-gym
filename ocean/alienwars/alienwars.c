@@ -449,17 +449,16 @@ static void aw_update(void) {
                 }
             }
             if(show_path&&!isolate_tunnels){
-                for(int i=1;i<fleet.route[sensor_selected].count;i++){
-                    Vector3 a=aw_sensor_v3(fleet.route[sensor_selected].point[i-1]),b=aw_sensor_v3(fleet.route[sensor_selected].point[i]);
-                    a.y+=0.12f;b.y+=0.12f;
-                    if(cut_mode==2){float level=target.y+1.5f;
-                        if(a.y>level&&b.y>level)continue;
-                        if(a.y>level)a=Vector3Lerp(a,b,(a.y-level)/(a.y-b.y));
-                        if(b.y>level)b=Vector3Lerp(b,a,(b.y-level)/(b.y-a.y));
+                rlDrawRenderBatchActive();rlDisableDepthTest();rlDisableDepthMask();
+                for(int unit=0;unit<AW_UNITS;unit++)if(fleet.active[unit]&&(fleet.selection&(1<<unit))){
+                    const AwMissionRoute*r=&fleet.route[unit];
+                    for(int i=1;i<r->count;i++){
+                        Vector3 a=aw_sensor_v3(r->point[i-1]),b=aw_sensor_v3(r->point[i]);
+                        a.y+=.12f;b.y+=.12f;
+                        DrawCylinderEx(a,Vector3Lerp(a,b,.72f),.055f,.055f,4,(Color){245,201,100,150});
                     }
-                    Vector3 end=Vector3Lerp(a,b,0.72f);
-                    DrawCylinderEx(a,end,0.055f,0.055f,4,(Color){245,201,100,220});
                 }
+                rlDrawRenderBatchActive();rlEnableDepthMask();rlEnableDepthTest();
             }
             aw_units_through_begin();
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
