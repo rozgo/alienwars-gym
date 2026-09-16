@@ -237,6 +237,10 @@ if [ "$ENV" = "alienwars" ] && [ "${ALIENWARS_RL:-0}" = "1" ]; then
     EXTRA_SRC="ocean/alienwars/nav_api.c"
 fi
 
+if [ "$ENV" = "alienwars_local" ]; then
+    EXTRA_SRC="ocean/alienwars_local/local_api.c"
+fi
+
 if [ "$(uname -m)" = "x86_64" ]; then
     SIMD_FLAGS=(-mavx2 -mfma)
 else
@@ -505,6 +509,13 @@ if [ "$MODE" = "native" ]; then
     fi
     OSRS_RENDER_OBJECT=""
     case "$ENV" in
+        alienwars_local)
+            OSRS_RENDER_OBJECT="build/alienwars_local.o"
+            EXTRA_SRC=""
+            $CC $LINK_OPT "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}" -std=c11 \
+                -Wno-unused-function -I. "${INCLUDES[@]}" \
+                -c ocean/alienwars_local/local_api.c -o "$OSRS_RENDER_OBJECT"
+            ;;
         alienwars)
             OSRS_RENDER_OBJECT="build/alienwars_nav.o"
             EXTRA_SRC=""

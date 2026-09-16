@@ -1,15 +1,17 @@
 #ifndef ALIENWARS_PATROLS_H
 #define ALIENWARS_PATROLS_H
 #include "map.h"
+#include "volume_routes.h"
 /* Eight ambient patrols plus the existing inspection scout = three of each
  * ground/naval/air class. Scripted traffic, independent of the map fingerprint
  * and the inspection route; no combat, learning or unit-to-unit avoidance. */
-#define AW_PATROLS 8
+#define AW_PATROLS 11
+#define AW_UNITS (AW_PATROLS+1)
 #define AW_AIR_POINTS 512
-enum {AW_PATROL_GROUND,AW_PATROL_NAVAL,AW_PATROL_AIR};
+enum {AW_PATROL_GROUND,AW_PATROL_NAVAL,AW_PATROL_AIR,AW_PATROL_SUB};
 typedef struct {
     int layer,variant,count,route[AW_NODES];float progress,speed;
-    float altitude[AW_AIR_POINTS];
+    float altitude[AW_NODES];
 } AwPatrol;
 typedef struct {AwPatrol units[AW_PATROLS];int count;} AwPatrols;
 typedef struct {float x,q,z;} AwPatrolPoint;
@@ -28,6 +30,26 @@ static int aw_patrol_ground_edge(const AwMap*m,int a,int b){
         float support=aw_support_q(m,x,z,q);
         if(fabsf(support-q)>.3f||!aw_body_fits(m,x,support,z,1))return 0;
     }return 1;
+}
+typedef struct {const AwMap*m;int layer,variant;const uint8_t*allowed;} AwPatrolGraph;
+static AwRoutePoint aw_patrol_node(const AwPatrolGraph*g,int n){
+    if(g->layer==AW_PATROL_NAVAL)return (AwRoutePoint){n%96-16+.5f,1.44f,n/96-16+.5f};
+    int c=aw_node_cell(g->m,n);return (AwRoutePoint){c%64+.5f,aw_patrol_floor(g->m,n),c/64+.5f};
+}
+static float aw_patrol_estimate(void*ctx,int a,int b){AwPatrolGraph*g=ctx;return aw_route_distance(aw_patrol_node(g,a),aw_patrol_node(g,b));}
+static int aw_patrol_edges(void*ctx,int a,AwAStarEdge*out){
+    AwPatrolGraph*g=ctx;int count=0;
+    for(int d=0;d<(g->layer==AW_PATROL_NAVAL?4:AW_LINKS);d++){
+        int b=g->layer==AW_PATROL_NAVAL?aw_ocean_neighbor(a,d):aw_open(g->m,a,d);
+        if(b<0||!g->allowed[b]||(g->layer==AW_PATROL_GROUND&&!aw_patrol_ground_edge(g->m,a,b)))continue;
+        float cost=aw_patrol_estimate(g,a,b);if(g->layer==AW_PATROL_GROUND)cost*=fmaxf(1,aw_move_cost(g->m,a,b)/10.0f);
+        out[count++]=(AwAStarEdge){b,cost};
+    }return count;
+}
+static int aw_patrol_search(AwPatrolGraph*g,int start,int goal,int*out){
+    AwAStar scratch={0};int nodes=g->layer==AW_PATROL_NAVAL?AW_OCEAN_CELLS:AW_NODES;
+    if(!aw_astar_init(&scratch,nodes)){aw_astar_close(&scratch);return 0;}
+    int n=aw_astar_path(&scratch,nodes,start,goal,g,aw_patrol_edges,aw_patrol_estimate,out,AW_NODES);aw_astar_close(&scratch);return n;
 }
 static int aw_patrol_ground(AwMap*m,AwPatrol*p,uint32_t salt){
     uint8_t allowed[AW_NODES]={0};int prev[AW_NODES],queue[AW_NODES],depth[AW_NODES]={0};
@@ -50,8 +72,8 @@ static int aw_patrol_ground(AwMap*m,AwPatrol*p,uint32_t salt){
         }
     }
     if(goal>=0&&prev[goal]>=0)best=goal;
-    p->count=0;for(int n=best;;n=prev[n]){p->route[p->count++]=n;if(n==start)break;}
-    for(int i=0;i<p->count/2;i++){int n=p->route[i];p->route[i]=p->route[p->count-1-i];p->route[p->count-1-i]=n;}
+    AwPatrolGraph graph={m,AW_PATROL_GROUND,p->variant,allowed};
+    p->count=aw_patrol_search(&graph,start,best,p->route);
     return p->count>1;
 }
 static int aw_patrol_water_cell(const AwMap*m,int c,int variant){
@@ -82,8 +104,8 @@ static int aw_patrol_naval(const AwMap*m,AwPatrol*p,uint32_t salt){
         if(value>best_score){best_score=value;best=c;}
         for(int d=0;d<4;d++){int n=aw_ocean_neighbor(c,d);if(n<0||!allowed[n]||prev[n]>=0)continue;prev[n]=c;depth[n]=depth[c]+1;queue[tail++]=n;}
     }
-    p->count=0;for(int n=best;;n=prev[n]){if(p->count>=AW_NODES)return 0;p->route[p->count++]=n;if(n==start)break;}
-    for(int i=0;i<p->count/2;i++){int n=p->route[i];p->route[i]=p->route[p->count-1-i];p->route[p->count-1-i]=n;}
+    AwPatrolGraph graph={m,AW_PATROL_NAVAL,p->variant,allowed};
+    p->count=aw_patrol_search(&graph,start,best,p->route);
     return p->count>1;
 }
 static float aw_patrol_roof(const AwMap*m,float x,float z){
@@ -91,48 +113,38 @@ static float aw_patrol_roof(const AwMap*m,float x,float z){
     if(m->bridge_bins[c])top=fmaxf(top,m->bridges[m->bridge_bins[c]-1].crown+2);
     return top;
 }
-static int aw_patrol_air(const AwMap*m,AwPatrol*p,uint32_t salt){
-    static const int dirs[8][2]={{256,0},{181,181},{0,256},{-181,181},{-256,0},{-181,-181},{0,-256},{181,-181}};
-    int sites[9];
-    for(int i=0;i<8;i++){
-        int r=17+aw_hash(salt+i)%12,x=32+dirs[i][0]*r/256,z=32+dirs[i][1]*r/256;
-        sites[i]=z*64+x;
-    }sites[8]=sites[0];p->count=0;
-    for(int i=0;i<8;i++){
-        int x=sites[i]%64,z=sites[i]/64,gx=sites[i+1]%64,gz=sites[i+1]/64;
-        while(x!=gx||z!=gz){
-            if(p->count>=AW_AIR_POINTS-1)return 0;p->route[p->count++]=z*64+x;
-            x+=(gx>x)-(gx<x);z+=(gz>z)-(gz<z);
-        }
+static int aw_patrol_volume(const AwMap*m,AwPatrol*p,uint32_t salt){
+    AwVolumeGraph g={0};AwAStar scratch={0};int submarine=p->layer==AW_PATROL_SUB;
+    if(!aw_volume_init(&g,m,submarine,p->variant)||!aw_astar_init(&scratch,g.nodes)){free(g.allowed);aw_astar_close(&scratch);return 0;}
+    int path[AW_NODES],first=-1,previous=-1;p->count=0;
+    /* Seeded perimeter goals make a circuit. Search can change depth/altitude
+     * and route around terrain; endpoints never dictate a straight segment. */
+    for(int i=0;i<=4;i++){
+        float angle=((salt%6283)*.001f)+i*1.570796327f;
+        float radius=submarine?43:21;AwRoutePoint target={32+cosf(angle)*radius,submarine?-3.0f-2*p->variant:24+8*p->variant,32+sinf(angle)*radius};
+        int next=i==4?first:aw_volume_nearest(&g,target);if(next<0)break;
+        if(previous<0){first=previous=next;continue;}
+        int n=aw_astar_path(&scratch,g.nodes,previous,next,&g,aw_volume_edges,aw_volume_estimate,path,AW_NODES-p->count);
+        if(n<2)break;
+        for(int j=i==1?0:1;j<n;j++){
+            AwRoutePoint v=aw_volume_position(&g,path[j]);int k=p->count++;
+            p->route[k]=submarine?((int)floorf(v.z)+16)*96+(int)floorf(v.x)+16:(int)v.z*64+(int)v.x;
+            p->altitude[k]=v.q;
+        }previous=next;
     }
-    p->route[p->count++]=sites[0];float clearance=6+p->variant*6;
-    for(int i=0;i<p->count;i++)p->altitude[i]=aw_patrol_roof(m,p->route[i]%64+.5f,p->route[i]/64+.5f)+clearance;
-    for(int i=0;i<p->count-1;i++){
-        float high=0;
-        for(int j=0;j<=8;j++){float t=j/8.0f,x=aw_lerp(p->route[i]%64,p->route[i+1]%64,t)+.5f,z=aw_lerp(p->route[i]/64,p->route[i+1]/64,t)+.5f;
-            /* Include the aircraft footprint in the terrain envelope. */
-            for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++)high=fmaxf(high,aw_patrol_roof(m,x+dx*.8f,z+dz*.8f)+clearance);
-        }
-        p->altitude[i]=fmaxf(p->altitude[i],high);p->altitude[i+1]=fmaxf(p->altitude[i+1],high);
-    }
-    /* Anticipate rising ground, then descend gradually; a cyclic Lipschitz
-     * envelope bounds vertical grade without lowering any required clearance. */
-    for(int pass=0;pass<p->count;pass++)for(int i=0;i<p->count-1;i++){
-        int j=(i+1)%(p->count-1);p->altitude[i]=fmaxf(p->altitude[i],p->altitude[j]-1.2f);p->altitude[j]=fmaxf(p->altitude[j],p->altitude[i]-1.2f);
-    }
-    p->altitude[p->count-1]=p->altitude[0];return 1;
+    free(g.allowed);aw_astar_close(&scratch);if(previous!=first)p->count=0;return p->count>2;
 }
 static int aw_patrol_build(AwMap*m,AwPatrols*f){
     memset(f,0,sizeof(*f));m->density_cache=calloc(AW_DENSITY_CACHE,sizeof(AwDensitySample));
     for(int i=0;i<AW_PATROLS;i++){
-        AwPatrol*p=&f->units[i];p->layer=i<2?AW_PATROL_GROUND:i<5?AW_PATROL_NAVAL:AW_PATROL_AIR;
-        p->variant=i<2?i+1:i<5?i-2:i-5;
+        AwPatrol*p=&f->units[i];p->layer=i<2?AW_PATROL_GROUND:i<5?AW_PATROL_NAVAL:i<8?AW_PATROL_AIR:AW_PATROL_SUB;
+        p->variant=i<2?i+1:i<5?i-2:i<8?i-5:i-8;
         /* Route segments/second: the quadrotor deliberately cruises at a
          * third of the transport's pace, about a quarter of the gunship's. */
         static const float air_speed[3]={.65f,2.55f,1.9f};
-        p->speed=i<2?(i?.65f:1.1f):i<5?(1.6f-p->variant*.35f):air_speed[p->variant];
+        p->speed=i<2?(i?.65f:1.1f):i<5?(1.6f-p->variant*.35f):i<8?air_speed[p->variant]:.8f-p->variant*.15f;
         uint32_t salt=aw_hash(m->seed^(uint32_t)(i+1)*7193u);
-        int ok=p->layer==AW_PATROL_GROUND?aw_patrol_ground(m,p,salt):p->layer==AW_PATROL_NAVAL?aw_patrol_naval(m,p,salt):aw_patrol_air(m,p,salt);
+        int ok=p->layer==AW_PATROL_GROUND?aw_patrol_ground(m,p,salt):p->layer==AW_PATROL_NAVAL?aw_patrol_naval(m,p,salt):aw_patrol_volume(m,p,salt);
         if(ok){f->count++;p->progress=(salt%1000)/1000.0f*(p->count-1);}
     }
     free(m->density_cache);m->density_cache=NULL;return f->count;
@@ -140,9 +152,9 @@ static int aw_patrol_build(AwMap*m,AwPatrols*f){
 static AwPatrolPoint aw_patrol_position(const AwMap*m,const AwPatrol*p,float progress){
     if(p->count<2)return (AwPatrolPoint){0,0,0};
     float cycle=fmodf(progress,(p->count-1)*2.0f),step=cycle>p->count-1?(p->count-1)*2-cycle:cycle;
-    if(p->layer==AW_PATROL_AIR)step=fmodf(progress,(float)(p->count-1));
+    if(p->layer==AW_PATROL_AIR||p->layer==AW_PATROL_SUB)step=fmodf(progress,(float)(p->count-1));
     int i=aw_clamp((int)step,0,p->count-2),a=p->route[i],b=p->route[i+1];float t=step-i,x,z,q;
-    if(p->layer==AW_PATROL_NAVAL){x=aw_lerp(a%96,b%96,t)-16+.5f;z=aw_lerp(a/96,b/96,t)-16+.5f;q=1.44f;}
+    if(p->layer==AW_PATROL_NAVAL||p->layer==AW_PATROL_SUB){x=aw_lerp(a%96,b%96,t)-16+.5f;z=aw_lerp(a/96,b/96,t)-16+.5f;q=p->layer==AW_PATROL_SUB?aw_lerp(p->altitude[i],p->altitude[i+1],t):1.44f;}
     else if(p->layer==AW_PATROL_AIR){x=aw_lerp(a%64,b%64,t)+.5f;z=aw_lerp(a/64,b/64,t)+.5f;q=aw_lerp(p->altitude[i],p->altitude[i+1],t);}
     else {int ca=aw_node_cell(m,a),cb=aw_node_cell(m,b);x=aw_lerp(ca%64,cb%64,t)+.5f;z=aw_lerp(ca/64,cb/64,t)+.5f;q=aw_support_q(m,x,z,aw_lerp(aw_patrol_floor(m,a),aw_patrol_floor(m,b),t));}
     return (AwPatrolPoint){x,q,z};
