@@ -115,7 +115,7 @@ void aw_shared_step(AwSharedTask*t){
 }
 void aw_shared_read(AwSharedTask*t,int unit,float*obs,float*reward,int*terminal,int*event,int*arrived,int*contacts,int*blocked){
     AwMissionAgent*a=&t->world.agents[unit];memcpy(obs,a->observation,sizeof(a->observation));*reward=a->reward;
-    *terminal=t->terminal[unit];*event=t->event[unit];*arrived=a->arrived;*contacts=a->contacts;*blocked=a->blocked_ticks;
+    *terminal=t->terminal[unit];*event=t->event[unit];*arrived=a->arrived;*contacts=a->contacts;*blocked=a->blocked_total;
 }
 void aw_shared_reference(AwSharedTask*t,int unit,float*actions,int random){
     for(int i=0;i<4;i++)actions[i]=random?(float)(aw_shared_rng(&t->action_rng)%(i?3:4)):(i?1:2);

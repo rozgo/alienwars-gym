@@ -173,6 +173,20 @@ static int aw_mission_plan(AwMissionPlanner*p,const AwVehicle*start,AwSVec goal,
         aw_mission_append(r,point,0,(AwDrive){0},volume?-1:p->path[i]);
     }
     if(aw_sv_length(aw_sv_add(goal,aw_sv_scale(r->point[r->count-1],-1)))>.02f)aw_mission_append(r,goal,0,(AwDrive){0},last);
+    /* Remove grid-snap backtracking and corner staircases only when the whole
+     * shortcut is body-clear. Otherwise pure pursuit can stop where its
+     * lookahead doubles back across the first connector. */
+    int written=1;
+    for(int i=0;i<r->count-1;){
+        int next=i+1;
+        for(int j=next+1;j<r->count&&r->distance[j]-r->distance[i]<=24;j++){
+            if(aw_mission_segment(p->map,start,r->point[i],r->point[j]))next=j;
+        }
+        r->point[written]=r->point[next];r->node[written]=r->node[next];
+        r->distance[written]=r->distance[written-1]+aw_sv_length(aw_sv_add(r->point[written],aw_sv_scale(r->point[written-1],-1)));
+        i=next;written++;
+    }
+    r->count=written;
     for(int i=1;i<r->count;i++){AwSVec d=aw_sv_add(r->point[i],aw_sv_scale(r->point[i-1],-1));r->heading[i]=atan2f(d.x,d.z);}
     return r->count>1;
 }

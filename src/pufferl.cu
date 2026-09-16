@@ -3024,10 +3024,10 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose,
 
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
-    if (!use_selfplay) {
+    if (!use_selfplay && !puf_ini_get(ini, "vec", "train_all_policies")) {
         puf_ini_put(ini, "vec.num_policies", "1");
         puf_ini_put(ini, "vec.hist_policy_percent", "0");
-    } else {
+    } else if (use_selfplay) {
         int npol = puf_ini_get(ini, "vec", "num_policies");
         assert(npol >= 2 && npol <= SELFPLAY_MAX_HIST + 1
             && "selfplay requires vec.num_policies in 2..SELFPLAY_MAX_HIST+1");
