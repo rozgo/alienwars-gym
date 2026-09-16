@@ -63,7 +63,9 @@ terminals mask completed actors to neutral and reset their recurrent memory.
 Parking goals are separated by hull lengths plus a margin. Failed searches and
 unavailable spawns are reported, not counted as successful missions. Map/route
 banks and all search/rollout buffers are prepared before stepping; step/reset
-allocate nothing. Generation remains version 10 with unchanged map hashes.
+allocate nothing. Current generation is version 11, with a single terrain palette
+per world. The September 16 training release records version 10 worlds and
+retains its original source, map hashes and evaluation results.
 
 ## Actual sensor observations
 

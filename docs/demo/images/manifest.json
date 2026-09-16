@@ -1,0 +1,54 @@
+{
+  "generator_version": 11,
+  "viewer_source": "cd01ce171623f5ee610aae6ea3dc3d090ec9e9eb",
+  "images": [
+    {
+      "file": "temperate.webp",
+      "caption": "Temperate terrain with mirrored bases, lakes and ocean.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&sensors=0",
+      "hash": "f6969e6d",
+      "bytes": 100594,
+      "sha256": "7918d889889b7296dc64e109d7ba1583b5bafe657858914f883f52de87fa9edf"
+    },
+    {
+      "file": "desert.webp",
+      "caption": "Asymmetric desert with independently placed bases.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0",
+      "hash": "416f652a",
+      "bytes": 106912,
+      "sha256": "01db81c60d534c33a88c23db5dca6d545285431bd1631ab753230fc272ae19a3"
+    },
+    {
+      "file": "frozen.webp",
+      "caption": "Frozen terrain with connected roads, cliffs and water.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0",
+      "hash": "0169f7aa",
+      "bytes": 129334,
+      "sha256": "25000f6b44e47dfd699f707260c2e2193336162e9706e5a3d7caf1c67500ff4e"
+    },
+    {
+      "file": "tunnels.webp",
+      "caption": "Underground network isolated from the surface.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&isolate=1",
+      "hash": "0169f7aa",
+      "bytes": 67970,
+      "sha256": "aaaaca397eca040aa760b893119c00aa96c142e77ade159fa30e3264c1ba6d62"
+    },
+    {
+      "file": "sensors.webp",
+      "caption": "Live LiDAR, sonar, RF and depth-camera overlays across the fleet.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&sensors=15&sensorsAll=1&unit=7",
+      "hash": "f6969e6d",
+      "bytes": 163084,
+      "sha256": "005af2cd83f96aa6c846864bbe240bc71a282fbda9d70846f9eaf31abe579a81"
+    },
+    {
+      "file": "submarine.webp",
+      "caption": "Heavy submarine with sonar and visibility through water.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&sensors=2&unit=11",
+      "hash": "f6969e6d",
+      "bytes": 69778,
+      "sha256": "6158ecdf2e8128b127050710598e2c2647baf9ca072b6f7b7d433832c87e3e41"
+    }
+  ]
+}

@@ -130,3 +130,22 @@ not necessarily imply large visible loops.
 clang -std=c11 -O2 -I. scripts/demo/scout.c -lm -o build/demo-scout
 build/demo-scout 96 > outputs/demo/scouting.jsonl
 ```
+
+## Current README and showcase screenshots
+
+The page at `docs/demo/index.html` includes a gallery of the current viewer beside
+the recorded 59-second video. Images in `docs/demo/images/` are actual Chrome
+screenshots, with seed URLs, world hashes, source revision and image SHA-256
+recorded in `manifest.json`. These small WebP files are deliberate public assets.
+
+After building the selected fleet viewer and serving `docs/` on port 8781:
+
+```sh
+node scripts/demo/screenshots.cjs
+```
+
+`DEMO_BASE` can point to another local `/maplab/` URL; `CHROME_PATH` overrides
+the browser executable. The capture uses production controls without changes to
+rendering, vehicle physics, policy weights or sensor equipment. Refresh the
+screenshots after material visual changes, and inspect each capture before
+publishing. The recorded showcase keeps its original footage and release asset.

@@ -1,102 +1,117 @@
 # AlienWars Gym
 
-Procedural 3D battlefields and traversal experiments, built on **PufferLib 5.0**
-with native C, Raylib and WebAssembly.
+A gym for training AlienWars agents in procedural 3D worlds. **PufferLib 5** trains
+native PPO controllers; **Raylib** renders the world; **WebAssembly** runs the
+simulation, sensing and policy inference in your browser.
 
-**[Open AlienWars Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)**
+**[Explore Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** ·
+[Watch the showcase](https://rozgo.github.io/alienwars-gym/demo/) ·
+[Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html) ·
+[Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
 
-[Watch the 59-second showcase](https://rozgo.github.io/alienwars-gym/demo/)
-· [Navigation Lab](https://rozgo.github.io/alienwars-gym/navigation/?kind=1)
-· [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
-· [Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html)
+[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
 
-Explore terrain, sensors, ground/sea/air units, tunnels and bridges, then watch
-the trained scout and inspect recorded native training metrics.
+## Worlds worth exploring
 
-Map Lab generates symmetric or asymmetric worlds with continuous WFC terrain,
-rolling hills, cliffs, beaches, lakes and an extended ocean. Roads reach bases
-up to ten floors high. Volumetric tunnels descend through ramp entrances, while
-regional WFC fits optional mountain passages and exposed bypasses to existing
-terrain. Bridges cross suitable water gaps without changing the landscape.
+**Wave Function Collapse** connects terrain tiles, road grades and tunnel
+profiles. Seeded landforms, rolling hills, beaches, ocean cliffs and lakes create
+varied terrain; bridges and mountain passages fit the generated landscape.
+Choose symmetric or asymmetric layouts, bases up to ten floors high, and one
+coherent terrain palette: **Temperate, Desert or Frozen**.
 
-Three ground, three naval, three air and three submarine variants traverse the
-world with A* global routes and physical local control. Five PPO learners train
-simultaneously in shared worlds, with individual goals and recurrent memory.
-Click units or select a family and command destinations in Map Lab. Fixed wings fly forward;
-quadcopters hover and strafe. Traction, clearance, turning, depth and sensing
-create tradeoffs between variants. Units remain visible through terrain and
-water. The five-family local navigation task is documented separately from the
-historical trained-scout Navigation Lab; combat remains future work.
+| Asymmetric desert | Frozen frontier |
+| --- | --- |
+| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
 
-Units now carry ideal odometry and attachable LiDAR, sonar, RF and depth-camera
-modules. Toggle their range overlays, inspect cached returns through terrain
-and water, or view the small live depth image. Sensing runs in shared C without
-rendering, with fixed observation buffers used by the navigation RL task.
+## Twelve vehicles. Five learning families. One shared world.
 
-- [Agent instructions](AGENTS.md)
-- [Map Lab specification and validation](docs/MAPLAB.md)
-- [Sensor architecture, observations and benchmarks](docs/SENSORS.md)
-- [Shared-world PPO, vehicle profiles and interactive missions](docs/SHARED_NAVIGATION.md)
-- [Navigation RL contract, training statistics and policy viewer](docs/NAVIGATION_RL.md)
-- [Development and GPU workflow](docs/DEVELOPMENT.md)
-- [Raylib web build and GitHub Pages](docs/WEB.md)
-- [Demo recording and editing](scripts/demo/README.md)
-- [Generation research](docs/GENERATION_RESEARCH.md)
-- [Upstream source and provenance](docs/UPSTREAM.md)
-- [PufferLib documentation](https://puffer.ai/docs.html)
+Three ground vehicles, three boats, three aircraft and three submarines have
+different hulls, speeds, turning limits and sensor reach. Fixed wings maintain
+forward airspeed; the quadcopter can hover and strafe. Boats respect draft;
+submarines navigate below the surface.
+
+**A\* plans global routes. PPO controls local navigation.** Five family policies
+train simultaneously in shared worlds, with individual destinations and recurrent
+memory for each vehicle. The browser loads the selected trained checkpoints.
+Select a unit or family and issue destinations, then follow their progress.
+
+| See beneath the landscape | Navigate beneath the ocean |
+| --- | --- |
+| [![Isolated volumetric tunnel network with ramps and underground chambers](docs/demo/images/tunnels.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&biome=3&isolate=1&sensors=0) | [![Heavy submarine visible through water with its sonar range](docs/demo/images/submarine.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=11&sensors=2) |
+
+The [recorded evaluation](docs/runs/shared-navigation-2026-09-16.md) covers three
+training seeds and 49.5 million steps. Local navigation remains experimental;
+combat and tactical coordination are future work.
+
+## See what the agents sense
+
+Attach **LiDAR, sonar, RF and depth cameras** to units, with ideal local odometry
+for motion. Toggle sensor overlays for one unit or the whole fleet, inspect
+returns through terrain and water, and view the live depth image. Equipment
+changes policy inputs; overlay visibility only changes the display.
+
+[![All-unit sensor overlays showing range fans, camera fields and radio connections across the battlefield](docs/demo/images/sensors.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=15&sensorsAll=1&unit=7)
+
+Generation, collision, navigation and sensing share a renderer-independent C
+model. Sensor sampling uses fixed buffers and runs without graphics during
+training. The depth camera measures geometric depth; trees and rocks are
+currently decorative rather than sensor occluders.
+
+## Try it
+
+Open **[Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** — no installation.
+
+- Drag to pan; Shift-drag to orbit; scroll to zoom.
+- Click a vehicle; Command/Ctrl-click to add units; right-click a destination.
+- Toggle sensor layers, select **All units**, or **Follow selected unit**.
+- **Isolate tunnels** reveals underground routes without moving the camera.
+- Choose a terrain palette and **New world** to explore another seed.
 
 ## Run locally
 
-Run from the repository root. On macOS, the native build uses the Xcode
-command-line tools and Homebrew `libomp`. Raylib 5.5 is downloaded on first use.
+Run from the repository root. On macOS, use the Xcode command-line tools and
+Homebrew `libomp`. Raylib 5.5 downloads on first use.
 
 ```sh
 ./scripts/check.sh
-./build/maplab --seed=73
+./build/maplab --seed=73 --biome=1
 ```
 
 The smoke check builds Map Lab and the upstream Minimal interface example with
 ASan/UBSan, generates a headless world and runs Minimal for 1,024 steps.
 
-For the browser build, install the isolated Emscripten SDK described in
-[the web guide](docs/WEB.md), then:
+For the browser build, install the isolated Emscripten SDK in the
+[web guide](docs/WEB.md), then:
 
 ```sh
-python3 scripts/build_fleet_site.py  # five selected PPO checkpoints
+python3 scripts/build_fleet_site.py  # five verified PPO checkpoints
 python3 scripts/check_maplab.py
-python3 scripts/check_sensors.py
+python3 scripts/check_shared.py
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
-Open <http://127.0.0.1:8781/>. The checker covers native/WASM generation parity,
-navigation, terrain and tunnel meshes, world variety, and patrol clearance.
-
-## Navigation reinforcement learning
-
-Generation, collision, navigation, sensors and action-driven scout motion share
-a renderer-independent C model. `ocean/alienwars/alienwars.h` adapts it to the
-native `src/pufferenv.h` interface. The navigation task has two action heads,
-621 observation floats, arrival/contact/failure rewards and explicit episodes.
+Open <http://127.0.0.1:8781/>. Training runs on an NVIDIA CUDA machine:
 
 ```sh
-python3 scripts/check_navigation.py
-./build.sh alienwars build/nav-viewer --cpu --rl
-./build/nav-viewer --env.controller=4 --env.maps=1  # manual control
-python3 scripts/nav_dashboard.py                 # live training JSONL charts
-# NVIDIA machine, from this checkout:
-CUDA_HOME=/usr/local/cuda ./build.sh alienwars build/puffer-alienwars
-./build/puffer-alienwars train --base.run_id=nav-pilot-unique
+./build.sh alienwars_shared build/puffer-shared
+python3 scripts/train_shared.py --prefix UNIQUE_RUN_NAME
 ```
 
-The policy viewer shows sensor returns, goals, trails, reward distances, reference
-routes, action probabilities and value estimates. The default `--cpu` and `--web`
-paths still open Map Lab; add `--rl` for Navigation Lab. See the
-[navigation guide](docs/NAVIGATION_RL.md) for checkpoint playback and evaluation.
+See the [shared-world training contract](docs/SHARED_NAVIGATION.md) and
+[GPU workflow](docs/DEVELOPMENT.md) for setup, curricula and reproducibility.
+The project uses PufferLib's native C/CUDA API. Browser simulation and inference
+run locally in WebAssembly.
 
-Training requires NVIDIA CUDA hardware. Browser simulation runs locally in
-WASM; the project does not use the older Python/Gymnasium training path.
-GPU access and reproducible development practices are in
-[the development guide](docs/DEVELOPMENT.md).
+## Go deeper
+
+- [Map generation and validation](docs/MAPLAB.md) · [Generation research](docs/GENERATION_RESEARCH.md)
+- [Sensor contract and benchmarks](docs/SENSORS.md)
+- [Shared-world PPO, vehicle profiles and missions](docs/SHARED_NAVIGATION.md)
+- [Historical trained-scout Navigation Lab](https://rozgo.github.io/alienwars-gym/navigation/?kind=1) · [Its training contract](docs/NAVIGATION_RL.md)
+- [Raylib web builds and GitHub Pages](docs/WEB.md)
+- [Showcase recording and screenshots](scripts/demo/README.md)
+- [Agent instructions](AGENTS.md) · [Upstream provenance](docs/UPSTREAM.md)
+- [PufferLib](https://github.com/PufferAI/PufferLib) · [Raylib](https://github.com/raysan5/raylib)
 
 Based on [PufferAI/PufferLib](https://github.com/PufferAI/PufferLib), retained
 under its [MIT license](LICENSE). Third-party asset notices remain with their
