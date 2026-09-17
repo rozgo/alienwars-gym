@@ -109,6 +109,13 @@ seeds before claiming robustness. Report failed runs and limits honestly.
 
 ## Training and reproducibility
 
+- User direction, September 17, 2026: the long-term training objective is actual
+  warfare between alien factions, with self-play as an intended capability.
+  At the next RL iteration, explicitly assess whether to implement self-play
+  in that pass; record the decision, rationale and proposed evaluation in the
+  iteration plan. Consider historical traffic policies for navigation and
+  opponent pools for faction warfare. See [the self-play direction](docs/SHARED_NAVIGATION.md#self-play-and-faction-warfare).
+  Current joint navigation training is not competitive faction self-play.
 - Training requires an NVIDIA GPU and development toolkit (NVCC, cuBLAS, NCCL,
   OpenMP, ccache and graphics link libraries). macOS supports CPU inference and
   rendering, not native training. Do not infer CUDA availability from Python.

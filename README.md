@@ -43,6 +43,10 @@ The [recorded evaluation](docs/runs/shared-navigation-2026-09-16.md) covers thre
 training seeds and 49.5 million steps. Local navigation remains experimental;
 combat and tactical coordination are future work.
 
+The long-term goal is to train warfare between alien factions. The next RL
+iteration will explicitly consider implementing self-play; see the
+[self-play development direction](docs/SHARED_NAVIGATION.md#self-play-and-faction-warfare).
+
 ## See what the agents sense
 
 Attach **LiDAR, sonar, RF and depth cameras** to units, with ideal local odometry

@@ -111,6 +111,46 @@ five hashes for each stage. `base.load_model_dir` requires `mission-0.bin` throu
 `mission-4.bin`; it initializes weights only, with fresh optimizer and recurrence.
 Do not mix these 645-input checkpoints with the old 96-input local policies.
 
+## Self-play and faction warfare
+
+User direction, September 17, 2026: the long-term objective is to train actual
+wars between alien factions. **Self-play is an intended capability and must be
+considered explicitly at the next RL iteration.** Decide whether that iteration
+should implement it, record the rationale and evaluation plan, and identify the
+prerequisites if it is deferred.
+
+Today, `selfplay.enabled` is off. The five family policies learn navigation
+simultaneously through our joint-training extension. Historical-opponent pools,
+competitive factions, combat objectives and team victory conditions are not
+part of the trained task. Existing results remain navigation evaluations.
+
+Consider two stages as the environment develops:
+
+1. **Navigation robustness:** evaluate using frozen historical controllers as
+   traffic alongside current learners. Compare against the current joint training
+   baseline on unfamiliar maps and traffic policies, measuring arrivals,
+   contacts and deadlocks. This can exercise policy-pool infrastructure before
+   combat is available; it does not establish competitive warfare behavior.
+2. **Faction warfare:** start with a bounded two-faction scenario, with explicit
+   objectives, combat actions, observations, team rewards, win/loss/draw rules
+   and episode limits. Train against current and historical opponents, and
+   expand the scenario curriculum as measured competence improves.
+
+Review PufferLib's existing checkpoint pool, opponent rotation and match
+evaluation before designing additional infrastructure. Integrating those with
+five simultaneous learners requires explicit family/faction policy routing,
+trainable versus frozen roles, and independent per-unit recurrent state; it is
+not merely setting `selfplay.enabled=1`. Preserve fixed rollout buffers and the
+shared native/browser simulation contract.
+
+For competitive evaluation, reserve unseen maps and opponent checkpoints, swap
+faction starting sides, include disclosed reference opponents, and report
+win/loss/draw rates across multiple training seeds. Preserve navigation and
+collision measures so competitive gains do not conceal movement regressions.
+Opponent diversity and resistance to forgetting need measured evidence before
+adding more elaborate league or matchmaking systems. This is a development
+direction; no self-play training or combat implementation is enabled by it.
+
 ## Interactive missions
 
 Click a vehicle to select it; Command/Ctrl-click adds or removes a selection.

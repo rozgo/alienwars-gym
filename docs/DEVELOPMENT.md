@@ -73,6 +73,13 @@ intermediate files, so concurrent experiments need separate worktrees.
 
 ## Reproducible training
 
+At the start of the next RL iteration, explicitly decide whether to implement
+self-play and record the rationale and evaluation plan. The intended direction
+is training warfare between alien factions; historical traffic controllers may
+be a useful earlier navigation experiment. Follow the
+[self-play and faction warfare direction](SHARED_NAVIGATION.md#self-play-and-faction-warfare),
+and distinguish planned competitive training from today's joint navigation task.
+
 Start with validated CPU environment behavior and a bounded single-GPU run.
 Record the source revision, compiler/toolkit and GPU versions, backend,
 precision, seeds, resolved configuration, exact commands and checkpoint hashes.
