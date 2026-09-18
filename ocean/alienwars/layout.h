@@ -219,13 +219,40 @@ static void aw_carve_lakes(AwMap*m){
         }
     }
 }
+/* Grade low shores from the shared height lattice, for oceans and lakes.
+ * Keep high cliffs, roads and entrance districts out of this beach grammar. */
+static void aw_beach_shelves(AwMap*m){
+    uint8_t original[AW_VERT*AW_VERT];memcpy(original,m->macro_q,sizeof(original));
+    for(int v=0;v<AW_VERT*AW_VERT;v++){
+        int cv=m->options.symmetry&&v>AW_VERT*AW_VERT/2?AW_VERT*AW_VERT-1-v:v;
+        int x=cv%AW_VERT,z=cv/AW_VERT,q=original[cv];if(q>4||x<3||z<3||x>61||z>61)continue;
+        int wet=99,dry=99,cliff=0,reserved=0;
+        for(int side=0;side<2;side++){int c=m->landmarks[side];if(aw_abs(x-c%64)+aw_abs(z-c/64)<11)reserved=1;}
+        for(int dz=-3;dz<=3;dz++)for(int dx=-3;dx<=3;dx++){
+            int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=AW_VERT||nz>=AW_VERT)continue;
+            int d=dx*dx+dz*dz,n=nz*AW_VERT+nx;if(d>9)continue;
+            if(original[n]>8)cliff=1;
+            if(original[n]<2&&d<wet)wet=d;
+            if(original[n]>=4&&d<dry)dry=d;
+            if(nx<AW_SIZE&&nz<AW_SIZE&&m->cells[nz*AW_SIZE+nx].road)reserved=1;
+        }
+        if(cliff||reserved)continue;
+        /* Sediment coves get broad terraces; firmer banks retain a shorter
+         * linear shore. This keeps natural bank diversity for fitted bridges. */
+        int broad=aw_noise(m->layout_seed^0x81723u,x,z,9)<130;
+        if(!broad){if(wet<=9||dry<=9)m->rolling[v]=1;continue;}
+        if(q>=2&&wet<=9){m->macro_q[v]=wet<=5?2:3;m->rolling[v]=1;}
+        else if(q==0&&dry<=2){m->macro_q[v]=1;m->rolling[v]=1;}
+        else if(q==0&&dry<=9)m->rolling[v]=1;
+    }
+}
 /* Broad lowland relief complements the sharp landform/cliff grammar. Pair
  * complete noise fields before sampling symmetric worlds: no half-map seam.
  * The shoreline and entrance districts retain their required dry sockets. */
 static void aw_rolling_hills(AwMap*m){
     uint8_t base[AW_VERT*AW_VERT];memcpy(base,m->macro_q,sizeof(base));
     for(int z=0;z<AW_VERT;z++)for(int x=0;x<AW_VERT;x++){
-        int v=z*AW_VERT+x,q=m->macro_q[v];if(q<4||q>8||m->lake_mask[v])continue;
+        int v=z*AW_VERT+x,q=m->macro_q[v];if(q<4||q>8||m->lake_mask[v]||m->rolling[v])continue;
         int n=aw_noise(m->layout_seed^0x7a191u,x,z,16)*3+aw_noise(m->layout_seed^0x913fu,x,z,9);
         if(m->options.symmetry){int other=aw_noise(m->layout_seed^0x7a191u,64-x,64-z,16)*3+aw_noise(m->layout_seed^0x913fu,64-x,64-z,9);n=(n+other)/2;}
         int relief=aw_clamp((n-240)/62,0,9),distance=12;
@@ -261,6 +288,7 @@ static void aw_rolling_hills(AwMap*m){
                 for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++){
                     int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=AW_VERT||nz>=AW_VERT)continue;
                     int n=nz*AW_VERT+nx,other=m->rolling[n]?m->macro_q[n]-base[n]:0;
+                    if(m->rolling[n]&&base[n]<base[v])other=aw_clamp(m->macro_q[n]-base[v],-1,9);
                     if(lift>other+1){lift=other+1;changed=1;}
                 }
                 m->macro_q[v]=base[v]+lift;
@@ -318,6 +346,7 @@ static int aw_layout(AwMap*m){
         m->macro_q[v]=aw_clamp(q,0,40);
     }
     aw_carve_lakes(m);
+    if(AW_VERSION>=12)aw_beach_shelves(m);
     aw_rolling_hills(m);
     return 1;
 }

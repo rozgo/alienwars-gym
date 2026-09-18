@@ -48,7 +48,51 @@ static void aw_flora_pod(AwBuilder*b,Vector3 p,float height,float radius,uint32_
     Vector3 top={p.x+.17f*sinf(2.8f),p.y+height,p.z};
     aw_flora_cap(b,top,(Vector3){.15f,1,0},radius*.45f,-radius*.2f,seed,color,rank);
 }
+/* Arid colonies store water in ribbed bodies; caps shade the soft tissue. */
+static void aw_resin_cactus(AwBuilder*b,Vector3 p,uint32_t seed,float rank){
+    float height=2.6f+aw_prop_random(seed)*2.0f,phase=aw_prop_random(seed+2)*2*PI;
+    Color flesh={133,126,81,255},cap={179,119,71,255};
+    aw_flora_pod(b,p,height,.55f+aw_prop_random(seed+3)*.27f,seed,flesh,rank);
+    Vector3 top={p.x+.06f,p.y+height*.87f,p.z};
+    aw_flora_cap(b,top,(Vector3){.12f,1,.07f},1.10f+aw_prop_random(seed+4)*.45f,.25f,seed,cap,rank);
+    for(int i=0;i<3;i++){
+        float a=phase+i*2.399963f;Vector3 join={p.x,p.y+height*(.22f+i*.13f),p.z};
+        Vector3 bud={p.x+cosf(a)*(.7f+i*.13f),join.y-.16f,p.z+sinf(a)*(.7f+i*.13f)};
+        aw_branch(b,join,bud,.21f,.17f,flesh,rank,19,9);
+        float rise=.72f+i*.25f;aw_flora_pod(b,bud,rise,.28f+i*.055f,seed+i,flesh,rank);
+        bud.y+=rise*.87f;aw_flora_cap(b,bud,(Vector3){cosf(a)*.12f,1,sinf(a)*.12f},.46f+i*.13f,.13f,seed+i,cap,rank);
+    }
+}
+/* Cold colonies unfold tall, curled membranes from a low root crown. */
+static void aw_frost_harp(AwBuilder*b,Vector3 p,uint32_t seed,float rank){
+    Color skin={104,130,155,255},fin={159,186,204,255};
+    float phase=aw_prop_random(seed+2)*2*PI,height=3.5f+aw_prop_random(seed)*2.2f;
+    for(int f=0;f<7;f++){
+        float a=phase+f*2.399963f,reach=1.0f+aw_prop_random(seed+f*97)*1.2f;
+        float h=height*(.65f+.35f*aw_prop_random(seed+f*79));Vector3 center[9],left[9],right[9],normal[9];
+        Vector3 side={-sinf(a),0,cosf(a)};
+        for(int k=0;k<9;k++){
+            float t=k/8.0f,spread=reach*t*t,curve=sinf(t*2.8f)*.4f,w=sinf(t*PI)*(.34f+f*.028f);
+            center[k]=(Vector3){p.x+cosf(a)*spread+side.x*curve,p.y+h*t,p.z+sinf(a)*spread+side.z*curve};
+            Vector3 cross={side.x*cosf(t*1.2f),sinf(t*1.2f)*.35f,side.z*cosf(t*1.2f)};
+            left[k]=Vector3Add(center[k],Vector3Scale(cross,w));right[k]=Vector3Subtract(center[k],Vector3Scale(cross,w));
+            normal[k]=Vector3Normalize(Vector3CrossProduct((Vector3){cosf(a)*2*reach*t,h,sinf(a)*2*reach*t},cross));
+            if(k){aw_branch(b,center[k-1],center[k],.025f,.018f,(Color){133,189,209,255},rank,18,5);}
+        }
+        for(int k=0;k<8;k++){
+            Color c=aw_tint(fin,.80f+.20f*k/7);
+            aw_flora_triangle(b,left[k],left[k+1],center[k+1],normal[k],normal[k+1],normal[k+1],c,rank,17,1);
+            aw_flora_triangle(b,left[k],center[k+1],center[k],normal[k],normal[k+1],normal[k],c,rank,17,1);
+            aw_flora_triangle(b,center[k],center[k+1],right[k+1],normal[k],normal[k+1],normal[k+1],c,rank,17,1);
+            aw_flora_triangle(b,center[k],right[k+1],right[k],normal[k],normal[k+1],normal[k],c,rank,17,1);
+        }
+        Vector3 root={p.x+cosf(a)*.48f,p.y+.025f,p.z+sinf(a)*.48f};
+        aw_branch(b,root,center[2],.055f,.10f,skin,rank,19,6);
+    }
+}
 static void aw_alien_flora(AwBuilder*b,Vector3 p,uint32_t seed,float rank,int snow,int dry){
+    if(dry){aw_resin_cactus(b,p,seed,rank);return;}
+    if(snow){aw_frost_harp(b,p,seed,rank);return;}
     float phase=aw_prop_random(seed+1)*2*PI,height=(dry?3.0f:4.5f)+aw_prop_random(seed)*2.8f;
     Color skin=snow?(Color){99,122,134,255}:dry?(Color){132,100,85,255}:(Color){92,110,95,255};
     Color cap=snow?(Color){142,163,176,255}:dry?(Color){157,123,92,255}:(Color){91,139,125,255};

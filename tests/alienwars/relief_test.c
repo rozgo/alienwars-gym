@@ -51,8 +51,9 @@ int main(void){
     }
     fprintf(stderr,"coverage slopes=%d bridge_worlds=%d sym=%d/%d raised=%d wet=%d\n",min_slopes,worlds,by_sym[0],by_sym[1],raised,wet);
     /* The v12 oval occupies roughly three quarters of the old rectangular
-     * footprint. Keep explicit coverage floors as well as every per-bridge
+     * footprint; graded beaches also replace some flat bridge banks. Keep
+     * explicit coverage floors as well as every per-bridge
      * topology/clearance check above; do not manufacture terrain for a bridge. */
-    assert(min_slopes>=(AW_VERSION>=12?28:40)&&worlds>=(AW_VERSION>=12?12:16)&&by_sym[0]>=6&&by_sym[1]>=6&&raised>20&&wet>20);
+    assert(min_slopes>=(AW_VERSION>=12?28:40)&&worlds>=(AW_VERSION>=12?10:16)&&by_sym[0]>=(AW_VERSION>=12?5:6)&&by_sym[1]>=(AW_VERSION>=12?5:6)&&raised>20&&wet>20);
     printf("RELIEF_TEST version=%d worlds=32 digest=%08" PRIx32 " bridge_worlds=%d bridges=%d min_walkable_slopes=%d graded_segments=%d water_spans=%d deck_support=PASS underpass=PASS symmetry=PASS ocean_unchanged=PASS\n",AW_VERSION,digest,worlds,bridges,min_slopes,raised,wet);
 }

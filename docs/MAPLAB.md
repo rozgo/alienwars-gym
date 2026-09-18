@@ -587,3 +587,19 @@ checkpoints and observation/action contracts are retained; their recorded
 training evaluation describes the earlier distribution, not a new v12 score.
 The historical Navigation Lab remains on generator 11 to preserve its evaluated
 bridge/tunnel tasks. Use `AW_GENERATOR_VERSION=11` only for historical reproductions.
+
+Low coasts now retain quarter-floor beach grades through shape Wave Function
+Collapse, instead of snapping intermediate shore vertices to 0/4. Seeded
+sediment coves receive broad 1/2/3-quarter-floor shelves; firmer banks keep
+shorter linear shore profiles. High cliffs, pinned roads and entrance districts
+are preserved. The same grades drive rendered triangles, support, collision and
+A*. Quarter-floor 2 is dry above the existing 1.44 water datum; quarter-floor 1
+remains submerged. Bridge fitting can use low dry banks, with a raised crown
+and the same clearance, wet-span and meshed-support checks. Sea level is unchanged.
+The shore texture stores water-side distance in R, seabed depth in G, land-side
+distance in B and the water mask in A; both terrain and water use it.
+
+All three palettes have original alien flora: Temperate fungal parasols,
+membrane fans and pods; Desert mushroom-cacti; Frozen curled frost-harp colonies.
+Their visual ecology, color and material detail remain separate from biome IDs
+and movement-cost classes. The assets do not change collision or sensing.

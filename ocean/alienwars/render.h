@@ -117,7 +117,7 @@ static const Color aw_palette[AW_TILES]={
     {122,124,116,255},{214,222,222,255},{129,167,179,255},{99,91,74,255},
     {82,119,115,255},{32,68,82,255},{103,107,102,255}
 };
-/* Temperate art direction is independent of other biome palettes. */
+/* Shared physical material IDs, distinct alien visual ecologies. */
 static Color aw_material_color(const AwMap*m,int material){
     if(m->options.biome==AW_TEMPERATE){
         switch(material){
@@ -125,6 +125,22 @@ static Color aw_material_color(const AwMap*m,int material){
             case AW_FOREST:return (Color){71,106,59,255};
             case AW_DIRT:return (Color){145,125,96,255};
             case AW_MUD:return (Color){111,98,75,255};
+        }
+    }
+    if(m->options.biome==AW_DESERT){
+        switch(material){
+            case AW_SAND:return (Color){176,129,86,255};
+            case AW_DIRT:return (Color){136,90,70,255};
+            case AW_ROCK:return (Color){105,86,106,255};
+            case AW_ROAD:return (Color){119,105,92,255};
+        }
+    }
+    if(m->options.biome==AW_FROZEN){
+        switch(material){
+            case AW_SNOW:return (Color){194,208,219,255};
+            case AW_ICE:return (Color){120,163,184,255};
+            case AW_ROCK:return (Color){103,108,144,255};
+            case AW_ROAD:return (Color){110,126,144,255};
         }
     }
     return aw_palette[material];
@@ -309,9 +325,9 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
             p.x+=jitter;p.z-=jitter;
             p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);
             int first=scenery.count;
-            int tree=mat==AW_FOREST||(mat==AW_SNOW&&h%19==0)||(mat==AW_GRASS&&h%31==0)||((mat==AW_SAND||mat==AW_DIRT)&&h%43==0);
+            int tree=mat==AW_FOREST||((mat==AW_SNOW||mat==AW_ICE)&&h%13==0)||(mat==AW_GRASS&&h%31==0)||((mat==AW_SAND||mat==AW_DIRT)&&h%23==0);
             if(tree)aw_ao_contact_add(ao,p.x,p.y,p.z,1.15f,1.15f,1.1f,.65f);
-            if(tree)aw_alien_flora(&scenery,p,h,rank,mat==AW_SNOW,m->options.biome==AW_DESERT);
+            if(tree)aw_alien_flora(&scenery,p,h,rank,m->options.biome==AW_FROZEN,m->options.biome==AW_DESERT);
             else if((mat==AW_ROCK||mat==AW_SNOW||mat==AW_DIRT||mat==AW_SAND)&&h%5==0){
                 float radius=.3f+aw_prop_random(h+1)*.38f,height=.35f+aw_prop_random(h+2)*.45f;
                 aw_boulder(&scenery,p,radius,height,h,ground,rank);
@@ -402,6 +418,11 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     float temperate=m->options.biome==AW_TEMPERATE?1.0f:0.0f;
     SetShaderValue(s->land_shader,GetShaderLocation(s->land_shader,"temperate"),&temperate,SHADER_UNIFORM_FLOAT);
     SetShaderValue(s->water_shader,GetShaderLocation(s->water_shader,"temperate"),&temperate,SHADER_UNIFORM_FLOAT);
+    float arid=m->options.biome==AW_DESERT?1.0f:0.0f,cryo=m->options.biome==AW_FROZEN?1.0f:0.0f;
+    SetShaderValue(s->land_shader,GetShaderLocation(s->land_shader,"arid"),&arid,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(s->land_shader,GetShaderLocation(s->land_shader,"cryo"),&cryo,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(s->water_shader,GetShaderLocation(s->water_shader,"arid"),&arid,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(s->water_shader,GetShaderLocation(s->water_shader,"cryo"),&cryo,SHADER_UNIFORM_FLOAT);
     s->detail_location=GetShaderLocation(s->land_shader,"detailEnabled");s->detail_enabled=1;
     SetShaderValue(s->land_shader,s->detail_location,&s->detail_enabled,SHADER_UNIFORM_INT);
     s->ao_location=GetShaderLocation(s->land_shader,"aoEnabled");s->ao_enabled=1;
@@ -421,6 +442,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->land_shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(s->land_shader,"texture4");
     s->land_shader.locs[SHADER_LOC_MAP_EMISSION]=GetShaderLocation(s->land_shader,"texture5");
     s->land_shader.locs[SHADER_LOC_MAP_HEIGHT]=GetShaderLocation(s->land_shader,"texture6");
+    s->land_shader.locs[SHADER_LOC_MAP_BRDF]=GetShaderLocation(s->land_shader,"texture7");
     s->water_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->water_shader,"texture0");
     s->water_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->water_shader,"texture1");
     s->shadow_shader=LoadShaderFromMemory(aw_vertex_shader,aw_shadow_fragment);
@@ -429,27 +451,28 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->water_material=LoadMaterialDefault();s->water_material.shader=s->water_shader;
     s->shadow_material=LoadMaterialDefault();s->shadow_material.shader=s->shadow_shader;
     /* Shoreline distance and water mask. AO is baked per opaque vertex. */
-    enum {RES=384};float *height=malloc(RES*RES*sizeof(float)),*distance=malloc(RES*RES*sizeof(float));
-    if(!height||!distance){fprintf(stderr,"Shore map allocation failed\n");exit(2);}
+    enum {RES=384};float *height=malloc(RES*RES*sizeof(float)),*distance=malloc(RES*RES*sizeof(float)),*dry_distance=malloc(RES*RES*sizeof(float));
+    if(!height||!distance||!dry_distance){fprintf(stderr,"Shore map allocation failed\n");exit(2);}
     for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
         int i=z*RES+x;height[i]=aw_ocean_bed_q(m,(x+.5f)*AW_OCEAN_SIZE/RES-AW_OCEAN_BELT,(z+.5f)*AW_OCEAN_SIZE/RES-AW_OCEAN_BELT);
-        distance[i]=height[i]>1.44f?0:1000;
+        distance[i]=height[i]>1.44f?0:1000;dry_distance[i]=height[i]>1.44f?1000:0;
     }
     for(int pass=0;pass<2;pass++)for(int j=0;j<RES*RES;j++){
         int i=pass?RES*RES-1-j:j,x=i%RES,z=i/RES,step=pass?1:-1;
         for(int k=-1;k<=1;k++){
-            int nx=x+k,nz=z+step;if(nx>=0&&nx<RES&&nz>=0&&nz<RES)distance[i]=fminf(distance[i],distance[nz*RES+nx]+(k?1.414214f:1));
+            int nx=x+k,nz=z+step;if(nx>=0&&nx<RES&&nz>=0&&nz<RES){distance[i]=fminf(distance[i],distance[nz*RES+nx]+(k?1.414214f:1));dry_distance[i]=fminf(dry_distance[i],dry_distance[nz*RES+nx]+(k?1.414214f:1));}
         }
-        if(x+step>=0&&x+step<RES)distance[i]=fminf(distance[i],distance[i+step]+1);
+        if(x+step>=0&&x+step<RES){distance[i]=fminf(distance[i],distance[i+step]+1);dry_distance[i]=fminf(dry_distance[i],dry_distance[i+step]+1);}
     }
     Image coast=GenImageColor(RES,RES,WHITE);Color*pixels=coast.data;
     for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
         int i=z*RES+x;
-        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),(unsigned char)Clamp((1.08f-height[i]*.75f)/12*255,0,255),255,height[i]>1.44f?0:255};
+        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),(unsigned char)Clamp((1.08f-height[i]*.75f)/12*255,0,255),(unsigned char)Clamp(dry_distance[i]*.5f/12*255,0,255),height[i]>1.44f?0:255};
     }
-    free(height);free(distance);
+    free(height);free(distance);free(dry_distance);
     s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);
     aw_build_detail(s,m);
+    s->land_material.maps[MATERIAL_MAP_BRDF].texture=s->coast;
     s->water_material.maps[MATERIAL_MAP_ALBEDO].texture=s->coast;
     s->shadow=LoadRenderTexture(2048,2048);
     if(!IsRenderTextureValid(s->shadow)){fprintf(stderr,"Shadow framebuffer unavailable\n");exit(2);}

@@ -18,14 +18,22 @@ variation, shared material weights and the existing GGX terrain lighting.
 Rock uses two sampling scales to reduce repetition, grass receives a leafy turf
 scan, and fibrous fungal stalks reuse the bark scan as monochrome tissue detail. Texture height drives surface-gradient
 normals without displacement. Snow keeps
-its finer procedural treatment; paths suppress relief. Traditional trees have been replaced by original alien fungal parasols, spiral
-membrane fans and pitcher-like pod towers in `alien_flora.h`. Climate-specific
+its finer procedural treatment; paths suppress relief. Traditional trees have been replaced by original alien flora in `alien_flora.h`.
+Temperate uses fungal parasols, spiral membrane fans and pitcher-like pod towers.
+Desert uses swollen ribbed mushroom-cacti with amber shade caps. Frozen uses
+rooted frost-harp colonies with curled blue-white fins. Climate-specific
 colors, ribbed skins, raised veins, restrained emission and approximate membrane
 backlighting establish the alien canopy. Membranes are opaque two-sided geometry;
 this is a light-transmission shading approximation, not sorted transparency. Low
 fern clumps and groundcover retain subtle shader motion. Additional small rock clusters sit in nonwalkable cells
 outside roads, bridges and cave/trail cells. Props
 remain cosmetic; this pass adds no new navigation obstacles.
+
+Desert stone has muted plum strata and warm ribbed soil; frozen ground has
+blue-violet stone and fine blue mineral seams. A signed shore-distance mask
+blends dry ground through damp beach material into shallow water, including
+inland lakes. This mask changes shading only; actual beach shelves and dry
+shore navigation come from the generator-v12 shared terrain.
 
 Water now uses sampled seabed depth as well as shoreline distance, with moving
 shore foam, cached planar reflections and local wakes from the three surface

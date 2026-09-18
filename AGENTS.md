@@ -315,3 +315,10 @@ User art direction: replace conventional broadleaf/conifer trees with original
 Felucia-inspired alien flora: fungal parasols, membrane fans and pod towers.
 Keep environmental emission subordinate to unit and sensor signals. These remain
 viewer-only props until explicitly incorporated into collision and sensing.
+
+Each biome has its own alien ecology: Temperate fungi and membrane canopies,
+Desert mushroom-cacti, and Frozen frost-harp fins. Beach grades are shared
+terrain geometry, not visual displacement. Keep the 1.44-quarter-floor sea datum
+consistent with naval drafts, sensors and dry-shore navigation (q >= 2 in v12).
+Run `beach_test.c` in native/WASM, preserving cliffs, roads, symmetry and linear
+shore support. Never lift only the rendered ocean independently of simulation.

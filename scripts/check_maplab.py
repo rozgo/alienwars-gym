@@ -77,6 +77,15 @@ if not artifacts_only:
     assert volume_native == volume_wasm, 'Native/WASM volumetric meshing disagree'
     print(volume_native)
 
+    beach_source = 'tests/alienwars/beach_test.c'
+    run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',beach_source,'-lm','-o','build/beach-test'])
+    beach_native = run(['build/beach-test'])
+    run([emcc,'-std=c11','-O3','-I.',beach_source,'-lm','-o','build/beach-test.js',
+         '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+    beach_wasm = run(['node','build/beach-test.js'])
+    assert beach_native == beach_wasm, 'Native/WASM beach grades disagree'
+    print(beach_native)
+
     occlusion_source = 'tests/alienwars/occlusion_test.c'
     run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',occlusion_source,'-lm','-o','build/occlusion-test'])
     occlusion_native = run(['build/occlusion-test'])
@@ -157,10 +166,11 @@ else:
               'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
               'relief_native':relief_native,'relief_wasm':relief_wasm,
               'patrol_native':patrol_native,'patrol_wasm':patrol_wasm,
+              'beach_native':beach_native,'beach_wasm':beach_wasm,
               'detail_native':detail_native,'detail_wasm':detail_wasm,
               'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
               'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,
               'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
               'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS: packaged viewer, artifact hashes and JavaScript' if artifacts_only else 'PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, mountain WFC / walkable spans, closed lakes/ocean boundary, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')
+print('PASS: packaged viewer, artifact hashes and JavaScript' if artifacts_only else 'PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, mountain WFC / walkable spans, closed lakes/ocean boundary, graded beaches, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')

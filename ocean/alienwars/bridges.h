@@ -5,7 +5,7 @@
  * No terrain, lake, road or cave is moved to make a bridge candidate fit. */
 static int aw_bridge_bank(const AwMap*m,int c){
     if(c<0||c>=AW_CELLS||!m->reachable[c]||!m->walkable[c]||m->bridge_bins[c]||m->cave_bin_count[c]||m->trail_bin_count[c])return 0;
-    int q=m->cells[c].q[0];if(q<4||q>16)return 0;
+    int q=m->cells[c].q[0];if(q<(AW_VERSION>=12?2:4)||q>16)return 0;
     for(int k=1;k<4;k++)if(m->cells[c].q[k]!=q)return 0;
     return aw_body_fits(m,c%64+.5f,q,c/64+.5f,1);
 }
@@ -21,7 +21,7 @@ static int aw_bridge_candidate(const AwMap*m,AwBridge*b){
         }
         if(!v&&u>1&&u<b->length-1){
             float bed=aw_height_q(m,x+.5f,z+.5f);
-            gaps+=bed<top-2;wet+=bed<1.44f;
+            gaps+=bed<top-2;wet+=bed<1.44f&&bed<top-2;
         }
     }
     return gaps>=3&&gaps*2>=b->length&&wet>=2&&wet*3>=b->length;
@@ -49,7 +49,8 @@ static void aw_bridges(AwMap*m){
             if(bx>60||bz>60)break;
             int end=bz*64+bx;if(!bank[end])continue;
             int qa=m->cells[c].q[0],qb=m->cells[end].q[0];if(aw_abs(qa-qb)>length-5)continue;
-            AwBridge b={x,z,dx,dz,length,qa,qb,(qa>qb?qa:qb)+2};
+            int crown=(qa>qb?qa:qb)+2;if(AW_VERSION>=12&&crown<6)crown=6;
+            AwBridge b={x,z,dx,dz,length,qa,qb,crown};
             if(!aw_bridge_candidate(m,&b))continue;
             if(m->options.symmetry){
                 /* Avoid self-overlapping mirrored footprints before ranking. */

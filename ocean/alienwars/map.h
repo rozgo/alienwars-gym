@@ -389,7 +389,8 @@ static void aw_navigation(AwMap*m){
     memset(m->walkable,0,sizeof(m->walkable));
     for(int c=0;c<AW_CELLS;c++){
         int lo=40,hi=0;for(int k=0;k<4;k++){int q=m->cells[c].q[k];if(q<lo)lo=q;if(q>hi)hi=q;}
-        m->walkable[c]=aw_cost[m->cells[c].material]>0&&lo>=4&&hi-lo<=1;
+        /* Quarter-floor 2 is the first dry shore above the 1.44 water datum. */
+        m->walkable[c]=aw_cost[m->cells[c].material]>0&&lo>=(AW_VERSION>=12?2:4)&&hi-lo<=1;
         if(m->walkable[c]&&(m->cave_bin_count[c]||m->trail_bin_count[c]||m->bridge_bins[c])){
             float q=aw_surface_q(m,c,0.5f,0.5f);
             if(fabsf(aw_support_q(m,c%64+0.5f,c/64+0.5f,q)-q)>0.1f)m->walkable[c]=0;
