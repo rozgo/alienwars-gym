@@ -45,7 +45,7 @@ static void compare_mesh(AwSVec origin,int count){
 }
 static void build_reference(void){triangle_count=0;for(int z=7;z<=18;z++)for(int x=7;x<=18;x++)aw_volume_cell(&m,z*64+x,triangle,NULL);aw_ray_world_init(&rays,&m);}
 static void ray_tests(void){
-    flat(4);aw_ray_world_init(&rays,&m);
+    flat(4);aw_bathymetry_build(&m);aw_ray_world_init(&rays,&m);
     AwSensorHit hit=aw_ray_terrain(&m,&rays,(AwSVec){25,9,25},(AwSVec){0,-1,0},20,0);
     assert(hit.kind==AW_HIT_TERRAIN&&fabsf(hit.distance-7.2f)<.001f);
     assert(aw_ray_terrain(&m,&rays,(AwSVec){25,9,25},(AwSVec){1,0,0},10,0).kind==AW_HIT_NONE);
@@ -56,7 +56,23 @@ static void ray_tests(void){
     hit=aw_ray_terrain(&m,&rays,(AwSVec){-20,-.6f,25},(AwSVec){0,-1,0},20,1);
     assert(hit.kind==AW_HIT_TERRAIN&&fabsf(hit.distance-9.6f)<.001f);
     hit=aw_ray_terrain(&m,&rays,(AwSVec){-4,-.6f,25},(AwSVec){0,-1,0},20,1);
-    assert(hit.kind==AW_HIT_TERRAIN&&fabsf(hit.distance-3.6f)<.001f);
+    /* At two tiles from this straight coast, smoothstep(1/8) * 12
+     * quantizes to .52 q of depression: world y=-1.59, range=.99. */
+    assert(hit.kind==AW_HIT_TERRAIN&&fabsf(hit.distance-(AW_VERSION>=13?.99f:3.6f))<.001f);
+#if AW_VERSION >= 13
+    /* A curved shelf around one coastal anchor, with the mandatory submerged
+     * domain border. The whole seven-unit ray sphere stays outside the land. */
+    flat(0);for(int c=0;c<AW_CELLS;c++)for(int k=0;k<4;k++)
+        if(aw_corner_vertex(c,k)==12*65+3)m.cells[c].q[k]=4;
+    aw_bathymetry_build(&m);aw_ray_world_init(&rays,&m);
+    triangle_count=0;
+    for(int z=7;z<=18;z++)for(int x=-10;x<0;x++){
+        AwVolumePoint p[4]={{x,aw_ocean_bed_q(&m,x,z),z},{x+1,aw_ocean_bed_q(&m,x+1,z),z},
+            {x+1,aw_ocean_bed_q(&m,x+1,z+1),z+1},{x,aw_ocean_bed_q(&m,x,z+1),z+1}};
+        triangle(NULL,p[0],p[1],p[2]);triangle(NULL,p[0],p[2],p[3]);
+    }
+    compare_mesh((AwSVec){-10,-3,25},256);
+#endif
     flat(24);passage(-6);passage(6);assert(aw_cave_index(&m));build_reference();
     compare_mesh((AwSVec){25,-4.95f,25},96);compare_mesh((AwSVec){25,4.05f,25},96);
     /* Surface breach must let an upward beam escape to max range. */

@@ -87,9 +87,30 @@ static float aw_ray_lattice(const AwMap*m,AwSVec origin,AwSVec dir,float start,f
         }t=exit;
     }return end;
 }
-/* Outside the land, the rendered shelf is the max of four sloped extents,
- * clamped to a flat deep bed. Intersect its five candidate planes analytically. */
+/* The outer DDA gives one ocean tile. Split it at the mesh's 0→2 diagonal;
+ * density is linear on each interval, so sonar hits the actual shelf triangles. */
 static float aw_ray_shelf(const AwMap*m,AwSVec o,AwSVec d,float a,float b){
+#if AW_VERSION >= 13
+    AwSVec mid=aw_sv_add(o,aw_sv_scale(d,(a+b)*.5f));
+    int cx=(int)floorf(mid.x*.5f),cz=(int)floorf(mid.z*.5f),count=2;
+    float cuts[3]={a,b,b},denominator=d.x-d.z;
+    if(fabsf(denominator)>1e-8f){
+        float split=(2*(cx-cz)-o.x+o.z)/denominator;
+        if(split>a+1e-6f&&split<b-1e-6f){cuts[1]=split;count=3;}
+    }
+    float last=0;
+    for(int i=0;i<count;i++){
+        AwSVec p=aw_sv_add(o,aw_sv_scale(d,cuts[i]));
+        float value=aw_ocean_bed_q(m,p.x*.5f,p.z*.5f)-(p.y+1.2f)/.75f;
+        if(value>1e-5f){
+            if(!i||last>=0)return cuts[i?i-1:0];
+            return cuts[i-1]+(cuts[i]-cuts[i-1])*(-last)/(value-last);
+        }
+        last=value;
+    }
+    return b;
+#else
+    /* Historical rectangular shelf had five analytic candidate planes. */
     AwSVec p=aw_sv_add(o,aw_sv_scale(d,a));if(aw_ray_density(m,p)>1e-5f)return a;
     const float nx[5]={1,-1,0,0,0},nz[5]={0,0,1,-1,0},k[5]={0,128,0,128,-12};
     float best=b,q0=(o.y+1.2f)/.75f,dq=d.y/.75f;
@@ -101,6 +122,7 @@ static float aw_ray_shelf(const AwMap*m,AwSVec o,AwSVec d,float a,float b){
         AwSVec hit=aw_sv_add(o,aw_sv_scale(d,t));
         if(fabsf(aw_ray_density(m,hit))<.0002f&&aw_ray_density(m,aw_sv_add(hit,aw_sv_scale(d,.0005f)))>0)best=fmaxf(a,t);
     }return best;
+#endif
 }
 static AwSensorHit aw_ray_terrain(const AwMap*m,const AwRayWorld*r,AwSVec o,AwSVec d,float range,int water){
     AwSensorHit hit={range,AW_HIT_NONE,-1};
