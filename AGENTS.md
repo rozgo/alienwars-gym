@@ -321,3 +321,9 @@ terrain geometry, not visual displacement. Keep the 1.44-quarter-floor sea datum
 consistent with naval drafts, sensors and dry-shore navigation (q >= 2 in v12).
 Run `beach_test.c` in native/WASM, preserving cliffs, roads, symmetry and linear
 shore support. Never lift only the rendered ocean independently of simulation.
+
+Version 13 caches coast-relative bathymetry in `bathymetry.h`. Keep the shared
+seabed continuous across the land/ocean boundary and consistent with water depth,
+sonar and submarine collision. Preserve lake beds and dry beach sockets. The
+cache is reset-time only; run bathymetry, sensor and shared-navigation parity
+checks when changing it. Never restore a flat square seabed inside the land grid.

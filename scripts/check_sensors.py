@@ -36,7 +36,7 @@ native_metrics = dict(re.findall(r'(\w+)=([^\s]+)', native_bench))
 wasm_metrics = dict(re.findall(r'(\w+)=([^\s]+)', wasm_bench))
 for key in ['worlds', 'steps', 'rays', 'samples', 'obs_floats']:
     assert native_metrics[key] == wasm_metrics[key], key
-report = {'sensor_version': 1, 'generator_version': 12,
+report = {'sensor_version': 1, 'generator_version': 13,
           'platform': platform.system() + ' ' + platform.machine(),
           'compiler': run(['clang', '--version']).splitlines()[0],
           'node': run(['node', '--version']), 'native': native, 'wasm': wasm,

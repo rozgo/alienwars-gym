@@ -603,3 +603,22 @@ All three palettes have original alien flora: Temperate fungal parasols,
 membrane fans and pods; Desert mushroom-cacti; Frozen curled frost-harp colonies.
 Their visual ecology, color and material detail remain separate from biome IDs
 and movement-cost classes. The assets do not change collision or sensing.
+
+## Coast-shaped seabed — version 13
+
+The ocean floor now follows the actual island coastline instead of the square
+64 × 64 land boundary. Reset-time exact squared Euclidean distances from WFC
+shore vertices define a smooth eight-tile descent after the first submerged
+tile, reaching the existing -12-quarter-floor deep-sea datum. This retains
+coves, headlands and elliptical outlines without a Manhattan-distance diamond.
+An edge-connected wet-vertex flood excludes enclosed lakes; existing dry land
+and quarter-floor beach sockets remain intact. Sea level is unchanged.
+
+A 97 × 97 uint16 cache adds 18,818 bytes per map, with no heap ownership or
+step-time searches. Its piecewise-linear sampling shares the 0→2 diagonal of
+the terrain/ocean triangles. The cache feeds the land solid, outer seabed mesh,
+water depth shading, naval drafts, submarine collision and sonar. It is built
+before cave validation so deeper sea cannot silently remove validated cover.
+The new bathymetry fixture checks true Euclidean distance, coast shape, lakes,
+shore preservation, symmetry, logical-boundary joins and mesh/density agreement
+in native C and WASM. Historical generator 11 remains unchanged.

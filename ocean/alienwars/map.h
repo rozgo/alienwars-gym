@@ -18,7 +18,7 @@
 #define AW_SPAN_START (AW_CELLS+AW_CAVE_NODES)
 #define AW_NODES (AW_SPAN_START+AW_SPANS)
 #ifndef AW_GENERATOR_VERSION
-#define AW_GENERATOR_VERSION 12
+#define AW_GENERATOR_VERSION 13
 #endif
 #define AW_VERSION AW_GENERATOR_VERSION
 #define AW_BRIDGES 4
@@ -34,6 +34,7 @@
 #define AW_OCEAN_BELT 16
 #define AW_OCEAN_SIZE (AW_SIZE+2*AW_OCEAN_BELT)
 #define AW_OCEAN_CELLS (AW_OCEAN_SIZE*AW_OCEAN_SIZE)
+#define AW_OCEAN_VERT (AW_OCEAN_SIZE+1)
 #define AW_SUBDIV 6
 #define AW_SHAPES 16
 #define AW_MAX_FLOOR 10
@@ -79,6 +80,9 @@ typedef struct {
     uint16_t trail_bins[AW_CELLS][AW_TRAIL_BIN];uint8_t trail_bin_count[AW_CELLS];
     uint16_t ocean_depth[AW_OCEAN_CELLS]; /* Hundredths of a quarter-floor. */
     uint8_t ocean_connected[AW_OCEAN_CELLS];int ocean_count;
+#if AW_VERSION >= 13
+    uint16_t shelf_drop[AW_OCEAN_VERT*AW_OCEAN_VERT]; /* Coast-relative bed depression, hundredths of q. */
+#endif
     AwLandform landforms[AW_LANDFORMS];AwLake lakes[AW_LAKES];
     int landform_count,lake_count,road_ends[2],landmarks[2],layout_attempts;
     uint32_t layout_seed;
@@ -335,6 +339,7 @@ static int aw_wfc(AwMap*m){
  * Coordinates here are grid units horizontally and quarter-floors vertically. */
 static float aw_lerp(float a,float b,float t){return a+(b-a)*t;}
 static float aw_bilinear(float a,float b,float c,float d,float x,float z){return aw_lerp(aw_lerp(a,b,x),aw_lerp(d,c,x),z);}
+#include "bathymetry.h"
 /* Beveled cliff cross-section: flat shelves with a shaped transition through
  * each height band. Road sockets retain their linear grade. */
 static float aw_tile_sample_q(const AwMap*m,int c,float x,float z){
@@ -345,7 +350,9 @@ static float aw_tile_sample_q(const AwMap*m,int c,float x,float z){
     float band=floorf(height/4),t=height/4-band;
     t=fminf(1,fmaxf(0,(t-0.27f)/0.46f));t=t*t*(3-2*t);
     float shaped=(band+t)*4;
-    return aw_lerp(shaped,height,support);
+    float surface=aw_lerp(shaped,height,support);
+    if(surface>=1)return surface;
+    return surface-aw_shelf_drop_q(m,c%AW_SIZE+x,c/AW_SIZE+z)*fmaxf(0,1-surface);
 }
 /* The same tessellated triangles are queried by collision, scout height and
  * camera occlusion. Shared boundaries have exactly the same sample profile. */
@@ -496,6 +503,9 @@ static int aw_validate(AwMap*m){
 }
 static uint32_t aw_fingerprint(const AwMap*m){
     uint32_t h=2166136261u;
+#if AW_VERSION >= 13
+    for(int i=0;i<AW_OCEAN_VERT*AW_OCEAN_VERT;i++)h=(h^m->shelf_drop[i])*16777619u;
+#endif
     for(int i=0;i<AW_OCEAN_CELLS;i++){h=(h^m->ocean_depth[i])*16777619u;h=(h^m->ocean_connected[i])*16777619u;}
     for(int c=0;c<AW_CELLS;c++){const AwCell*t=&m->cells[c];for(int k=0;k<4;k++)h=(h^t->q[k])*16777619u;h=(h^t->material)*16777619u;h=(h^t->road)*16777619u;h=(h^t->tunnel)*16777619u;h=(h^t->portal)*16777619u;}
     for(int i=0;i<m->cave_count;i++){const AwCaveNode*n=&m->cave[i];h=(h^(uint16_t)n->x)*16777619u;h=(h^(uint16_t)n->z)*16777619u;h=(h^(uint16_t)n->q)*16777619u;h=(h^n->profile)*16777619u;}
@@ -553,7 +563,9 @@ static int aw_generate_options(AwMap*m,uint32_t seed,AwOptions options){
     /* Establish a valid world before fitting optional passages to its rock. */
     for(int layout=0;layout<24;layout++){
         memset(m,0,sizeof(*m));m->seed=seed;m->layout_seed=aw_hash(seed^(uint32_t)layout*0x9e3779b9u);m->rng=m->layout_seed;m->options=options;m->attempts=1;m->layout_attempts=layout+1;
-        if(!aw_layout(m)||!aw_shape_wfc(m)||!aw_cave_approaches(m)||!aw_wfc(m))continue;
+        if(!aw_layout(m)||!aw_shape_wfc(m))continue;
+        aw_bathymetry_build(m);
+        if(!aw_cave_approaches(m)||!aw_wfc(m))continue;
         uint32_t surface_rng=m->rng;
         for(int attempt=0;attempt<(options.tunnels?16:1);attempt++){
             aw_cave_clear(m);aw_navigation(m);m->rng=surface_rng;m->attempts=attempt+1;

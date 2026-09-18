@@ -8,8 +8,15 @@ static int aw_node_cell(const AwMap*m,int node){
     const AwCaveNode*n=&m->cave[node-AW_CELLS];return n->z*AW_SIZE+n->x;
 }
 static float aw_height_q(const AwMap*m,float x,float z){
+#if AW_VERSION >= 13
+    /* Exact domain endpoints must match the adjacent ocean mesh. */
+    x=fminf(AW_SIZE,fmaxf(0,x));z=fminf(AW_SIZE,fmaxf(0,z));
+    int ix=aw_clamp((int)x,0,AW_SIZE-1),iz=aw_clamp((int)z,0,AW_SIZE-1);
+    return aw_surface_q(m,iz*AW_SIZE+ix,x-ix,z-iz);
+#else
     x=fminf(AW_SIZE-0.0001f,fmaxf(0,x));z=fminf(AW_SIZE-0.0001f,fmaxf(0,z));
     return aw_surface_q(m,(int)z*AW_SIZE+(int)x,x-floorf(x),z-floorf(z));
+#endif
 }
 #include "mountain.h"
 static float aw_cave_radius(int profile){return 0.85f+0.18f*profile;}

@@ -7,8 +7,12 @@
 static float aw_ocean_bed_q(const AwMap*m,float x,float z){
     float outside=fmaxf(fmaxf(-x,x-AW_SIZE),fmaxf(-z,z-AW_SIZE));
     if(outside<=0)return aw_height_q(m,x,z);
+#if AW_VERSION >= 13
+    return -aw_shelf_drop_q(m,x,z);
+#else
     /* Continuous shelf at the mandatory submerged domain edge. */
     return -fminf(12.0f,outside*2.0f);
+#endif
 }
 static int aw_ocean_neighbor(int c,int d){
     int x=c%AW_OCEAN_SIZE,z=c/AW_OCEAN_SIZE;

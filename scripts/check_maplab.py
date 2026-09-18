@@ -86,6 +86,15 @@ if not artifacts_only:
     assert beach_native == beach_wasm, 'Native/WASM beach grades disagree'
     print(beach_native)
 
+    bathymetry_source = 'tests/alienwars/bathymetry_test.c'
+    run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',bathymetry_source,'-lm','-o','build/bathymetry-test'])
+    bathymetry_native = run(['build/bathymetry-test'])
+    run([emcc,'-std=c11','-O3','-I.',bathymetry_source,'-lm','-o','build/bathymetry-test.js',
+         '-sSTACK_SIZE=1MB','-sINITIAL_MEMORY=64MB','-sASSERTIONS=1','-sENVIRONMENT=node'],env=env)
+    bathymetry_wasm = run(['node','build/bathymetry-test.js'])
+    assert bathymetry_native == bathymetry_wasm, 'Native/WASM coastal bathymetry disagree'
+    print(bathymetry_native)
+
     occlusion_source = 'tests/alienwars/occlusion_test.c'
     run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined','-I.',occlusion_source,'-lm','-o','build/occlusion-test'])
     occlusion_native = run(['build/occlusion-test'])
@@ -160,17 +169,18 @@ for seed in [0, 1, 73, 4294967295]:
     assert native_line == web_line, (native_line, web_line)
     matches.append(dict(re.findall(r'(\w+)=([^\s]+)',native_line)))
 if artifacts_only:
-    report = {'generator_version':12,'scope':'packaged artifacts only','packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,'javascript_syntax':'passed'}
+    report = {'generator_version':13,'scope':'packaged artifacts only','packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,'javascript_syntax':'passed'}
 else:
-    report = {'generator_version':12,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
+    report = {'generator_version':13,'native':native,'wasm':wasm,'volume_native':volume_native,'volume_wasm':volume_wasm,
               'mountain_native':mountain_native,'mountain_wasm':mountain_wasm,
               'relief_native':relief_native,'relief_wasm':relief_wasm,
               'patrol_native':patrol_native,'patrol_wasm':patrol_wasm,
               'beach_native':beach_native,'beach_wasm':beach_wasm,
+              'bathymetry_native':bathymetry_native,'bathymetry_wasm':bathymetry_wasm,
               'detail_native':detail_native,'detail_wasm':detail_wasm,
               'occlusion_native':occlusion_native,'occlusion_wasm':occlusion_wasm,
               'diversity_native':diversity_native,'diversity_wasm':diversity_wasm,
               'packaged_viewer_seed_checks':matches,'artifact_hashes_match':True,
               'javascript_syntax':'passed'}
 (BUILD / 'maplab-check.json').write_text(json.dumps(report,indent=2)+'\n')
-print('PASS: packaged viewer, artifact hashes and JavaScript' if artifacts_only else 'PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, mountain WFC / walkable spans, closed lakes/ocean boundary, graded beaches, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')
+print('PASS: packaged viewer, artifact hashes and JavaScript' if artifacts_only else 'PASS: 256 native/WASM seeds, 48 same-settings diversity worlds, mountain WFC / walkable spans, closed lakes/ocean boundary, graded beaches and coastal bathymetry, cave clearance, manifold meshing, baked occlusion, seamless detail maps, deliberate failures, viewer parity, artifacts and JavaScript')
