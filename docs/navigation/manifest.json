@@ -4,7 +4,7 @@
   "checkpoint_sha256": "ec8c3c85f688e79704a585068434c7eb1b8e4d356585ed28ceb8fb43071fcc5a",
   "hidden": 128,
   "layers": 2,
-  "source": "5ed39a3f56d7786f8b2477af45404f5e89f54388",
+  "source": "8164781ebb751143af064f981d088f097c3fabd7",
   "dirty": false,
   "site_links": {
     "maplab": "../maplab/",
@@ -12,10 +12,10 @@
     "demo": "../demo/"
   },
   "files": {
-    "index.wasm": "28a999b6d8f28883d3812e4987cfe662a82bbe82e273ae3a0bc8373f7583e700",
+    "index.wasm": "3a72c75b102d2ffae1a3795c2c3d5681b6f2c6e8ab807d1ae3ffde261f44e9d8",
     "theme.css": "37667df5acd500ec6b953f9fa031461df32cabd36ea68c9ebb3e8c5c6ee43574",
     "index.html": "af02e897c545d8af1b6ce9072ec2cfd98eee5f03e3cc905c3b59b17c05c53cc8",
-    "index.js": "66df5427980bb21b1b81d885fd21b0cc14e148f0a7433a5697a0cf797e74aa81",
-    "index.data": "1f63b81f92560aacb7b47220924155a2fb5aa68995f75bb7930f0e9f5b16fb89"
+    "index.js": "79dd5a8c9e7a2a45758cbeeeb660a2ded6e2163e17792de6bd02daeeead6d3bb",
+    "index.data": "f84b3dde32af06f1e551cf9c1d9b224f3b5124df0cf4f447db2bc4704fc40b3f"
   }
 }

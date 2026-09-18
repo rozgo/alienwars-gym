@@ -10,19 +10,34 @@ simulation, sensing and policy inference in your browser.
 [Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html) ·
 [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
 
-[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=9010a7041434)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
+[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=0c01bb1b9934)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
 
 ## Worlds worth exploring
 
 **Wave Function Collapse** connects terrain tiles, road grades and tunnel
-profiles. Seeded landforms, rolling hills, beaches, ocean cliffs and lakes create
+profiles. Irregular oval coastlines, seeded landforms, rolling hills, beaches, ocean cliffs and lakes create
 varied terrain; bridges and mountain passages fit the generated landscape.
 Choose symmetric or asymmetric layouts, bases up to ten floors high, and one
 coherent terrain palette: **Temperate, Desert or Frozen**.
 
 | Asymmetric desert | Frozen frontier |
 | --- | --- |
-| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp?v=616b56491cc5)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp?v=08adef78e35c)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
+| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp?v=0862cd60ee8e)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp?v=56088aa07732)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
+
+## A living art direction
+
+The biological kit brings distinct grown bodies for **all twelve fleet roles**, plus
+nursery forms at both bases. Alien fungal parasols, membrane fans and pod towers
+replace traditional trees, with mushroom-cacti in Desert and frost harps in Frozen. Four 1K material scans, stronger baked and cast shadows,
+shore foam, boat wakes and contact shadows give the world more physical
+presence. **Play view** expands the battlefield and tucks away the inspector.
+
+[![Biological scout among alien fungi in the live Temperate world](docs/demo/images/biological.webp?v=75d1951920c2)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&view=play&sensors=0)
+
+The [art pipeline](docs/ART_PIPELINE.md) includes reproducible Blender sources and
+asset licenses. Cultivation and combat remain planned. Rendering changes preserve
+the trained navigation policies; generator-v12 terrain has not been reevaluated
+for the historical training scores.
 
 ## Twelve vehicles. Five learning families. One shared world.
 
@@ -38,7 +53,7 @@ Select a unit or family and issue destinations, then follow their progress.
 
 | See beneath the landscape | Navigate beneath the ocean |
 | --- | --- |
-| [![Isolated volumetric tunnel network with ramps and underground chambers](docs/demo/images/tunnels.webp?v=d6dd95cf494f)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&biome=3&isolate=1&sensors=0) | [![Heavy submarine visible through water with its sonar range](docs/demo/images/submarine.webp?v=421652b97799)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=11&sensors=2) |
+| [![Isolated volumetric tunnel network with ramps and underground chambers](docs/demo/images/tunnels.webp?v=09fba0d99610)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&biome=3&isolate=1&sensors=0) | [![Heavy submarine visible through water with its sonar range](docs/demo/images/submarine.webp?v=770b0298e4d5)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=11&sensors=2) |
 
 The [recorded evaluation](docs/runs/shared-navigation-2026-09-16.md) covers three
 training seeds and 49.5 million steps. Local navigation remains experimental;
@@ -59,7 +74,7 @@ for motion. Toggle sensor overlays for one unit or the whole fleet, inspect
 returns through terrain and water, and view the live depth image. Equipment
 changes policy inputs; overlay visibility only changes the display.
 
-[![All-unit sensor overlays showing range fans, camera fields and radio connections across the battlefield](docs/demo/images/sensors.webp?v=061b21511978)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=15&sensorsAll=1&unit=7)
+[![All-unit sensor overlays showing range fans, camera fields and radio connections across the battlefield](docs/demo/images/sensors.webp?v=a3467a85de7c)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=15&sensorsAll=1&unit=7)
 
 Generation, collision, navigation and sensing share a renderer-independent C
 model. Sensor sampling uses fixed buffers and runs without graphics during
@@ -72,7 +87,7 @@ Open **Flecs Explorer** in Map Lab to inspect the selected unit's live body stat
 mission, odometry, sensors and PPO inputs. The official Explorer reads the same
 Flecs world used by the viewer; the training build keeps these inspection addons disabled.
 
-[![Official Flecs Explorer inspecting a live unit beside the Temperate battlefield](docs/demo/images/explorer.webp?v=54df4b5b1600)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=7&explorer=1)
+[![Official Flecs Explorer inspecting a live unit beside the Temperate battlefield](docs/demo/images/explorer.webp?v=472d133b82ff)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=7&explorer=1)
 
 ## Try it
 
