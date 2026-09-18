@@ -20,6 +20,7 @@ fi
 case "$AW_MISSION_CONTRACT" in 2|3) ;; *) echo 'Invalid navigation contract' >&2; exit 2 ;; esac
 mkdir -p build/web/alienwars
 printf '{"contract":%s}\n' "$AW_MISSION_CONTRACT" > build/web/alienwars/contract.json
+LOCAL_PRELOAD+=(--preload-file build/web/alienwars/contract.json@resources/alienwars/contract.json)
 emcc ocean/alienwars/alienwars.c ocean/alienwars/flecs_runtime.c -o build/web/alienwars/maplab.html \
     -std=c11 -O3 -DAW_NAV_VERSION="$AW_MISSION_CONTRACT" -Wall -Wextra -Wno-unused-function -DAW_FLECS_EXPLORER \
     -I. -Iocean/alienwars "${INCLUDES[@]}" "${LINK_ARCHIVES[@]}" \

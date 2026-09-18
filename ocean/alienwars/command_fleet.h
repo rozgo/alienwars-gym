@@ -86,9 +86,15 @@ static void aw_command_fleet_init(AwCommandFleet*f,const AwMap*m,const AwPatrols
         if(overlap){f->status[i]=AW_MISSION_UNAVAILABLE;continue;}
         aw_mission_agent_reset(&f->unit[i],&f->route[i],6000);f->active[i]=1;f->home[i]=vehicle.position;f->destination[i]=r->point[end];f->automatic[i]=1;
     }
-    int sizes[]={4,3,3,3};f->trained=1;
+    const char*directory=getenv("AW_MISSION_MODELS");if(!directory||!*directory)directory="resources/alienwars";
+    char metadata[2048],json[1024]={0};snprintf(metadata,sizeof(metadata),"%s/contract.json",directory);
+    int model_contract=2;FILE*config=fopen(metadata,"r");
+    if(config){fread(json,1,sizeof(json)-1,config);fclose(config);char*key=strstr(json,"\"contract\"");char*colon=key?strchr(key,':'):NULL;model_contract=colon?atoi(colon+1):0;}
+    int sizes[]={4,3,3,3};f->trained=model_contract==AW_NAV_VERSION;
+
     for(int family=0;family<5;family++){
-        char file[128];snprintf(file,sizeof(file),"resources/alienwars/mission-%d.bin",family);Weights*w=f->weights[family]=load_weights(file);
+        if(model_contract!=AW_NAV_VERSION)continue;
+        char file[2048];snprintf(file,sizeof(file),"%s/mission-%d.bin",directory,family);Weights*w=f->weights[family]=load_weights(file);
         int expected=128*AW_MISSION_INPUTS+14*128+2*3*128*128;
         if(!w){f->trained=0;continue;}
         int valid=w->size-7==expected;for(int j=0;valid&&j<expected;j++)if(!isfinite(w->data[j]))valid=0;

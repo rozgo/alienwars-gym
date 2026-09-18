@@ -230,7 +230,8 @@ EM_JS(void,aw_sensor_report,(int unit,const float* values),{
 });
 #endif
 #ifdef PLATFORM_WEB
-EM_JS(void,aw_command_fleet_report,(int trained,int selected,const char* role,const float* values),{
+EM_JS(void,aw_command_fleet_report,(int trained,int selected,const char* role,const float* values,const char*audit),{
+    document.body.dataset.fleetAudit=UTF8ToString(audit);
     if(window.maplabFleet)window.maplabFleet({trained:!!trained,selected,role:UTF8ToString(role),values:Array.from(HEAPF32.subarray(values>>2,(values>>2)+26))});
 });
 #endif
@@ -252,7 +253,7 @@ static void aw_publish_sensors(void){
     AwSVec goal=fleet.destination[sensor_selected];
     float profile[26]={spec.speed,spec.turn,spec.width*2,spec.length*2,aw_vehicle_sensor_range(v->family,v->variant),v->failed,v->contact,(float)fleet.arrivals[sensor_selected],(float)fleet.unit[sensor_selected].cursor,(float)fleet.route[sensor_selected].count,
         fleet.status[sensor_selected],fleet.selection,fleet.unit[sensor_selected].remaining,fleet.command_result,fleet.world.ticks*.1f,goal.x,goal.y,goal.z,v->family,fleet.active[sensor_selected],fleet.command_requested,command_armed,fleet.total_contacts[sensor_selected],fleet.total_blocked[sensor_selected],fleet.total_collisions[sensor_selected],fleet.unit[sensor_selected].ticks};
-    aw_command_fleet_report(fleet.trained,sensor_selected,fleet.active[sensor_selected]?aw_vehicle_role(v->family,v->variant):"Unavailable: no body-clear route",profile);
+    aw_command_fleet_report(fleet.trained,sensor_selected,fleet.active[sensor_selected]?aw_vehicle_role(v->family,v->variant):"Unavailable: no body-clear route",profile,aw_fleet_snapshot());
 #endif
 }
 AW_EXPORT void aw_sensor_control(int action,int value){
