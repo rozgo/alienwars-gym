@@ -99,3 +99,38 @@ collision-free requested arrival rates of 55.6% ground, 63.9% boat, 91.7% quad,
 72.9% fixed wing and 73.6% submarine. These are measurements on the current
 terrain, not the older release's original validation scores. Candidate results
 and three-seed training are pending; no new policy is approved for deployment.
+
+## Reproduction
+
+Core development scripts run through pinned `uv` tooling; training remains
+native C/CUDA. In a clean GPU checkout:
+
+```sh
+./build.sh alienwars_shared build/puffer-shared
+uv run scripts/train_shared.py --prefix UNIQUE_RUN --maps 32 \
+  --frozen outputs/shared/deployed
+uv run scripts/check_shared_training.py outputs/shared/UNIQUE_RUN/runs.json \
+  --out outputs/reliability/training-audit.json
+AW_SHARED_FROZEN_DIR=outputs/shared/deployed uv run scripts/eval_shared.py \
+  --models candidate=outputs/shared/UNIQUE_RUN/s373-c2 --contract 3 \
+  --seed 32001 --maps 8 --baselines --out outputs/reliability/selection
+```
+
+The frozen directory must exactly match the five hashes in the published
+contract-2 manifest. Training writes `contract.json` beside each five-model set.
+Use `--contract 2` for old checkpoints; `--no-assist` measures the candidate
+without deterministic recovery assistance. `--scenarios-per-map 3` restricts the
+new evaluator to the first three preparations, but exact historical replay also
+requires compiling with `AW_NAV_VERSION=2`, as `check_flecs.py` does.
+
+The September 18 run uses independent seeds 373, 474 and 575, 32 maps and
+128/256/512 PPO epochs across the three curricula. Training source is
+`67eeed8f`; its immutable checkout is kept separate from subsequent viewer and
+documentation work. There are 49,545,216 planned learner agent steps. The two-epoch
+smoke at `8aab2254` is excluded from that total.
+
+Validation completed so far: native ASan/UBSan and WASM agree on hull draft,
+head-on passage, parked-obstacle detours, terminal/reset behavior, repeated goals,
+frozen inference and absence of reset/step allocations. Both native and WASM
+historical Flecs traces match their pre-port snapshots. These checks establish
+implementation behavior; they do not establish the 95% navigation target.

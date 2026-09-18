@@ -1,5 +1,13 @@
 # Shared-world navigation
 
+The deployed viewer uses contract 2, documented below. Development training now
+uses **contract 3**: gentler steering, sensor-history anticipation, bounded
+recovery, eight traffic preparations, repeated destinations and up to four frozen
+historical actors outside the learner batch. See
+[NAVIGATION_RELIABILITY.md](NAVIGATION_RELIABILITY.md) for the implementation,
+measurement gates and current results. A matching tensor shape is not enough to
+interchange these checkpoints. Viewer/evaluation tools check semantic contracts.
+
 Contract version 2 runs twelve physical agents and five independent PPO learners
 in the same worlds: ground, boats, quadcopters, fixed wings and submarines.
 Every agent has its own destination, observation, terminal state and recurrent
