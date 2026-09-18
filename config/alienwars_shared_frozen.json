@@ -1,0 +1,61 @@
+{
+  "contract": 2,
+  "observations": 645,
+  "actions": [
+    4,
+    3,
+    3,
+    3
+  ],
+  "hidden": 128,
+  "layers": 2,
+  "training": "five independent PPO learners in shared worlds",
+  "selection_map_seeds": [
+    11001,
+    11002,
+    11003
+  ],
+  "selected_training_seed": 474,
+  "policies": [
+    {
+      "family": 0,
+      "name": "Ground",
+      "run": "shared-v3-s474-c1",
+      "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+      "sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-0.bin"
+    },
+    {
+      "family": 1,
+      "name": "Surface boats",
+      "run": "shared-v3-s474-c2",
+      "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+      "sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-1.bin"
+    },
+    {
+      "family": 2,
+      "name": "Quadcopters",
+      "run": "shared-v3-s474-c2",
+      "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+      "sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-2.bin"
+    },
+    {
+      "family": 3,
+      "name": "Fixed wings",
+      "run": "shared-v3-s474-c1",
+      "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+      "sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-3.bin"
+    },
+    {
+      "family": 4,
+      "name": "Submarines",
+      "run": "shared-v3-s474-c2",
+      "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+      "sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce",
+      "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-4.bin"
+    }
+  ]
+}

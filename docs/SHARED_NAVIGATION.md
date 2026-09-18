@@ -73,7 +73,7 @@ terminals mask completed actors to neutral and reset their recurrent memory.
 Parking goals are separated by hull lengths plus a margin. Failed searches and
 unavailable spawns are reported, not counted as successful missions. Map/route
 banks and all search/rollout buffers are prepared before stepping; step/reset
-allocate nothing. Current generation is version 11, with a single terrain palette
+allocate nothing. Current generation is version 13, with a single terrain palette
 per world. The September 16 training release records version 10 worlds and
 retains its original source, map hashes and evaluation results.
 
@@ -111,7 +111,10 @@ that every family's weights change and every learner reports finite losses.
 
 ```sh
 ./build.sh alienwars_shared build/puffer-shared
-uv run scripts/train_shared.py --prefix UNIQUE_RUN_NAME
+gh release download shared-navigation-2026-09-16 --pattern 'mission-*.bin' \
+  --dir outputs/shared/deployed
+uv run scripts/train_shared.py --prefix UNIQUE_RUN_NAME \
+  --frozen outputs/shared/deployed
 uv run scripts/check_shared.py
 ```
 
@@ -136,10 +139,12 @@ physical combat and team outcomes with reference controllers first. Combat
 self-play follows validation of that environment; cultivation planning can be
 introduced after the combat controllers have a measured baseline.
 
-Today, `selfplay.enabled` is off. The five family policies learn navigation
-simultaneously through our joint-training extension. Historical-opponent pools,
-competitive factions, combat objectives and team victory conditions are not
-part of the trained task. Existing results remain navigation evaluations.
+`selfplay.enabled` remains off. The five family policies learn navigation
+simultaneously through our joint-training extension. Contract 3 adds frozen
+historical traffic outside learner batches, pinned by
+`config/alienwars_shared_frozen.json`. Competitive factions, combat objectives
+and team victory conditions remain outside the trained task. Existing results
+remain navigation evaluations.
 
 Consider two stages as the environment develops:
 

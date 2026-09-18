@@ -128,8 +128,9 @@ AW_SHARED_FROZEN_DIR=outputs/shared/deployed uv run scripts/eval_shared.py \
   --seed 32001 --maps 8 --baselines --out outputs/reliability/selection
 ```
 
-The frozen directory must exactly match the five hashes in the published
-contract-2 manifest. Training writes `contract.json` beside each five-model set.
+The frozen directory must exactly match the five hashes in
+`config/alienwars_shared_frozen.json`, a retained copy of the September 16
+contract-2 release. Training writes `contract.json` beside each five-model set.
 Use `--contract 2` for old checkpoints; `--no-assist` measures the candidate
 without deterministic recovery assistance. `--scenarios-per-map 3` restricts the
 new evaluator to the first three preparations, but exact historical replay also

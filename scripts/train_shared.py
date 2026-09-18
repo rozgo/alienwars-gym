@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];os.chdir(ROOT)
 p=argparse.ArgumentParser();p.add_argument('--seeds',type=int,nargs='+',default=[373,474,575]);p.add_argument('--prefix',default='reliability-v3');p.add_argument('--binary',default='build/puffer-shared');p.add_argument('--epochs',type=int,nargs=3,default=[128,256,512]);p.add_argument('--maps',type=int,default=32);p.add_argument('--frozen',required=True);p.add_argument('--resume',type=Path);p.add_argument('--start-stage',type=int,choices=[0,1,2],default=0);args=p.parse_args()
 assert 1<=args.maps<=32 and min(args.epochs)>0
-manifest_path=ROOT/'web/maplab/policies.json'
+manifest_path=ROOT/'config/alienwars_shared_frozen.json'
 historical=json.loads(manifest_path.read_text())
 assert historical['contract']==2
 for f,policy in enumerate(historical['policies']):

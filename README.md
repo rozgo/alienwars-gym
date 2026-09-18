@@ -132,7 +132,10 @@ Open <http://127.0.0.1:8781/>. Training runs on an NVIDIA CUDA machine:
 
 ```sh
 ./build.sh alienwars_shared build/puffer-shared
-uv run scripts/train_shared.py --prefix UNIQUE_RUN_NAME
+gh release download shared-navigation-2026-09-16 --pattern 'mission-*.bin' \
+  --dir outputs/shared/deployed
+uv run scripts/train_shared.py --prefix UNIQUE_RUN_NAME \
+  --frozen outputs/shared/deployed
 ```
 
 See the [shared-world training contract](docs/SHARED_NAVIGATION.md) and
