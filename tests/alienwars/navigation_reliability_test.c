@@ -50,9 +50,29 @@ int main(void){
     assert(world.agents[0].arrived&&!world.agents[0].contacts);
     /* Disable equipment after measured tracks have been acquired. Neither
      * stale history nor simulator neighbor state may fill that channel. */
-    AwSensorConfig config=world.sensors.units[0].config[AW_SENSOR_RF];config.enabled=0;
-    aw_sensor_attach(&world.sensors,0,AW_SENSOR_RF,config);aw_mission_sense(&world,&map,.1f);
+    for(int type=0;type<4;type++){AwSensorConfig config=world.sensors.units[0].config[type];config.enabled=0;
+        aw_sensor_attach(&world.sensors,0,type,config);}
+    aw_mission_sense(&world,&map,.1f);
     assert(!world.agents[0].tracks[1].valid&&world.agents[0].closing==0);
+    aw_mission_world_reset(&world,&map,2);
+    route(0,(AwSVec){64,1.8f,59},(AwSVec){64,1.8f,78});route(1,(AwSVec){64,1.8f,64},(AwSVec){64,1.8f,64.1f});world.paused[1]=1;
+    AwSensorConfig rf=world.sensors.units[0].config[AW_SENSOR_RF];rf.enabled=0;aw_sensor_attach(&world.sensors,0,AW_SENSOR_RF,rf);
+    aw_mission_sense(&world,&map,.1f);assert(world.agents[0].tracks[1].valid&&world.agents[0].tracks[1].source!=AW_SENSOR_RF+1);
+    AwSVec measured=world.agents[0].tracks[1].position;world.agents[1].vehicle.position.x+=30;
+    aw_navigation_tracks(&world);assert(!memcmp(&measured,&world.agents[0].tracks[1].position,sizeof(measured)));
+    world.agents[1].vehicle.position.x-=30;
+    for(ticks=0;ticks<1200&&!world.agents[0].arrived;ticks++)aw_mission_tick(&world,&map,actions);
+    fprintf(stderr,"RANGE_DETOUR ticks=%d arrived=%d contacts=%d\n",ticks,world.agents[0].arrived,world.agents[0].contacts);
+    assert(world.agents[0].arrived&&!world.agents[0].contacts);
+    aw_mission_world_reset(&world,&map,2);
+    route(0,(AwSVec){64,15,60},(AwSVec){64,15,80});route(1,(AwSVec){82,15,64},(AwSVec){30,15,64});
+    routes[0].family=routes[0].start.family=AW_VEHICLE_QUAD;
+    routes[1].family=routes[1].start.family=AW_VEHICLE_WING;routes[1].variant=routes[1].start.variant=1;routes[1].start.velocity=(AwSVec){-5,0,0};
+    for(int i=0;i<2;i++){aw_mission_agent_reset(&world.agents[i],&routes[i],600);aw_mission_equip(&world,i);}
+    aw_mission_sense(&world,&map,.1f);
+    for(ticks=0;ticks<600&&!(world.agents[0].arrived&&world.agents[1].arrived);ticks++)aw_mission_tick(&world,&map,actions);
+    fprintf(stderr,"AIR_CROSS ticks=%d arrived=%d,%d contacts=%d,%d\n",ticks,world.agents[0].arrived,world.agents[1].arrived,world.agents[0].contacts,world.agents[1].contacts);
+    assert(world.agents[0].arrived&&world.agents[1].arrived&&!world.agents[0].contacts&&!world.agents[1].contacts&&!world.agents[1].vehicle.failed);
     aw_mission_world_close(&world);
-    printf("NAV_RELIABILITY physical_boat_clearance=PASS draft=PASS measured_track_expiry=PASS head_on_clear_arrivals=2 parked_obstacle_detour=PASS\n");
+    printf("NAV_RELIABILITY physical_boat_clearance=PASS draft=PASS measured_track_expiry=PASS head_on_clear_arrivals=2 parked_obstacle_detour=PASS range_fallback=PASS no_hidden_pose=PASS crossing_aircraft=PASS\n");
 }

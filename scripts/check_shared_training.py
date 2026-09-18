@@ -15,7 +15,7 @@ for stage in runs['stages']:
  run=stage['run'];directory=Path('outputs/shared/checkpoints/alienwars_shared')/run
  records=[json.loads(s) for s in (Path('logs/alienwars_shared')/f'{run}.jsonl').read_text().splitlines()];finite(records)
  text=(Path('logs/alienwars_shared')/f'{run}.ini').read_text()
- report={'run':run,'source_commit':runs['source_commit'],'families':[],'metric_records':len(records)}
+ report={'run':run,'source_commit':stage.get('source_commit',runs['source_commit']),'families':[],'metric_records':len(records)}
  for family in range(5):
   suffix=f'.policy-{family}.bin' if family else ''
   initial=directory/f'initial.bin{suffix}';final=directory/f"{stage['agent_steps']:016d}.bin{suffix}"

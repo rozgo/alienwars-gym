@@ -10,7 +10,7 @@
 
 #define AW_MISSION_INPUTS (32+AW_SENSOR_OBS)
 #define AW_MISSION_ACTIONS 4
-typedef struct {AwSVec position,velocity;double stamp;int valid,samples;} AwNavTrack;
+typedef struct {AwSVec position,velocity;double stamp;int valid,samples,source;float horizontal_uncertainty,vertical_uncertainty;} AwNavTrack;
 /* Longitudinal: reverse, stop, cruise, full. Wing reverse/stop both select
  * minimum positive airspeed. Other heads bias yaw/climb/quad strafe. */
 typedef struct {

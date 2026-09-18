@@ -61,7 +61,7 @@ contract and explicit checkpoint provenance; retain the old baseline for compari
 
 The candidate keeps 645 inputs and categorical heads `[4, 3, 3, 3]`, but changes
 steering to bounded biases around the route tracker. Inputs 27–31 now describe
-RF-history closing speed, nearest measured range, yielding, recovery phase and
+Sensor-history closing speed, nearest measured range, yielding, recovery phase and
 passing-side retention. This is a semantic contract change: contract-2 weights
 must use the legacy action interpretation. The published viewer still defaults
 to contract 2 until a replacement release is explicitly selected.
@@ -70,8 +70,12 @@ The deterministic assistance is separate from PPO. It checks short trajectories
 with the actual actuator model, passes on the right, yields by stable slot order
 where a passing pocket is blocked, and searches a bounded local detour after
 persistent lack of progress. No dynamic neighbor velocity is read from simulator
-state: tracks come from actual timestamped RF observations and expire when RF
-is disabled or lost. Raw lidar, sonar and camera channels remain policy inputs.
+state: tracks come from actual timestamped RF observations, with visible hull
+returns from lidar, sonar and depth cameras as a fallback. Unobserved body-center
+offsets have conservative uncertainty bounds. Tracks expire when measurements
+are lost; raw sensor channels remain policy inputs. Hover-capable units yield
+vertically to forward-only aircraft when a physically clear climb is available.
+Submarine probes include braking distance at the next control decision.
 This does not guarantee safety against unobserved traffic. Contacts, intervention
 decisions, physical deadlocks, yielding and replans are recorded separately.
 
@@ -124,10 +128,15 @@ new evaluator to the first three preparations, but exact historical replay also
 requires compiling with `AW_NAV_VERSION=2`, as `check_flecs.py` does.
 
 The September 18 run uses independent seeds 373, 474 and 575, 32 maps and
-128/256/512 PPO epochs across the three curricula. Training source is
-`67eeed8f`; its immutable checkout is kept separate from subsequent viewer and
-documentation work. There are 49,545,216 planned learner agent steps. The two-epoch
-smoke at `8aab2254` is excluded from that total.
+128/256/512 PPO epochs across the three curricula. The first two stages completed
+at `67eeed8f` (21,233,664 learner agent steps across three seeds). The final stage
+was deliberately interrupted before useful rollout to incorporate measured
+sensor-fusion and braking fixes. `train_shared.py --start-stage 2 --resume
+PARENT/runs.json` starts a fresh PPO optimizer from the exact stage-1 weights,
+retaining per-stage source commits and checkpoint hashes. It does not claim to
+resume optimizer state. Every running GPU checkout remains immutable. There are
+49,545,216 planned retained learner agent steps; the separate smoke runs and
+interrupted final-stage attempts are excluded.
 
 Validation completed so far: native ASan/UBSan and WASM agree on hull draft,
 head-on passage, parked-obstacle detours, terminal/reset behavior, repeated goals,
