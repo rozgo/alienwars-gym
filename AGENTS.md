@@ -344,3 +344,10 @@ seabed continuous across the land/ocean boundary and consistent with water depth
 sonar and submarine collision. Preserve lake beds and dry beach sockets. The
 cache is reset-time only; run bathymetry, sensor and shared-navigation parity
 checks when changing it. Never restore a flat square seabed inside the land grid.
+
+Automatic viewer patrols loop failed/stalled episodes through `command_fleet.h`;
+this is demo lifecycle, not learned recovery. Preserve pause/manual-command
+semantics, hull-clear unoccupied respawn anchors, per-unit terminal/sensor resets
+and separate restart/arrival counters. Never enable demo respawns in training or
+held-out evaluation, or claim looping as collision-free navigation. The endurance
+test defaults to no respawns; its explicit `loop` mode verifies the demo lifecycle.

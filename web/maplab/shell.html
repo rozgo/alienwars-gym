@@ -494,14 +494,14 @@
       const v=report.values;
       const count=Number(v[11]).toString(2).replace(/0/g,'').length;
       $('move-unit').textContent=v[21]?'Click a destination…':'Set destination';
-      $('command-status').textContent=`${count} selected · ${['Travelling','Arrived','Route unavailable','Aircraft impact','Mission timed out'][v[10]]||'Ready'} · ${v[12].toFixed(0)}u remaining${v[20]?` · Last command ${v[13]}/${v[20]} routed`:''}`;
+      $('command-status').textContent=`${count} selected · ${['Travelling','Arrived','Route unavailable','Aircraft impact','Mission timed out','Restarting patrol'][v[10]]||'Ready'} · ${v[12].toFixed(0)}u remaining${v[20]?` · Last command ${v[13]}/${v[20]} routed`:''}`;
       $('command-altitude-label').hidden=![2,3,4].includes(v[18]);
       $('unit-profile').textContent=`${report.role} · Speed ${v[0].toFixed(1)} · Turn ${(v[1]*180/Math.PI).toFixed(0)}°/s · Range ${v[4].toFixed(0)}`;
       if(!$('isolate-tunnels').checked){
         $('scout-heading').textContent=$('sensor-unit').selectedOptions[0].textContent.toUpperCase();
         $('scout-status').textContent=`${['Ground','Ocean','Quadcopter','Fixed wing','Submarine'][v[18]]} · ${v[12].toFixed(0)}u to destination · ${report.trained?'PPO':'Reference'}`;
       }
-      $('patrol-note').textContent=`12 vehicles · A* routes · ${report.trained?'Jointly trained PPO':'Reference controllers'}${v[5]?' · Selected aircraft stopped after collision':''}`;
+      $('patrol-note').textContent=`12 vehicles · A* routes · ${report.trained?'Jointly trained PPO':'Reference controllers'} · Automatic patrols loop`;
     };
     window.maplabSensors=(unit,data)=>{
       if(rebuilding)return;

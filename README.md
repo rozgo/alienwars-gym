@@ -53,6 +53,8 @@ submarines navigate below the surface.
 train simultaneously in shared worlds, with individual destinations and recurrent
 memory for each vehicle. The browser loads the selected trained checkpoints.
 Select a unit or family and issue destinations, then follow their progress.
+Automatic demo patrols loop: failed or stuck units restart their own episode
+from a clear patrol point. Those restarts are separate from successful arrivals.
 
 | See beneath the landscape | Navigate beneath the ocean |
 | --- | --- |

@@ -197,8 +197,22 @@ the displayed lifetime odometer continues. This matches the episodic training
 reference without teleporting a pose or clearing real sensor samples.
 Automatic demo patrols plan their return trip from the actual arrival pose.
 Manual ground/boat/quad/sub missions stop after arrival. Fixed wings continue to
-a return destination because stopping is physically invalid. Failed aircraft
-stop and remain visibly marked; Restart vehicles explicitly respawns the fleet.
+a return destination because stopping is physically invalid.
+
+Automatic demo patrols also loop after timeout, impact, an unavailable return
+route, or 30 seconds confined within a 0.35-unit radius. After a two-second
+restart notice, only the affected unit respawns at an unoccupied, terrain-clear
+patrol anchor and starts another mission. Occupied anchors defer the restart.
+Pauses are respected, equipment and lifetime counters persist, and recurrent
+state/sensor history reset so the jump cannot become a velocity measurement.
+Restarts are counted separately from arrivals (`patrol_restarts`); they do not
+prove navigation reliability. Manual commands retain their normal stop/failure
+behavior. Restart vehicles still explicitly resets the whole fleet.
+
+This is viewer-only episode looping with the existing contract-2 checkpoints.
+Training and held-out evaluation are unchanged; the endurance test disables
+respawns unless its third argument is `loop`. The September 18 no-respawn
+measurements and rejected candidate promotion remain valid historical results.
 
 ## Evaluation and limits
 

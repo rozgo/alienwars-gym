@@ -6,7 +6,7 @@
 #include "missions.h"
 #include "local_navigation.h"
 #include "../../src/puffercpu.c"
-enum {AW_MISSION_TRAVELLING,AW_MISSION_ARRIVED,AW_MISSION_UNAVAILABLE,AW_MISSION_IMPACT,AW_MISSION_STALLED};
+enum {AW_MISSION_TRAVELLING,AW_MISSION_ARRIVED,AW_MISSION_UNAVAILABLE,AW_MISSION_IMPACT,AW_MISSION_STALLED,AW_MISSION_RESTARTING};
 typedef struct {
     AwMissionWorld world;
     AwMissionAgent*unit;
@@ -23,7 +23,25 @@ typedef struct {
     int recovery_attempts[AW_UNITS],recovery_after[AW_UNITS];
     int total_terrain[AW_UNITS],total_units[AW_UNITS];
     int total_contacts[AW_UNITS],total_blocked[AW_UNITS],total_collisions[AW_UNITS];
+    /* Viewer episode looping is separate from training and arrival statistics. */
+    int loop_patrols,restart_at[AW_UNITS],patrol_restarts[AW_UNITS];
+    AwVehicle patrol_spawn[AW_UNITS][4];
+    AwSVec patrol_goal[AW_UNITS];
 } AwCommandFleet;
+static void aw_command_fleet_remember_patrol(AwCommandFleet*f,int i){
+    const AwMissionRoute*r=&f->route[i];
+    for(int k=0;k<4;k++){
+        int n=k*(r->count-1)/4;AwVehicle v=r->start;
+        if(k){v.position=r->point[n];v.yaw=r->heading[n];v.velocity=(AwSVec){0};v.yaw_rate=0;
+            if(v.family==AW_VEHICLE_WING){
+                AwSVec d=aw_sv_add(r->point[n+1],aw_sv_scale(r->point[n],-1));
+                v.pitch=atan2f(d.y,hypotf(d.x,d.z));
+                float speed=aw_vehicle_spec(v.family,v.variant).reverse;
+                v.velocity=(AwSVec){sinf(v.yaw)*speed,0,cosf(v.yaw)*speed};
+            }
+        }f->patrol_spawn[i][k]=v;
+    }f->patrol_goal[i]=r->point[r->count-1];f->restart_at[i]=0;
+}
 static void aw_command_fleet_close(AwCommandFleet*f){
     for(int i=0;i<AW_UNITS;i++)if(f->net[i])free_puffernet(f->net[i]);
     for(int i=0;i<AW_VEHICLE_FAMILIES;i++)free(f->weights[i]);
@@ -43,6 +61,7 @@ static int aw_command_fleet_destination(AwCommandFleet*f,const AwMap*m,int i,AwS
     if(!automatic)f->home[i]=vehicle.position;
     f->destination[i]=f->route[i].point[f->route[i].count-1];f->automatic[i]=automatic;f->terminal[i]=1;f->status[i]=AW_MISSION_TRAVELLING;f->arrival_handled[i]=0;
     f->recovery_attempts[i]=0;f->recovery_after[i]=0;
+    f->restart_at[i]=0;
     aw_mission_observe(&f->world);(void)m;return 1;
 }
 static void aw_command_fleet_scout_route(AwCommandFleet*f,const AwMap*m,int start){
@@ -56,6 +75,7 @@ static void aw_command_fleet_scout_route(AwCommandFleet*f,const AwMap*m,int star
     if(f->weights[0]&&!f->net[0]){int sizes[]={4,3,3,3};f->weights[0]->idx=0;f->net[0]=make_puffernet(f->weights[0],1,AW_MISSION_INPUTS,128,2,sizes,4);}
     f->status[0]=AW_MISSION_TRAVELLING;f->arrival_handled[0]=0;
     f->previous[0]=vehicle;f->home[0]=vehicle.position;f->destination[0]=r->point[r->count-1];f->automatic[0]=1;f->terminal[0]=1;
+    aw_command_fleet_remember_patrol(f,0);
     if(f->ready){
         aw_sensor_teleport(&f->world.sensors,0);
         f->world.sensors.units[0].pose=(AwSensorPose){.position=vehicle.position,.yaw=vehicle.yaw,.pitch=vehicle.pitch};
@@ -67,7 +87,7 @@ static void aw_command_fleet_init(AwCommandFleet*f,const AwMap*m,const AwPatrols
     if(preserve)for(int i=0;i<AW_UNITS;i++)memcpy(equipment[i],f->world.sensors.units[i].config,sizeof(equipment[i]));
     aw_command_fleet_close(f);if(!aw_mission_world_init(&f->world))return;
     aw_mission_world_reset(&f->world,m,AW_UNITS);
-    f->unit=f->world.agents;f->active=f->world.active;f->selection=1;
+    f->unit=f->world.agents;f->active=f->world.active;f->selection=1;f->loop_patrols=1;
     if(!aw_mission_planner_init(&f->planner,m))return;
     aw_command_fleet_scout_route(f,m,0);
     for(int i=1;i<AW_UNITS;i++){
@@ -87,6 +107,7 @@ static void aw_command_fleet_init(AwCommandFleet*f,const AwMap*m,const AwPatrols
         int overlap=0;for(int j=0;j<i;j++)if(f->active[j]&&aw_bodies_overlap(aw_vehicle_body(&vehicle),aw_vehicle_body(&f->unit[j].vehicle),.2f))overlap=1;
         if(overlap){f->status[i]=AW_MISSION_UNAVAILABLE;continue;}
         aw_mission_agent_reset(&f->unit[i],&f->route[i],6000);f->active[i]=1;f->home[i]=vehicle.position;f->destination[i]=r->point[end];f->automatic[i]=1;
+        aw_command_fleet_remember_patrol(f,i);
     }
     const char*directory=getenv("AW_MISSION_MODELS");if(!directory||!*directory)directory="resources/alienwars";
     char metadata[2048],json[1024]={0};snprintf(metadata,sizeof(metadata),"%s/contract.json",directory);
@@ -114,13 +135,51 @@ static AwVehicle aw_command_fleet_pose(const AwCommandFleet*f,int i){
     pose.position=aw_sv_add(old->position,aw_sv_scale(aw_sv_add(pose.position,aw_sv_scale(old->position,-1)),t));
     pose.yaw=aw_motion_angle(old->yaw+aw_motion_angle(pose.yaw-old->yaw)*t);pose.pitch=aw_lerp(old->pitch,pose.pitch,t);return pose;
 }
+/* Failed automatic episodes restart at a clear patrol anchor. Never clear a
+ * wing's failure in-place inside the body that it hit, or count a reset as an
+ * arrival. This viewer-only lifecycle does not run in training/evaluation. */
+static int aw_command_fleet_restart_patrol(AwCommandFleet*f,const AwMap*m,int i){
+    for(int k=0;k<4;k++){
+        AwVehicle v=f->patrol_spawn[i][k];int clear=aw_vehicle_clear(m,&v);
+        for(int j=0;j<AW_UNITS&&clear;j++)if(j!=i&&f->active[j])
+            clear=!aw_bodies_overlap(aw_vehicle_body(&v),aw_vehicle_body(&f->unit[j].vehicle),.6f);
+        if(!clear)continue;
+        if(!aw_mission_plan(&f->planner,&v,f->patrol_goal[i],&f->candidate))continue;
+        f->route[i]=f->candidate;aw_mission_agent_reset(&f->unit[i],&f->route[i],6000);
+        f->previous[i]=f->unit[i].vehicle;f->home[i]=v.position;f->destination[i]=f->patrol_goal[i];
+        float distance=f->world.sensors.units[i].odometry.distance;
+        aw_sensor_teleport(&f->world.sensors,i);
+        f->world.sensors.units[i].odometry.distance=distance;f->unit[i].odometry_origin=distance;
+        f->world.sensors.units[i].pose=(AwSensorPose){.position=v.position,.yaw=v.yaw,.pitch=v.pitch};
+        /* Resample returns after a respawn; do not infer a huge velocity from
+         * the old location or let cached returns steer toward a phantom body. */
+        for(int j=0;j<AW_UNITS;j++){
+            memset(&f->unit[j].tracks[i],0,sizeof(AwNavTrack));
+            for(int t=0;t<AW_SENSOR_TYPES;t++){
+                f->world.sensors.units[j].reading[t].valid=0;
+                f->world.sensors.units[j].reading[t].next=f->world.sensors.time;
+            }
+        }
+        f->terminal[i]=1;f->status[i]=AW_MISSION_TRAVELLING;f->arrival_handled[i]=0;
+        f->recovery_attempts[i]=f->recovery_after[i]=f->restart_at[i]=0;
+        f->patrol_restarts[i]++;aw_mission_observe(&f->world);return 1;
+    }return 0;
+}
 /* Planning is outside the fixed simulation tick and reuses its prepared
  * scratch. A rejected user command leaves the current mission intact. */
 static void aw_command_fleet_continue(AwCommandFleet*f,const AwMap*m){
+    for(int i=0;i<AW_UNITS;i++)if(f->loop_patrols&&f->active[i]&&f->automatic[i]&&!f->world.paused[i]){
+        AwMissionAgent*a=&f->unit[i];
+        if(a->timeout||a->vehicle.failed||(!a->arrived&&a->deadlock_ticks>=300)||f->status[i]==AW_MISSION_UNAVAILABLE||f->restart_at[i]){
+            f->status[i]=AW_MISSION_RESTARTING;
+            if(!f->restart_at[i])f->restart_at[i]=f->world.ticks+20;
+            else if(f->world.ticks>=f->restart_at[i]&&!aw_command_fleet_restart_patrol(f,m,i))f->restart_at[i]=f->world.ticks+20;
+        }
+    }
     /* Retry from the current pose; never respawn a stuck unit. Reuse the
      * full planner's fixed scratch outside the 10 Hz physics tick. */
     for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&!f->world.paused[i]&&!f->unit[i].vehicle.failed&&
-        !f->unit[i].arrived&&f->unit[i].control_version>=3&&(f->unit[i].timeout||f->unit[i].deadlock_ticks>=100)&&
+        !f->restart_at[i]&&!f->unit[i].arrived&&f->unit[i].control_version>=3&&(f->unit[i].timeout||f->unit[i].deadlock_ticks>=100)&&
         f->world.ticks>=f->recovery_after[i]&&f->recovery_attempts[i]<3){
         int attempts=f->recovery_attempts[i]+1,after=f->world.ticks+300;
         aw_command_fleet_destination(f,m,i,f->destination[i],f->automatic[i]);
@@ -128,7 +187,7 @@ static void aw_command_fleet_continue(AwCommandFleet*f,const AwMap*m){
          * new user/patrol destination starts a fresh budget instead. */
         f->recovery_attempts[i]=attempts;f->recovery_after[i]=after;
     }
-    for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&f->unit[i].arrived&&!f->arrival_handled[i]){
+    for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&!f->world.paused[i]&&f->unit[i].arrived&&!f->arrival_handled[i]){
         f->arrivals[i]++;f->recovery_attempts[i]=0;f->status[i]=AW_MISSION_ARRIVED;f->arrival_handled[i]=1;
         if(f->automatic[i]||f->unit[i].vehicle.family==AW_VEHICLE_WING){
             AwSVec target=f->home[i],previous=f->destination[i];
@@ -138,6 +197,7 @@ static void aw_command_fleet_continue(AwCommandFleet*f,const AwMap*m){
 }
 static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int scout_live,int others_live){
     if(!f->ready)return;
+    for(int i=0;i<AW_UNITS;i++)f->world.paused[i]=!(i?others_live:scout_live);
     aw_command_fleet_continue(f,m);
     f->accumulator+=dt;
     while(f->accumulator>=.1f){f->accumulator-=.1f;float actions[16][4];int contacts[AW_UNITS],blocked[AW_UNITS],collisions[AW_UNITS],terrain[AW_UNITS],units[AW_UNITS];
@@ -155,7 +215,8 @@ static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int sc
         aw_mission_tick(&f->world,m,actions);
         for(int i=0;i<AW_UNITS;i++)if(f->active[i]){
             f->total_terrain[i]+=f->unit[i].terrain_contacts-terrain[i];f->total_units[i]+=f->unit[i].unit_contacts-units[i];f->total_contacts[i]+=f->unit[i].contacts-contacts[i];f->total_blocked[i]+=f->unit[i].blocked_total-blocked[i];f->total_collisions[i]+=f->unit[i].collision_events-collisions[i];
-            if(f->unit[i].vehicle.failed)f->status[i]=AW_MISSION_IMPACT;
+            if(f->restart_at[i])f->status[i]=AW_MISSION_RESTARTING;
+            else if(f->unit[i].vehicle.failed)f->status[i]=AW_MISSION_IMPACT;
             else if(f->unit[i].timeout)f->status[i]=AW_MISSION_STALLED;
         }
     }
