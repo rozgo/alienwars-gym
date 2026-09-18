@@ -23,6 +23,14 @@ Preserve final-test isolation; do not tune against the held-out results. Record
 both the combined navigation system and policy ablations when recovery assists
 control. Earlier generator-10 scores are historical, not current-world results.
 
+Select one complete five-family checkpoint set from seeds 373, 474 and 575 using
+the selection worlds only: maximize the worst family collision-free arrival
+rate, then the macro-average rate, then prefer the lower seed on exact ties.
+Do not assemble untested mixtures of families from different runs. Freeze that
+choice before opening final-world results. Report all three seeds on final worlds,
+and separate initial missions (fixed requested denominator) from conditional
+return missions so greater repeated-trip throughput cannot hide poor first trips.
+
 ## Work sequence
 
 1. Pin uv tooling; reproduce existing failures and verify rendered body envelopes,

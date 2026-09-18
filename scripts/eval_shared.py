@@ -17,17 +17,27 @@ for item in args.models:
     metadata=Path(directory)/'contract.json'
     assert (json.loads(metadata.read_text())['contract']==args.contract if metadata.exists() else args.contract==2),'Explicit checkpoint contract required'
     runs.append((label,directory))
-report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip()),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
+report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip()),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist and args.contract>=3,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
 for label,directory in runs:
     command=[binary,directory,str(args.seed),str(args.maps),str(args.scenarios_per_map*args.maps),str(args.curriculum),'json']
     with (out/f'{label}.jsonl').open('w') as data,(out/f'{label}.log').open('w') as log:subprocess.run(command,stdout=data,stderr=log,check=True)
     records=[json.loads(line) for line in (out/f'{label}.jsonl').read_text().splitlines() if line.startswith('{')]
     result={'command':command,'families':[v for v in records if 'attempted' in v]}
     assert len(result['families'])==5 and sum('scenario' in v for v in records)==sum(f['attempted'] for f in result['families'])
+    seen=set();initial=[];repeated=[]
+    for record in records:
+        if 'scenario' not in record:continue
+        key=(record['scenario'],record['unit'])
+        (repeated if key in seen else initial).append(record);seen.add(key)
     for family in result['families']:
         family['requested_arrival_rate']=family['arrivals']/family['attempted']
         family['collision_free_arrival_rate']=family['collision_free_arrivals']/family['attempted']
         available=family['attempted']-family['unavailable'];family['available_arrival_rate']=family['arrivals']/available if available else None
+        for name,group in [('initial',initial),('repeat',repeated)]:
+            attempts=[v for v in group if v['family']==family['family']]
+            clean=sum(bool(v.get('arrived')) and not v.get('contact_decisions',0) for v in attempts)
+            family[f'{name}_attempts']=len(attempts);family[f'{name}_clean_arrivals']=clean
+            family[f'{name}_clean_rate']=clean/len(attempts) if attempts else None
     if directory not in ['reference','random']:result['hashes']=[hashlib.sha256((Path(directory)/f'mission-{f}.bin').read_bytes()).hexdigest() for f in range(5)]
     report['results'][label]=result;(out/'summary.json').write_text(json.dumps(report,indent=2)+'\n')
     print(label,[(f['family'],f['arrivals'],f['attempted'],f['unavailable']) for f in result['families']],flush=True)
