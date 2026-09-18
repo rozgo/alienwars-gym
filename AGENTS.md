@@ -14,6 +14,17 @@ Do not describe
 scripted patrols as trained policies. The Breakout bootstrap experiment was
 retired on September 15, 2026; do not restore its demo or project tooling.
 
+User direction, September 17, 2026: humans do not exist in AlienWars. All new
+military craft, equipment and infrastructure are grown biological organisms or
+tissues. Each unit is itself the biological entity: no pilots, crew, riders,
+occupants or separate creature/vehicle pairing. Use unit/entity, body and organ
+language for new content. Economy follows habitat preparation, seeding, tending, maturation,
+collection, sustainment and bounded recycling. Preserve meaningful mass, recoil,
+metabolism and ammunition tradeoffs. See [the biological warfare direction](docs/BIOLOGICAL_WARFARE.md)
+and [the proposed next slice](docs/CULTIVATION_SLICE.md). Existing vehicle models
+are development stand-ins; species names and detailed traits remain open.
+These are design documents, not evidence of implemented combat or cultivation.
+
 The public Navigation Lab packages the evaluated checkpoint selected by
 `web/navigation/release.json`. Build with `scripts/build_navigation_site.py`.
 `docs/navigation/` (including the small policy data bundle) and `docs/training/`

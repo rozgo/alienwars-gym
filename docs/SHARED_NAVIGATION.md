@@ -119,6 +119,13 @@ considered explicitly at the next RL iteration.** Decide whether that iteration
 should implement it, record the rationale and evaluation plan, and identify the
 prerequisites if it is deferred.
 
+Faction warfare follows the [biological cultivation direction](BIOLOGICAL_WARFARE.md):
+all craft and equipment are grown, and humans do not exist. The proposed
+[Cultivate and Defend slice](CULTIVATION_SLICE.md) establishes nursery economics,
+physical combat and team outcomes with reference controllers first. Combat
+self-play follows validation of that environment; cultivation planning can be
+introduced after the combat controllers have a measured baseline.
+
 Today, `selfplay.enabled` is off. The five family policies learn navigation
 simultaneously through our joint-training extension. Historical-opponent pools,
 competitive factions, combat objectives and team victory conditions are not

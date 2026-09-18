@@ -1,5 +1,16 @@
 # Development and GPU workflow
 
+## Next development slice
+
+The accepted direction is [biological warfare and cultivation](BIOLOGICAL_WARFARE.md):
+an entirely alien world where military organisms and equipment are grown.
+[Cultivate and Defend](CULTIVATION_SLICE.md) proposes the next playable slice,
+including soil/water preparation, growth, collection, supply and bounded combat.
+Its completion checks cover accounting, physical tradeoffs, perception, native/WASM
+parity and performance. The first milestone uses reference opponents; combat PPO
+and historical-opponent self-play follow environment validation. Current published
+policies remain navigation policies.
+
 ## Native development
 
 Map Lab is the standalone C terrain and shared-fleet policy viewer. See

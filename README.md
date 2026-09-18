@@ -43,8 +43,12 @@ The [recorded evaluation](docs/runs/shared-navigation-2026-09-16.md) covers thre
 training seeds and 49.5 million steps. Local navigation remains experimental;
 combat and tactical coordination are future work.
 
-The long-term goal is to train warfare between alien factions. The next RL
-iteration will explicitly consider implementing self-play; see the
+The long-term goal is warfare between alien factions whose armies are **grown**:
+prepare soil and water nurseries, seed and nurture organisms, then harvest
+ammunition and awaken living craft. Humans do not exist in this world. Cultivation
+and combat are planned; see the [biological warfare direction](docs/BIOLOGICAL_WARFARE.md)
+and the proposed [Cultivate and Defend slice](docs/CULTIVATION_SLICE.md).
+The next RL iteration will explicitly consider implementing self-play; see the
 [self-play development direction](docs/SHARED_NAVIGATION.md#self-play-and-faction-warfare).
 
 ## See what the agents sense
@@ -108,6 +112,7 @@ run locally in WebAssembly.
 
 ## Go deeper
 
+- [Biological warfare and cultivation](docs/BIOLOGICAL_WARFARE.md) · [Next development slice](docs/CULTIVATION_SLICE.md)
 - [Map generation and validation](docs/MAPLAB.md) · [Generation research](docs/GENERATION_RESEARCH.md)
 - [Sensor contract and benchmarks](docs/SENSORS.md)
 - [Shared-world PPO, vehicle profiles and missions](docs/SHARED_NAVIGATION.md)
