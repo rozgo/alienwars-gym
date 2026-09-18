@@ -22,6 +22,7 @@ for item in args.models:
 report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip()),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist and args.contract>=3,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
 if report['frozen_pool']:
     report['frozen_hashes']=[hashlib.sha256((Path(report['frozen_pool'])/f'mission-{f}.bin').read_bytes()).hexdigest() for f in range(5)]
+report['deadlock_diagnostic']='10s confined within 0.35 units; 5s yielding grace; one event until escape'
 for label,directory in runs:
     command=[binary,directory,str(args.seed),str(args.maps),str(args.scenarios_per_map*args.maps),str(args.curriculum),'json']
     jobs=min(args.jobs,args.scenarios_per_map*args.maps) if directory!='random' else 1
@@ -52,6 +53,9 @@ for label,directory in runs:
         key=(record['scenario'],record['unit'])
         (repeated if key in seen else initial).append(record);seen.add(key)
     for family in result['families']:
+        outcomes=[v for v in records if 'scenario' in v and v['family']==family['family'] and v.get('available')]
+        family['timeouts_after_confinement']=sum(bool(v.get('timeout')) and v.get('deadlock_events',0)>0 for v in outcomes)
+        family['arrivals_after_confinement']=sum(bool(v.get('arrived')) and v.get('deadlock_events',0)>0 for v in outcomes)
         family['requested_arrival_rate']=family['arrivals']/family['attempted']
         family['collision_free_arrival_rate']=family['collision_free_arrivals']/family['attempted']
         available=family['attempted']-family['unavailable'];family['available_arrival_rate']=family['arrivals']/available if available else None

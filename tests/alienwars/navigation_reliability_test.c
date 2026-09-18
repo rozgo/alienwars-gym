@@ -14,6 +14,12 @@ static void route(int i,AwSVec start,AwSVec goal){
     aw_mission_agent_reset(&world.agents[i],&routes[i],1200);world.active[i]=1;aw_mission_equip(&world,i);
 }
 int main(void){
+    AwMissionAgent jitter={0};
+    for(int i=0;i<200;i++){jitter.vehicle.position.x=(i%2)*.02f;jitter.yielding=i%2;aw_mission_deadlock(&jitter);}
+    assert(jitter.deadlock_events==1&&jitter.deadlock_ticks>=100);
+    jitter.vehicle.position.x=1;aw_mission_deadlock(&jitter);assert(jitter.deadlock_ticks<100);
+    AwMissionAgent waiting={.yielding=1};for(int i=0;i<149;i++)aw_mission_deadlock(&waiting);
+    assert(!waiting.deadlock_events);aw_mission_deadlock(&waiting);assert(waiting.deadlock_events==1);
     /* A graph's conservative 3x3 water neighborhood must not create invisible
      * collision walls outside the actual oriented hull. */
     flat(0);for(int i=0;i<AW_OCEAN_VERT*AW_OCEAN_VERT;i++)map.shelf_drop[i]=1200;

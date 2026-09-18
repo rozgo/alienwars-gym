@@ -20,6 +20,7 @@ typedef struct {
     int terrain_contacts,unit_contacts,max_blocked_ticks;
     int assist_enabled,control_version,safety_interventions,recoveries,yield_ticks,recovery_ticks;
     int yield_streak,yielding,recovery_phase,avoid_peer,avoid_ticks,deadlock_ticks,max_deadlock_ticks,deadlock_events;
+    AwSVec deadlock_anchor;int deadlock_window,deadlock_reported;
     float closing,clearance;
     AwNavTrack tracks[AW_SENSOR_UNITS];
     AwSVec detour[64];int detour_count,detour_cursor,replan_cooldown,replans,replan_failures;
@@ -228,6 +229,19 @@ static void aw_mission_agent_reset(AwMissionAgent*a,const AwMissionRoute*r,int l
     memset(a,0,sizeof(*a));a->route=r;a->vehicle=r->start;a->cursor=1;a->limit=limit;a->control_version=AW_NAV_VERSION;a->assist_enabled=AW_NAV_VERSION>=3;
     a->previous_potential=aw_mission_project(a);
 }
+/* Diagnostic only: small control oscillations are not useful displacement.
+ * Neither observations, rewards nor local action selection use these fields.
+ * The viewer uses sustained confinement to request a bounded global replan. */
+static void aw_mission_deadlock(AwMissionAgent*a){
+    if(!a->deadlock_window)a->deadlock_anchor=a->vehicle.position;
+    if(aw_sv_length(aw_sv_add(a->vehicle.position,aw_sv_scale(a->deadlock_anchor,-1)))>.35f){
+        a->deadlock_anchor=a->vehicle.position;a->deadlock_window=0;a->deadlock_reported=0;
+    }
+    a->deadlock_window++;
+    a->deadlock_ticks=aw_clamp(a->deadlock_window-(a->yielding?50:0),0,1000000000);
+    if(a->deadlock_ticks>a->max_deadlock_ticks)a->max_deadlock_ticks=a->deadlock_ticks;
+    if(a->deadlock_ticks>=100&&!a->deadlock_reported){a->deadlock_events++;a->deadlock_reported=1;}
+}
 static int aw_mission_layer(int family){return family==AW_VEHICLE_GROUND?0:family==AW_VEHICLE_BOAT?1:family==AW_VEHICLE_SUB?3:2;}
 static void aw_mission_equip(AwMissionWorld*w,int i){
     const AwVehicle*v=&w->agents[i].vehicle;AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);
@@ -289,7 +303,6 @@ static void aw_mission_tick(AwMissionWorld*w,const AwMap*m,const float actions[]
     w->ticks++;
     for(int i=0;i<w->count;i++)if(w->active[i]){
         AwMissionAgent*a=&w->agents[i];int finished=w->paused[i]||a->arrived||a->timeout||a->vehicle.failed;
-        float moved=aw_sv_length(aw_sv_add(vehicle[i].position,aw_sv_scale(a->vehicle.position,-1)));
         int previous_contact=a->vehicle.contact;a->vehicle=vehicle[i];if(finished)continue;
         a->ticks++;a->contacts+=a->vehicle.contact;
         if(a->detour_count&&aw_sv_length(aw_sv_add(a->detour[a->detour_cursor],aw_sv_scale(a->vehicle.position,-1)))<.6f){
@@ -302,9 +315,7 @@ static void aw_mission_tick(AwMissionWorld*w,const AwMap*m,const float actions[]
         if(progress<.01f){a->blocked_ticks++;a->blocked_total++;}else a->blocked_ticks=0;
         if(a->blocked_ticks>a->max_blocked_ticks)a->max_blocked_ticks=a->blocked_ticks;
         a->yield_streak=a->yielding?a->yield_streak+1:0;
-        if(moved<.005f&&(!a->yielding||a->yield_streak>50))a->deadlock_ticks++;else a->deadlock_ticks=0;
-        if(a->deadlock_ticks>a->max_deadlock_ticks)a->max_deadlock_ticks=a->deadlock_ticks;
-        if(a->deadlock_ticks==100)a->deadlock_events++;
+        aw_mission_deadlock(a);
         AwSVec goal=a->route->point[a->route->count-1];float distance=aw_sv_length(aw_sv_add(goal,aw_sv_scale(a->vehicle.position,-1)));
         float tolerance=a->vehicle.family==AW_VEHICLE_WING?4:1;
         a->arrived=distance<tolerance&&a->remaining<tolerance*2;

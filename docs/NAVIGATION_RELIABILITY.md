@@ -15,6 +15,14 @@ decisions, distinct contact episodes, persistent deadlocks, legitimate yielding,
 recovery attempts, mission time and repeated-destination throughput. A ten-second
 run without route progress is a stall diagnostic, not by itself proof of deadlock.
 Run a continuous browser patrol without respawns or hidden controller changes.
+The final diagnostic detects ten seconds confined within a 0.35-unit radius,
+with an additional five seconds for explicit yielding. Tiny control oscillations
+therefore do not clear it. Count one episode until the unit leaves that area.
+This diagnostic is absent from PPO inputs/rewards; only the viewer uses it for
+bounded global replanning. Earlier per-tick immobility counts are not comparable.
+Confinement is a warning, not proof of a permanent mutual deadlock: report arrivals
+after confinement separately from timeouts after confinement, alongside explicit
+yielding time. A queue that eventually clears must not be presented as a failed mission.
 
 Use generator-13 maps 31001–31008 for diagnosis, 301–332 for training, 32001–32008
 for checkpoint selection, and 41001–41016 for final held-out evaluation. Compare
