@@ -57,8 +57,10 @@ be solved directly. This avoids raymarch step sizes skipping thin bridge decks,
 cave ceilings or stacked floors. The outer ocean shelf uses analytic plane
 intersections. No second triangle mesh or full-volume BVH is stored per world.
 
-`AwSensors` owns fixed-capacity arrays (16 units, four slots, up to 48 rays per
-slot) and contiguous float observations. Initialization builds the small terrain
+`AwSensors` borrows a caller-owned unit buffer (up to 16 units, four slots, up to
+48 rays per slot) and owns contiguous float
+observations. The current fleet supplies its Flecs perception component column;
+standalone callers supply their own array. Initialization builds the small terrain
 height-bound array. Stepping performs no allocations, rendering, network I/O or
 map/RNG mutations. All unit poses must be supplied before a step. Scheduled
 samples are cached with timestamps; module phases spread work after the initial
@@ -68,7 +70,8 @@ its bounded frame timestep.
 
 ```c
 static AwSensors sensors;  // Per environment; allocate once, not on the step stack.
-aw_sensors_init(&sensors, &map, agent_count);
+static AwSensorUnit sensor_units[AW_SENSOR_UNITS]; // Or the Flecs component column.
+aw_sensors_init(&sensors, &map, agent_count, sensor_units);
 aw_sensor_equip(&sensors, 0, 0, .65f);  // Ground defaults and body radius.
 
 AwSensorConfig camera = aw_sensor_default(AW_SENSOR_CAMERA, 0);

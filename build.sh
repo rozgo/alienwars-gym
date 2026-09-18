@@ -241,7 +241,10 @@ if [ "$ENV" = "alienwars_local" ]; then
     EXTRA_SRC="ocean/alienwars_local/local_api.c"
 fi
 if [ "$ENV" = "alienwars_shared" ]; then
-    EXTRA_SRC="ocean/alienwars_shared/shared_api.c"
+    EXTRA_SRC="ocean/alienwars_shared/shared_api.c ocean/alienwars/flecs_runtime.c"
+fi
+if [ "$ENV" = "alienwars" ] && [ "${ALIENWARS_RL:-0}" != "1" ] && [ "$MODE" = "cpu" ]; then
+    EXTRA_SRC="ocean/alienwars/flecs_runtime.c"
 fi
 
 if [ "$(uname -m)" = "x86_64" ]; then
@@ -518,6 +521,8 @@ if [ "$MODE" = "native" ]; then
             $CC $LINK_OPT "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}" -std=c11 \
                 -Wno-unused-function -I. "${INCLUDES[@]}" \
                 -c ocean/alienwars_shared/shared_api.c -o "$OSRS_RENDER_OBJECT"
+            $CC $LINK_OPT -std=c11 -I. -c ocean/alienwars/flecs_runtime.c -o build/alienwars_flecs.o
+            OSRS_RENDER_OBJECT="$OSRS_RENDER_OBJECT build/alienwars_flecs.o"
             ;;
         alienwars_local)
             OSRS_RENDER_OBJECT="build/alienwars_local.o"

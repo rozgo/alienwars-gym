@@ -25,6 +25,14 @@ and [the proposed next slice](docs/CULTIVATION_SLICE.md). Existing vehicle model
 are development stand-ins; species names and detailed traits remain open.
 These are design documents, not evidence of implemented combat or cultivation.
 
+The current fleet stores mission, perception, active and pause state in Flecs
+through the C API; see [FLECS.md](docs/FLECS.md). Entity columns have fixed topology
+for the current policy contract. Use `aw_mission_world_init/reset/close`; never
+shallow-copy or memset a live owning world. `AwSensors` borrows its unit buffer.
+Compile the shared `flecs_runtime.c` in every fleet consumer, including CUDA
+training, standalone checks and capture/browser builds. Retain allocation guards,
+the pre-port traces and exact checkpoint compatibility during changes.
+
 The public Navigation Lab packages the evaluated checkpoint selected by
 `web/navigation/release.json`. Build with `scripts/build_navigation_site.py`.
 `docs/navigation/` (including the small policy data bundle) and `docs/training/`

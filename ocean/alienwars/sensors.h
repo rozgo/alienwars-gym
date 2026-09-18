@@ -1,6 +1,7 @@
 #ifndef ALIENWARS_SENSORS_H
 #define ALIENWARS_SENSORS_H
 #include "sensor_rays.h"
+#include <assert.h>
 #define AW_SENSOR_VERSION 1
 #define AW_SENSOR_UNITS 16
 #define AW_SENSOR_TYPES 4
@@ -33,7 +34,9 @@ typedef struct {
 } AwSensorUnit;
 typedef struct {
     AwRayWorld rays;double time;int count;
-    AwSensorUnit units[AW_SENSOR_UNITS];
+    /* Borrowed contiguous component storage. The caller owns its lifetime;
+     * current fleet units live in Flecs, standalone fixtures provide arrays. */
+    AwSensorUnit *units;
     /* Fixed contiguous policy data; exact global pose is a separate privileged
      * channel, never silently mixed into perceptual/odometry observations. */
     float observations[AW_SENSOR_UNITS][AW_SENSOR_OBS];
@@ -57,8 +60,9 @@ static AwSensorConfig aw_sensor_default(int type,int layer){
     if(type==AW_SENSOR_CAMERA){c.range=36;c.period=.5f;c.hfov=AW_SENSOR_PI*.5f;c.vfov=AW_SENSOR_PI*.34f;c.mount.pitch=layer==2?-.65f:-.12f;}
     c.enabled=type==AW_SENSOR_SONAR?(layer==1||layer==3):type==AW_SENSOR_LIDAR?(layer!=1&&layer!=3):1;return c;
 }
-static void aw_sensors_init(AwSensors*s,const AwMap*m,int count){
-    memset(s,0,sizeof(*s));s->count=aw_clamp(count,0,AW_SENSOR_UNITS);aw_ray_world_init(&s->rays,m);
+static void aw_sensors_init(AwSensors*s,const AwMap*m,int count,AwSensorUnit*units){
+    memset(s,0,sizeof(*s));s->count=aw_clamp(count,0,AW_SENSOR_UNITS);s->units=units;
+    assert(units||!s->count);if(s->count)memset(units,0,(size_t)s->count*sizeof(*units));aw_ray_world_init(&s->rays,m);
 }
 /* Attaching / reconfiguring invalidates only this module. Geometry and RNG
  * remain untouched. The same mount interface is valid on every unit layer. */

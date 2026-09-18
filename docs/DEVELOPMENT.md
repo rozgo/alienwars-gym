@@ -2,6 +2,10 @@
 
 ## Next development slice
 
+The current architecture step ports the existing fleet to the [Flecs C runtime](FLECS.md)
+while preserving PufferLib and Raylib behavior. Validate that port before adding
+new gameplay or changing the policy contract.
+
 The accepted direction is [biological warfare and cultivation](BIOLOGICAL_WARFARE.md):
 an entirely alien world where military organisms and equipment are grown.
 [Cultivate and Defend](CULTIVATION_SLICE.md) proposes the next playable slice,
@@ -36,6 +40,9 @@ native/WASM terrain and navigation checks. See [MAPLAB.md](MAPLAB.md) and
 The native environment interface is `src/pufferenv.h`; `ocean/minimal/minimal.h`
 provides a reference. Run `python3 scripts/check_navigation.py` for action motion,
 terminal/reset contracts, recurrent-state reset and native/WASM route outcomes.
+Run `python3 scripts/check_flecs.py` for pre-port behavior, ECS ownership, memory
+and allocation-free step/reset checks. Shared fleet consumers link
+`ocean/alienwars/flecs_runtime.c` as C, including the CUDA trainer.
 
 ## GPU prerequisites
 

@@ -36,6 +36,7 @@ typedef struct {
     const AwNavTask *task;
     AwGroundUnit unit;
     AwSensors sensors;
+    AwSensorUnit sensor_units[1]; /* Historical single-scout task owns its storage. */
     float observations[AW_NAV_OBS];
     AwSVec trace[AW_NAV_TRACE];
     int trace_count,ticks,limit,result,contacts,invalid_actions;
@@ -233,7 +234,7 @@ static void aw_nav_reset(AwNavEpisode *e,const AwNavWorld *w,int task,float yaw,
     AwSVec p=w->positions[e->task->start];
     e->unit=(AwGroundUnit){.x=p.x,.z=p.z,.q=aw_nav_node_q(&w->map,e->task->start),
         .motion={.yaw=yaw,.initialized=1},.attempted_x=p.x,.attempted_z=p.z};
-    e->sensors.rays=w->rays;e->sensors.count=1;aw_sensor_equip(&e->sensors,0,0,.6f);
+    e->sensors.rays=w->rays;e->sensors.count=1;e->sensors.units=e->sensor_units;aw_sensor_equip(&e->sensors,0,0,.6f);
     e->sensors.units[0].config[AW_SENSOR_RF].enabled=0;
     e->sensors.units[0].config[AW_SENSOR_CAMERA].mount.pitch=-.45f;
     aw_nav_sense(e,1.0f/30);e->trace[e->trace_count++]=p;

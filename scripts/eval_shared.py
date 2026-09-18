@@ -7,7 +7,7 @@ p=argparse.ArgumentParser();p.add_argument('--models',action='append',default=[]
 assert 1<=args.maps<=32
 out=Path(args.out);out.mkdir(parents=True,exist_ok=True)
 binary='build/shared-eval'
-subprocess.run(['clang','-std=c11','-O3','-I.','-Isrc','-Ivendor','-Iraylib-5.5_macos/include','-Iraylib-5.5_linux_amd64/include','ocean/alienwars_shared/shared_eval.c','-lm','-o',binary],check=True)
+subprocess.run(['clang','-std=c11','-O3','-I.','-Isrc','-Ivendor','-Iraylib-5.5_macos/include','-Iraylib-5.5_linux_amd64/include','ocean/alienwars_shared/shared_eval.c','ocean/alienwars/flecs_runtime.c','-lm','-o',binary],check=True)
 runs=[(v,v) for v in ['reference','random']] if args.baselines else []
 for item in args.models:
     label,directory=item.split('=',1);assert label and '/' not in label;runs.append((label,directory))

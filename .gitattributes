@@ -1,0 +1,3 @@
+# Preserve byte-identical upstream distributions, including their whitespace.
+vendor/flecs/flecs.c -whitespace
+vendor/flecs/flecs.h -whitespace

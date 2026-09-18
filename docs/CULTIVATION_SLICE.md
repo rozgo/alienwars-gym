@@ -135,7 +135,8 @@ opening diagnostics. Preserve pan/orbit controls and tunnel/sensor inspection.
 Follow the proposed [data architecture](BIOLOGICAL_WARFARE.md#proposed-data-architecture):
 validated immutable definitions, component-based live state, explicit systems and
 a separate fixed-shape RL observation view. Start with the components required
-by this slice; an ECS library and a GPU environment are not prerequisites.
+by this slice on the [current Flecs runtime](FLECS.md). A GPU environment is not
+a prerequisite; the initial simulation remains C on the CPU with CUDA PPO.
 
 Implement cultivation, inventory and combat as renderer-independent C systems
 over the existing terrain, vehicle and sensor contracts. Keep stable entity slots

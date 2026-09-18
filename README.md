@@ -1,7 +1,7 @@
 # AlienWars Gym
 
 A gym for training AlienWars agents in procedural 3D worlds. **PufferLib 5** trains
-native PPO controllers; **Raylib** renders the world; **WebAssembly** runs the
+native PPO controllers; **Flecs** manages live unit state; **Raylib** renders the world; **WebAssembly** runs the
 simulation, sensing and policy inference in your browser.
 
 **[Explore Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** ·
@@ -116,6 +116,7 @@ run locally in WebAssembly.
 - [Map generation and validation](docs/MAPLAB.md) · [Generation research](docs/GENERATION_RESEARCH.md)
 - [Sensor contract and benchmarks](docs/SENSORS.md)
 - [Shared-world PPO, vehicle profiles and missions](docs/SHARED_NAVIGATION.md)
+- [Flecs C runtime, ownership and validation](docs/FLECS.md)
 - [Historical trained-scout Navigation Lab](https://rozgo.github.io/alienwars-gym/navigation/?kind=1) · [Its training contract](docs/NAVIGATION_RL.md)
 - [Raylib web builds and GitHub Pages](docs/WEB.md)
 - [Showcase recording and screenshots](scripts/demo/README.md)

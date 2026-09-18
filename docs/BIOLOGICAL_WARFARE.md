@@ -144,10 +144,10 @@ throughput as entity counts and interaction complexity increase.
 
 ## Proposed data architecture
 
-Use data-driven composition with a small, fixed-capacity Entity Component System
-in C. This is a proposed extension of the existing fixed C arrays, not a claim
-that the current navigation implementation already has a general ECS. No ECS
-library dependency is selected by this document.
+Use data-driven composition with a bounded Entity Component System in C. The
+current fleet now uses [Flecs 4.1.6](FLECS.md) for live unit storage and lifecycle.
+The broader biological definitions, growth and combat components below remain
+proposed extensions; the port preserves the current navigation behavior.
 
 - **Definitions:** versioned, validated authoring tables describe biological
   forms, organs, growth recipes, habitat requirements and payloads. Resolve names
@@ -201,5 +201,6 @@ PPO remains the initial path. Component arrays make later batching practical,
 but a GPU environment requires its own measured, validated implementation.
 
 The [Flecs design guide](https://www.flecs.dev/flecs/DesignWithFlecs.html) and
-[storage FAQ](https://www.flecs.dev/flecs/FAQ.html) are references for ECS patterns,
-not selected dependencies or evidence of a performance gain in AlienWars.
+[storage FAQ](https://www.flecs.dev/flecs/FAQ.html) inform these patterns. Use our
+[runtime validation](FLECS.md#validation) for evidence about AlienWars behavior
+and costs rather than inferring gains from general ECS benchmarks.

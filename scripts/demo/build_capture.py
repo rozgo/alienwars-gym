@@ -24,7 +24,7 @@ assert sensor.count(old)==1
 sensor=sensor.replace(old,new).replace('id==selected?1:.42f','id==selected?1:.78f')
 sensor=sensor.replace('type,.30f*opacity','type,.50f*opacity').replace('type,.28f*(1-pulse)*opacity','type,.45f*(1-pulse)*opacity')
 (OUT/'sensor_render.h').write_text(sensor)
-command=[str(ROOT/'.local/emsdk/upstream/emscripten/emcc'),str(OUT/'viewer.c'),'-o',str(OUT/'index.html'),
+command=[str(ROOT/'.local/emsdk/upstream/emscripten/emcc'),str(OUT/'viewer.c'),'ocean/alienwars/flecs_runtime.c','-o',str(OUT/'index.html'),
     '-std=c11','-O3','-Wall','-Wextra','-Wno-unused-function','-I.','-Iocean/alienwars',
     '-Iraylib-5.5_webassembly/include','-Isrc','-Ivendor','raylib-5.5_webassembly/lib/libraylib.a',
     '-DPLATFORM_WEB','-DGRAPHICS_API_OPENGL_ES3','-sUSE_GLFW=3','-sUSE_WEBGL2=1',

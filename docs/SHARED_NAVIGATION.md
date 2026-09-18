@@ -6,6 +6,8 @@ Every agent has its own destination, observation, terminal state and recurrent
 memory. Variants within a movement family share parameters. Training is native
 PufferLib 5 C/CUDA; browser inference uses the same C simulation and Raylib/WASM.
 The historical single-family experiment remains in [LOCAL_NAVIGATION.md](LOCAL_NAVIGATION.md).
+Current live unit state is owned by the [Flecs C runtime](FLECS.md). Its storage
+port preserves this observation/action and checkpoint contract.
 
 ## Global routes and physical control
 

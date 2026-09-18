@@ -20,7 +20,7 @@ int main(void){
         assert(fabsf(aw_motion_angle(replay.yaw-route.heading[i]))<1e-5f);
     }
     int wing_points=route.count;
-    world.count=1;world.active[0]=1;aw_sensors_init(&world.sensors,&map,1);
+    assert(aw_mission_world_init(&world));aw_mission_world_reset(&world,&map,1);world.active[0]=1;
     aw_mission_agent_reset(&world.agents[0],&route,1200);aw_mission_equip(&world,0);aw_mission_sense(&world,&map,.1f);
     float actions[16][4]={{2,1,1,1}};
     while(!world.agents[0].arrived&&!world.agents[0].timeout&&!world.agents[0].vehicle.failed)aw_mission_tick(&world,&map,actions);
@@ -43,6 +43,6 @@ int main(void){
     AwMissionRoute finish={.count=2,.point={{0,-5,0},{0,-5,10}},.distance={0,10}};
     AwMissionAgent near={.route=&finish,.cursor=1,.along=10,.remaining=0,.vehicle={.family=AW_VEHICLE_SUB,.position={2,-5,10},.yaw=-AW_MOTION_PI/2}};
     AwDrive correction=aw_mission_control(&near,actions[0]);assert(correction.speed>0);
-    assert(map.hash==hash);aw_mission_planner_close(&planner);
+    assert(map.hash==hash);aw_mission_planner_close(&planner);aw_mission_world_close(&world);
     printf("MISSION_ROUTE_TEST wing_replay=PASS wing_tracker=PASS points=%d sensor_equipment=PASS synchronous_collision=PASS invalid_goal=PASS map_unchanged=PASS\n",wing_points);
 }

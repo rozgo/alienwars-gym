@@ -22,7 +22,7 @@ typedef struct {
 static void aw_command_fleet_close(AwCommandFleet*f){
     for(int i=0;i<AW_UNITS;i++)if(f->net[i])free_puffernet(f->net[i]);
     for(int i=0;i<AW_VEHICLE_FAMILIES;i++)free(f->weights[i]);
-    aw_mission_planner_close(&f->planner);memset(f,0,sizeof(*f));
+    aw_mission_planner_close(&f->planner);aw_mission_world_close(&f->world);memset(f,0,sizeof(*f));
 }
 static int aw_command_fleet_destination(AwCommandFleet*f,const AwMap*m,int i,AwSVec goal,int automatic){
     if(i<0||i>=AW_UNITS||!f->active[i]||f->unit[i].vehicle.failed)return 0;
@@ -59,9 +59,10 @@ static void aw_command_fleet_scout_route(AwCommandFleet*f,const AwMap*m,int star
 static void aw_command_fleet_init(AwCommandFleet*f,const AwMap*m,const AwPatrols*p){
     AwSensorConfig equipment[AW_UNITS][4];int preserve=f->ready;
     if(preserve)for(int i=0;i<AW_UNITS;i++)memcpy(equipment[i],f->world.sensors.units[i].config,sizeof(equipment[i]));
-    aw_command_fleet_close(f);f->unit=f->world.agents;f->active=f->world.active;f->world.count=AW_UNITS;f->selection=1;
+    aw_command_fleet_close(f);if(!aw_mission_world_init(&f->world))return;
+    aw_mission_world_reset(&f->world,m,AW_UNITS);
+    f->unit=f->world.agents;f->active=f->world.active;f->selection=1;
     if(!aw_mission_planner_init(&f->planner,m))return;
-    aw_sensors_init(&f->world.sensors,m,AW_UNITS);
     aw_command_fleet_scout_route(f,m,0);
     for(int i=1;i<AW_UNITS;i++){
         aw_local_route(m,&p->units[i-1],&f->scratch);const AwLocalRoute*r=&f->scratch;if(r->count<2)continue;

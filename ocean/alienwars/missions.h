@@ -2,6 +2,7 @@
 #define ALIENWARS_MISSIONS_H
 #include "mission_routes.h"
 #include "sensors.h"
+#include "flecs_config.h"
 
 #define AW_MISSION_INPUTS (32+AW_SENSOR_OBS)
 #define AW_MISSION_ACTIONS 4
@@ -16,11 +17,67 @@ typedef struct {
 } AwMissionAgent;
 typedef struct {
     int count,ticks;
-    AwMissionAgent agents[AW_SENSOR_UNITS];
-    unsigned char active[AW_SENSOR_UNITS];
-    unsigned char paused[AW_SENSOR_UNITS];
+    ecs_world_t *ecs;
+    ecs_query_t *units;
+    ecs_entity_t entities[AW_SENSOR_UNITS];
+    ecs_entity_t mission_id,sensor_id,active_id,paused_id;
+    /* Borrowed views of Flecs component columns, not mirrored entity state.
+     * All 16 slots are created together; topology is fixed until close. */
+    AwMissionAgent *agents;
+    unsigned char *active,*paused;
+    AwSensorUnit *perception;
     AwSensors sensors;
 } AwMissionWorld;
+
+static ecs_entity_t aw_mission_component(ecs_world_t*ecs,const char*name,size_t size,size_t alignment){
+    ecs_entity_t entity=ecs_entity_init(ecs,&(ecs_entity_desc_t){.name=name});
+    return ecs_component_init(ecs,&(ecs_component_desc_t){.entity=entity,.type={.size=(ecs_size_t)size,.alignment=(ecs_size_t)alignment}});
+}
+/* Obtain typed contiguous columns through the C query API. Never infer an actor
+ * slot from an ECS numeric ID or carry a pointer across a structural change. */
+static void aw_mission_world_bind(AwMissionWorld*w){
+    ecs_iter_t it=ecs_query_iter(w->ecs,w->units);int rows=0;
+    while(ecs_query_next(&it)){
+        assert(!rows&&it.count==AW_SENSOR_UNITS);
+        for(int i=0;i<it.count;i++)assert(it.entities[i]==w->entities[i]);
+        w->agents=ecs_field_w_size(&it,sizeof(AwMissionAgent),0);
+        w->perception=ecs_field_w_size(&it,sizeof(AwSensorUnit),1);
+        w->active=ecs_field_w_size(&it,sizeof(unsigned char),2);
+        w->paused=ecs_field_w_size(&it,sizeof(unsigned char),3);
+        rows+=it.count;
+    }
+    assert(rows==AW_SENSOR_UNITS);
+}
+static int aw_mission_world_init(AwMissionWorld*w){
+    assert(!w->ecs);w->ecs=ecs_mini();if(!w->ecs)return 0;
+    w->mission_id=aw_mission_component(w->ecs,"AwMission",sizeof(AwMissionAgent),_Alignof(AwMissionAgent));
+    w->sensor_id=aw_mission_component(w->ecs,"AwPerception",sizeof(AwSensorUnit),_Alignof(AwSensorUnit));
+    w->active_id=aw_mission_component(w->ecs,"AwActive",sizeof(unsigned char),_Alignof(unsigned char));
+    w->paused_id=aw_mission_component(w->ecs,"AwPaused",sizeof(unsigned char),_Alignof(unsigned char));
+    const ecs_entity_t*ids=ecs_bulk_init(w->ecs,&(ecs_bulk_desc_t){.count=AW_SENSOR_UNITS,
+        .ids={w->mission_id,w->sensor_id,w->active_id,w->paused_id}});
+    assert(ids);memcpy(w->entities,ids,sizeof(w->entities));
+    w->units=ecs_query_init(w->ecs,&(ecs_query_desc_t){.cache_kind=EcsQueryCacheNone,
+        .terms={{.id=w->mission_id},{.id=w->sensor_id},{.id=w->active_id},{.id=w->paused_id}}});
+    assert(w->units);aw_mission_world_bind(w);
+    memset(w->agents,0,AW_SENSOR_UNITS*sizeof(*w->agents));
+    memset(w->perception,0,AW_SENSOR_UNITS*sizeof(*w->perception));
+    memset(w->active,0,AW_SENSOR_UNITS);memset(w->paused,0,AW_SENSOR_UNITS);
+    return 1;
+}
+static void aw_mission_world_reset(AwMissionWorld*w,const AwMap*m,int count){
+    assert(w->ecs&&count>=0&&count<=AW_SENSOR_UNITS);aw_mission_world_bind(w);
+    w->count=count;w->ticks=0;
+    memset(w->agents,0,AW_SENSOR_UNITS*sizeof(*w->agents));
+    memset(w->perception,0,AW_SENSOR_UNITS*sizeof(*w->perception));
+    memset(w->active,0,AW_SENSOR_UNITS);memset(w->paused,0,AW_SENSOR_UNITS);
+    aw_sensors_init(&w->sensors,m,count,w->perception);
+}
+static void aw_mission_world_close(AwMissionWorld*w){
+    if(w->units)ecs_query_fini(w->units);
+    if(w->ecs)ecs_fini(w->ecs);
+    memset(w,0,sizeof(*w));
+}
 
 static float aw_mission_project(AwMissionAgent*a){
     const AwMissionRoute*r=a->route;float best=INFINITY,along=a->along;int cursor=a->cursor;
@@ -124,6 +181,7 @@ static void aw_mission_sense(AwMissionWorld*w,const AwMap*m,float dt){
     aw_sensors_step(&w->sensors,m,dt);aw_mission_observe(w);
 }
 static void aw_mission_tick(AwMissionWorld*w,const AwMap*m,const float actions[][4]){
+    aw_mission_world_bind(w);
     AwVehicle vehicle[AW_SENSOR_UNITS];AwDrive drive[AW_SENSOR_UNITS];unsigned char moving[AW_SENSOR_UNITS];
     for(int i=0;i<w->count;i++){
         AwMissionAgent*a=&w->agents[i];vehicle[i]=a->vehicle;vehicle[i].contact=0;a->reward=0;

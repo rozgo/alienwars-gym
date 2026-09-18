@@ -97,15 +97,17 @@ AwSharedTask*aw_shared_create(int maps,unsigned seed,unsigned instance,int curri
         fprintf(stderr,"SHARED_BANK worlds=%d curriculum=%d prep_seconds=%.3f routes=%d,%d,%d,%d,%d\n",maps,curriculum,(clock()-timer)/(double)CLOCKS_PER_SEC,family_count[0],family_count[1],family_count[2],family_count[3],family_count[4]);
         b->next=banks;banks=b;
     }
-    AwSharedTask*t=calloc(1,sizeof(*t));if(!t)return NULL;t->bank=b;b->references++;t->rng=aw_hash(instance^seed^773);t->action_rng=aw_hash(instance^9817);return t;
+    AwSharedTask*t=calloc(1,sizeof(*t));if(!t)return NULL;
+    if(!aw_mission_world_init(&t->world)){free(t);return NULL;}
+    t->bank=b;b->references++;t->rng=aw_hash(instance^seed^773);t->action_rng=aw_hash(instance^9817);return t;
 }
 void aw_shared_destroy(AwSharedTask*t){
-    if(!t)return;AwSharedBank*b=t->bank;if(!--b->references){AwSharedBank**link=&banks;while(*link!=b)link=&(*link)->next;*link=b->next;free(b->worlds);free(b);}free(t);
+    if(!t)return;aw_mission_world_close(&t->world);AwSharedBank*b=t->bank;if(!--b->references){AwSharedBank**link=&banks;while(*link!=b)link=&(*link)->next;*link=b->next;free(b->worlds);free(b);}free(t);
 }
 static void aw_shared_reset_at(AwSharedTask*t,int map,int scenario){
     t->map=&t->bank->worlds[map];t->scenario=scenario;
-    memset(&t->world,0,sizeof(t->world));memset(t->event,0,sizeof(t->event));memset(t->terminal,0,sizeof(t->terminal));
-    t->world.count=AW_SHARED_AGENTS;t->reset_pending=0;aw_sensors_init(&t->world.sensors,&t->map->map,AW_SHARED_AGENTS);
+    aw_mission_world_reset(&t->world,&t->map->map,AW_SHARED_AGENTS);memset(t->event,0,sizeof(t->event));memset(t->terminal,0,sizeof(t->terminal));
+    t->reset_pending=0;
     for(int i=0;i<AW_SHARED_AGENTS;i++){
         const AwMissionRoute*r=&t->map->route[t->scenario][i];
         if(r->count<2){t->terminal[i]=1;continue;}

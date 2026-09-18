@@ -9,9 +9,9 @@ report={}
 for name in ['mission_route','shared_adapter','command_fleet']:
     source=f'tests/alienwars/{name}_test.c'
     includes=['-I.','-Isrc','-Ivendor','-Iraylib-5.5_macos/include','-Iraylib-5.5_linux_amd64/include']
-    subprocess.run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined',*includes,source,'-lm','-o',f'build/{name}-test'],check=True)
+    subprocess.run(['clang','-std=c11','-O1','-g','-fsanitize=address,undefined',*includes,source,'ocean/alienwars/flecs_runtime.c','-lm','-o',f'build/{name}-test'],check=True)
     native=subprocess.check_output([f'build/{name}-test'],text=True)
-    subprocess.run([emcc,'-std=c11','-O3',*includes,source,'-lm','-sSTACK_SIZE=2MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node','-o',f'build/{name}-test.js'],check=True)
+    subprocess.run([emcc,'-std=c11','-O3',*includes,source,'ocean/alienwars/flecs_runtime.c','-lm','-sSTACK_SIZE=2MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node','-o',f'build/{name}-test.js'],check=True)
     wasm=subprocess.check_output(['node',f'build/{name}-test.js'],text=True)
     assert native==wasm,(name,native,wasm)
     report[name]=native.strip();print(native.strip(),flush=True)

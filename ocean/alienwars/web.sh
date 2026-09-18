@@ -9,7 +9,7 @@ if [ -n "${AW_MISSION_MODELS:-}" ]; then
     done
 fi
 mkdir -p build/web/alienwars
-emcc ocean/alienwars/alienwars.c -o build/web/alienwars/maplab.html \
+emcc ocean/alienwars/alienwars.c ocean/alienwars/flecs_runtime.c -o build/web/alienwars/maplab.html \
     -std=c11 -O3 -Wall -Wextra -Wno-unused-function \
     -I. -Iocean/alienwars "${INCLUDES[@]}" "${LINK_ARCHIVES[@]}" \
     -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 \

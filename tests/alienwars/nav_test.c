@@ -27,7 +27,7 @@ static void flat(int q){
 static void finite_obs(const AwNavEpisode *e){for(int i=0;i<AW_NAV_OBS;i++)assert(isfinite(e->observations[i])&&fabsf(e->observations[i])<=1.00001f);}
 static void fixtures(void){
     flat(4);aw_nav_reset(&episode,&fixture,0,AW_MOTION_PI*.5f,600);
-    copy=episode;forbid_alloc=1;
+    copy=episode;copy.sensors.units=copy.sensor_units;forbid_alloc=1;
     for(int i=0;i<60&&!episode.result;i++){
         aw_nav_step(&episode,2,1);aw_nav_step(&copy,2,1);finite_obs(&episode);
         assert(!memcmp(episode.observations,copy.observations,sizeof(episode.observations)));

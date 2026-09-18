@@ -13,6 +13,7 @@ static void* checked_realloc(void*p,size_t n){assert(!forbid_alloc);return reall
 #include "ocean/alienwars/patrols.h"
 static AwMap m,before;
 static AwSensors sensors,copy;
+static AwSensorUnit sensor_units[AW_SENSOR_UNITS],copy_units[AW_SENSOR_UNITS];
 static AwRayWorld rays;
 typedef struct {AwSVec a,b,c;} Triangle;
 static Triangle triangles[180000];static int triangle_count;
@@ -69,7 +70,7 @@ static void ray_tests(void){
     build_reference();compare_mesh((AwSVec){25,11,25},128);compare_mesh((AwSVec){24,11,24},96);
 }
 static void contract_tests(void){
-    flat(4);aw_sensors_init(&sensors,&m,3);
+    flat(4);aw_sensors_init(&sensors,&m,3,sensor_units);
     for(int i=0;i<3;i++){aw_sensor_equip(&sensors,i,0,.7f);sensors.units[i].pose.position=(AwSVec){20+i*5,1.8f,25};}
     AwSensorConfig sonar=aw_sensor_default(AW_SENSOR_SONAR,0);sonar.enabled=1;assert(aw_sensor_attach(&sensors,0,AW_SENSOR_SONAR,sonar));
     before=m;forbid_alloc=1;aw_sensors_step(&sensors,&m,1.0f/60);forbid_alloc=0;
@@ -91,9 +92,10 @@ static void contract_tests(void){
     sonar=aw_sensor_default(AW_SENSOR_SONAR,1);assert(aw_sensor_attach(&sensors,2,AW_SENSOR_SONAR,sonar));
     aw_sensors_step(&sensors,&m,.01f);assert(sensors.units[2].reading[AW_SENSOR_SONAR].valid);
     int seabed=0;for(int i=0;i<24;i++)seabed+=sensors.units[2].reading[AW_SENSOR_SONAR].beams[i].hit.kind==AW_HIT_TERRAIN;assert(seabed>10);
-    copy=sensors;forbid_alloc=1;
+    copy=sensors;memcpy(copy_units,sensor_units,sizeof(sensor_units));copy.units=copy_units;forbid_alloc=1;
     for(int step=0;step<180;step++){aw_sensors_step(&sensors,&m,1.0f/60);aw_sensors_step(&copy,&m,1.0f/60);}
-    forbid_alloc=0;assert(!memcmp(&sensors,&copy,sizeof(sensors))&&!memcmp(&m,&before,sizeof(m)));
+    forbid_alloc=0;assert(!memcmp(sensor_units,copy_units,sizeof(sensor_units)));
+    copy.units=sensors.units;assert(!memcmp(&sensors,&copy,sizeof(sensors))&&!memcmp(&m,&before,sizeof(m)));
     for(int i=0;i<3;i++)for(int k=0;k<AW_SENSOR_OBS;k++)assert(isfinite(sensors.observations[i][k])&&fabsf(sensors.observations[i][k])<=1.00001f);
     /* Nonzero mount translations and rotations compose in the body's frame. */
     AwSensorConfig mounted=aw_sensor_default(AW_SENSOR_LIDAR,0);mounted.mount.position=(AwSVec){0,1,2};mounted.mount.yaw=AW_SENSOR_PI*.5f;
@@ -101,7 +103,8 @@ static void contract_tests(void){
     assert(aw_sensor_attach(&sensors,0,AW_SENSOR_LIDAR,mounted));aw_sensor_sample(&sensors,&m,0,AW_SENSOR_LIDAR);
     AwSensorReading*scan=&sensors.units[0].reading[0];assert(fabsf(scan->pose.position.x-22)<.001f&&fabsf(scan->pose.position.y-2.8f)<.001f);
     assert(fabsf(scan->beams[16].direction.x)<.001f&&fabsf(scan->beams[16].direction.z+1)<.001f);
-    copy=sensors;aw_sensors_step(&sensors,&m,NAN);aw_sensors_step(&sensors,&m,0);assert(!memcmp(&copy,&sensors,sizeof(sensors)));
+    copy=sensors;memcpy(copy_units,sensor_units,sizeof(sensor_units));aw_sensors_step(&sensors,&m,NAN);aw_sensors_step(&sensors,&m,0);
+    assert(!memcmp(&copy,&sensors,sizeof(sensors))&&!memcmp(copy_units,sensor_units,sizeof(sensor_units)));
     sensors.units[2].active=0;aw_sensors_step(&sensors,&m,.01f);for(int k=0;k<AW_SENSOR_OBS;k++)assert(sensors.observations[2][k]==0);
     /* Occluding terrain attenuates RF; disabled peers do not transmit. */
     sensors.units[0].pose.position=(AwSVec){20,1.8f,25};sensors.units[1].pose.position=(AwSVec){30,1.8f,25};
@@ -114,7 +117,7 @@ static AwSensorPose frames[600][AW_UNITS];
 static void benchmark(void){
     static AwPatrols patrols;double total=0;uint64_t queries=0,samples=0;int finite=0;
     for(int seed=0;seed<3;seed++){
-        assert(aw_generate(&m,seed+71)&&aw_patrol_build(&m,&patrols));before=m;aw_sensors_init(&sensors,&m,AW_UNITS);aw_sensor_equip(&sensors,0,0,.65f);
+        assert(aw_generate(&m,seed+71)&&aw_patrol_build(&m,&patrols));before=m;aw_sensors_init(&sensors,&m,AW_UNITS,sensor_units);aw_sensor_equip(&sensors,0,0,.65f);
         for(int i=0;i<AW_PATROLS;i++)aw_sensor_equip(&sensors,i+1,patrols.units[i].layer,1);
         for(int f=0;f<600;f++){
             int c=m.cave_hubs[0];AwCaveNode*n=&m.cave[c];frames[f][0]=(AwSensorPose){.position={(n->x+.5f)*2,(n->q+1)*.75f-1.2f,(n->z+.5f)*2},.yaw=f*.01f};
@@ -129,7 +132,7 @@ static void benchmark(void){
         }forbid_alloc=0;total+=(double)clock()/CLOCKS_PER_SEC-start;queries+=sensors.ray_queries;samples+=sensors.samples;finite++;
         assert(!memcmp(&m,&before,sizeof(m)));
     }
-    printf("SENSOR_BENCH worlds=%d units=12 steps=1800 simulation_seconds=30 cpu_ms=%.3f ms_per_world_step=%.4f rays=%llu samples=%llu state_bytes=%zu obs_floats=%d no_step_alloc=PASS map_unchanged=PASS\n",finite,total*1000,total*1000/1800,(unsigned long long)queries,(unsigned long long)samples,sizeof(AwSensors),AW_SENSOR_OBS);
+    printf("SENSOR_BENCH worlds=%d units=12 steps=1800 simulation_seconds=30 cpu_ms=%.3f ms_per_world_step=%.4f rays=%llu samples=%llu state_bytes=%zu obs_floats=%d no_step_alloc=PASS map_unchanged=PASS\n",finite,total*1000,total*1000/1800,(unsigned long long)queries,(unsigned long long)samples,sizeof(AwSensors)+sizeof(sensor_units),AW_SENSOR_OBS);
 }
 int main(int argc,char**argv){
     if(argc>1&&!strcmp(argv[1],"--bench")){benchmark();return 0;}

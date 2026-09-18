@@ -17,6 +17,7 @@ int main(void){
         assert(env.agents[i].policy==aw_shared_family(i));
         env.agents[i].observations=obs[i];env.agents[i].actions=actions[i];env.agents[i].rewards=&rewards[i];env.agents[i].terminals=&terminals[i];env.agents[i].action_mask=masks[i];
     }
+    int64_t ecs_allocations=ecs_os_api_malloc_count+ecs_os_api_calloc_count+ecs_os_api_realloc_count;
     guard=1;puf_reset(&env);
     int available=0;
     for(int i=0;i<12;i++){
@@ -44,6 +45,8 @@ int main(void){
         puf_step(&env);
         for(int i=0;i<12;i++){assert(isfinite(rewards[i]));for(int j=0;j<OBS_SIZE;j++)assert(isfinite(obs[i][j])&&fabsf(obs[i][j])<=1);}
     }
-    assert(allocations==0);guard=0;puf_close(&env);dict_clear(&settings);
+    assert(allocations==0);
+    assert(ecs_allocations==ecs_os_api_malloc_count+ecs_os_api_calloc_count+ecs_os_api_realloc_count);
+    guard=0;puf_close(&env);dict_clear(&settings);
     printf("SHARED_ADAPTER policies=5 agents=12 available=%d terminal_and_reward_reset=PASS independent_state=PASS no_step_reset_allocations=PASS finite_invalid_actions=PASS valid_spawns=PASS\n",available);
 }
