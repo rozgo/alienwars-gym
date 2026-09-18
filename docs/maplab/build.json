@@ -1,6 +1,6 @@
 {
   "generator_version": 11,
-  "source_commit": "eebca7fe939210855ea0f45af9c3f38f4d37ad10",
+  "source_commit": "79f53c30cd4b060a799d7478556dad45742645ed",
   "source_dirty": false,
   "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
   "raylib": "5.5",
@@ -14,18 +14,25 @@
       "LICENSE": "5f89f3edd5d1e458cd48509818e23b57d85869f7d57d0ebe31bcfd3a73e5dd60"
     }
   },
+  "explorer": {
+    "repository": "https://github.com/flecs-hub/explorer",
+    "commit": "b72f0e28c0a03c21094b497e0afff7e5ec5898d1",
+    "archive_sha256": "bc2c66610b707569c63842140049addf83ab5f3b0b2f840f7102710b484bd99e",
+    "files": 671
+  },
+  "viewer_inspection": true,
   "artifacts": {
     "index.html": {
-      "bytes": 44923,
-      "sha256": "aadc4d22bcc8d5fa5ae37d0a1d5722289ae8e48dffae15c6c0201f12a8e4e897"
+      "bytes": 46796,
+      "sha256": "fbdefa2386bd148ab74eeca0d501e7d04d109ec1b318d423229d94670cfef22f"
     },
     "maplab.js": {
-      "bytes": 240020,
-      "sha256": "2a1c6a9c2ff8f845d7020808731fafa5160433280d99ef6c01c158ffc2f028e5"
+      "bytes": 259532,
+      "sha256": "71d69dc19989350b0c01ea963e1e6bc3fe663daa363589ef84a2b8e66e71cae8"
     },
     "maplab.wasm": {
-      "bytes": 1041168,
-      "sha256": "089a662f15bd1b92aad8f0629018a35a053b37a70fde541f25493e3194760f93"
+      "bytes": 1345923,
+      "sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     },
     "maplab.data": {
       "bytes": 3653120,

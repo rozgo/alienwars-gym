@@ -1,0 +1,288 @@
+<template>
+  <div class="entity-subtree">
+    <entity-tree-item
+      :conn="conn"
+      :item="item"
+      :depth="depth"
+      :selectedItem="selectedItem"
+      :showButtons="showButtons"
+      v-for="item in treeQueryResult"
+      @select="selectItem"
+      @remove="removeItem"
+      :key="itemKey(item)">
+    </entity-tree-item>
+    <template v-if="path !== '#0'">
+      <div class="entity-tree-vertical-line" :style="lineIndent"></div>
+    </template>
+  </div>
+</template>
+
+<script>
+export default { name: "entity-subtree" }
+</script>
+
+<script setup>
+import { onMounted, onUnmounted, ref, defineProps, defineEmits, defineExpose, computed, watch } from 'vue';
+
+const props = defineProps({
+  conn: {type: Object, required: true},
+  selectedItem: {type: Object, required: false},
+  path: {type: String, required: false, default: "#0"},
+  depth: {type: Number, required: false, default: 0},
+  nameFilter: {type: String, required: false},
+  queryFilter: {type: String, required: false},
+  showButtons: {type: Boolean, required: false, default: true}
+});
+
+const emit = defineEmits(['select']);
+const items = ref({});
+const treeQuery = ref();
+const treeQueryResult = ref();
+
+const lineIndent = computed(() => {
+  return `margin-left: ${props.depth * 12 - 8}px;`;
+});
+
+function compareItems(a, b) {
+  if (a.isModule == b.isModule) {
+    if (a.isComponent == b.isComponent) {
+      if (a.isParent == b.isParent) {
+        if (a.label) {
+          return a.label.localeCompare(b.label);
+        } else {
+          return a.name.localeCompare(b.name);
+        }
+      } else if (a.isParent) {
+        return -1;
+      } else {
+        return 1;
+      }
+    } else if (a.isComponent) {
+      return -1;
+    }
+  } else if (a.isModule) {
+    return -1;
+  } else {
+    return 1;
+  }
+}
+
+function selectItem(evt) {
+  emit('select', evt);
+}
+
+function itemKey(item) {
+  return item.id !== undefined ? "#" + item.id : item.path;
+}
+
+function removeItem(item) {
+  if (treeQueryResult.value) {
+    treeQueryResult.value = treeQueryResult.value.filter((i) => i !== item);
+  }
+  if (itemKey(item) !== undefined) {
+    delete items.value[itemKey(item)];
+  }
+}
+
+function addEntity(path, name) {
+  let treeItem = items.value[path];
+  if (treeItem === undefined) {
+    treeItem = items.value[path] = {};
+  }
+
+  treeItem.path = path;
+  treeItem.queryRef = path;
+  treeItem.name = name;
+  treeItem.isModule = false;
+  treeItem.isComponent = false;
+  treeItem.isTarget = false;
+  treeItem.isQuery = false;
+  treeItem.isPrefab = false;
+  treeItem.isDisabled = false;
+  treeItem.isParent = false;
+  treeItem.baseEntity = undefined;
+  treeItem.label = undefined;
+  treeItem.color = undefined;
+
+  if (!treeQueryResult.value) {
+    treeQueryResult.value = [];
+  }
+  if (!treeQueryResult.value.includes(treeItem)) {
+    treeQueryResult.value.push(treeItem);
+    treeQueryResult.value.sort(compareItems);
+  }
+
+  emit('select', treeItem);
+}
+
+defineExpose({
+  addEntity
+});
+
+onMounted(() => {
+  updateQuery();
+});
+
+watch(() => [props.nameFilter, props.queryFilter], () => {
+  updateQuery();
+});
+
+function updateQuery() {
+  if (treeQuery.value) {
+    treeQuery.value.abort();
+  }
+
+  let q = `
+    [none] ?flecs.core.Module,
+    [none] ?flecs.core.Component,
+    [none] ?flecs.core.Relationship,
+    [none] ?flecs.core.Trait,
+    [none] ?flecs.core.Target,
+    [none] ?flecs.core.Query,
+    [none] ?flecs.core.Prefab,
+    [none] ?flecs.core.Disabled,
+    [none] ?flecs.core.ChildOf(_, $this),
+    [none] ?flecs.core.IsA($this, $base|self)`
+    ;
+
+  let nf = props.nameFilter ? props.nameFilter : undefined;
+  let qf = props.queryFilter ? props.queryFilter : undefined;
+
+  if (!nf && !qf) {
+    let path = props.path;
+    if (path) {
+      const escapedPath = path.replace(/([^a-zA-Z0-9_$#.\\])/g, '\\$1');
+      q += `, (flecs.core.ChildOf, ${escapedPath})`;
+    }
+  }
+
+  if (qf) {
+    q += `, ${qf}`
+  }
+
+  if (nf) {
+    if (nf[0] == '#') {
+      q += `, $this == "${nf}"`;
+    } else {
+      q += `, $this ~= "${nf}"`;
+    }
+  }
+
+  treeQuery.value =
+    props.conn.query(q, {
+      try: true,
+      rows: true,
+      limit: 1000,
+      doc: true,
+      managed: true,
+      entity_ids: true,
+      persist: props.path === "0" // persist root query across reconnects
+    },
+    (reply) => {
+      let sortedItems = [];
+
+      if (!reply.results) {
+        reply.results = [];
+      }
+
+      const resultPaths = [];
+      const pathCounts = {};
+      for (let item of reply.results) {
+        const name = item.name + "";
+        const name_esc = name.replaceAll(".", "\\.");
+        let path = name_esc;
+        if (item.parent && name[0] != '#') {
+          path = item.parent + "." + name_esc
+        }
+        resultPaths.push(path);
+        pathCounts[path] = (pathCounts[path] || 0) + 1;
+      }
+
+      for (let i = 0; i < reply.results.length; i++) {
+        const item = reply.results[i];
+        const name = item.name + "";
+        const path = resultPaths[i];
+
+        const key = item.id !== undefined ? "#" + item.id : path;
+        let treeItem = items.value[key];
+        if (treeItem === undefined && key !== path) {
+          const pathItem = items.value[path];
+          if (pathItem !== undefined && pathItem.id === undefined) {
+            delete items.value[path];
+            treeItem = items.value[key] = pathItem;
+          }
+        }
+        if (treeItem === undefined) {
+          treeItem = items.value[key] = {};
+        }
+
+        Object.assign(treeItem, item);
+
+        treeItem.path = path;
+        const selectById = item.id !== undefined &&
+          (name[0] == '#' || pathCounts[path] > 1);
+        treeItem.queryRef = selectById ? "#" + item.id : path;
+        treeItem.isModule = item.fields.is_set[0];
+        treeItem.isComponent = item.fields.is_set[1] || item.fields.is_set[2] || item.fields.is_set[3];
+        treeItem.isTarget = item.fields.is_set[4];
+        treeItem.isQuery = item.fields.is_set[5];
+        treeItem.isPrefab = item.fields.is_set[6];
+        treeItem.isDisabled = item.fields.is_set[7];
+        treeItem.isParent = item.fields.is_set[8];
+        treeItem.baseEntity = item.fields.is_set[9] ? item.vars["base"] : undefined;
+
+        if (item.doc) {
+          treeItem.label = item.doc.label;
+          treeItem.color = item.doc.color;
+        } else {
+          treeItem.label = undefined;
+          treeItem.color = undefined;
+
+        }
+
+        sortedItems.push(treeItem);
+      }
+
+      sortedItems.sort(compareItems);
+
+      treeQueryResult.value = sortedItems;
+    }, (err) => {}, () => {
+      treeQueryResult.value = [];
+    });
+}
+
+onUnmounted(() => {
+  treeQuery.value.abort();
+});
+
+</script>
+
+<style scoped>
+
+div.entity-subtree {
+  position: relative;
+  animation: subtree-in 0.12s ease-out;
+}
+
+@keyframes subtree-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+div.entity-tree-vertical-line {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  min-width: 1px;
+  height: calc(100% - 4px);
+  background-color: white;
+  opacity: 0.2;
+}
+
+</style>

@@ -1,0 +1,262 @@
+<template>
+
+<div :id="id" :class="class" :style="gridStyle" ref="rootEl">
+  <slot></slot>
+  <div v-if="centerPaneHidden" class="center-collapsed-separator"
+    :style="`grid-column: ${separatorColumn}; grid-row: 1;`"></div>
+</div>
+
+</template>
+
+<script>
+export default { name: "pane-container" };
+</script>
+
+<script setup>
+import { computed, defineProps, defineExpose, onMounted, onBeforeUnmount, nextTick, ref } from 'vue';
+
+const props = defineProps({
+  id: {type: String, required: false},
+  class: {type: String, required: false},
+  showLeftPane: {type: Boolean, required: false, default: true},
+  showRightPane: {type: Boolean, required: false, default: true}
+});
+
+const rootEl = ref(null)
+
+// --- Resizable layout state ---
+const defaultLeftPaneWidth = 300;
+const defaultRightPaneWidth = 500;
+const minLeftPaneWidth = 180;
+const minRightPaneWidth = 320;
+const hideCenterThreshold = 100;
+
+const containerWidth = ref(0);
+
+const leftPaneWidth = ref(Number(localStorage.getItem(`${props.id}.leftPaneWidth`)) || defaultLeftPaneWidth);
+const rightPaneWidth = ref(Number(localStorage.getItem(`${props.id}.rightPaneWidth`)) || defaultRightPaneWidth);
+
+const dragging = ref(null); // 'leftPane' | 'rightPane' | custom | null
+let containerRect = null;
+let customDragMove = null;
+
+function clampLeftPane(width, totalInnerWidth) {
+  // When center is collapsed, the right pane uses 1fr so only its minimum
+  // constrains the left pane, not its stored width.
+  const rightConstraint = props.showRightPane
+    ? (centerPaneHidden.value ? minRightPaneWidth : rightPaneWidth.value)
+    : 0;
+  const max = totalInnerWidth - rightConstraint;
+  return Math.max(minLeftPaneWidth, Math.min(width, max));
+}
+
+function clampRightPane(width, totalInnerWidth) {
+  // When center is collapsed, the left pane's stored width doesn't block —
+  // only its minimum matters, since the grid gives the right pane 1fr.
+  const leftConstraint = props.showLeftPane
+    ? (centerPaneHidden.value ? minLeftPaneWidth : leftPaneWidth.value)
+    : 0;
+  const max = totalInnerWidth - leftConstraint;
+  return Math.max(minRightPaneWidth, Math.min(width, max));
+}
+
+function onWindowMouseMove(e) {
+  if (!dragging.value) return;
+  if (customDragMove) {
+    customDragMove(e);
+    return;
+  }
+  if (!containerRect) return;
+  const totalInnerWidth = containerRect.width; // grid area width
+  containerWidth.value = totalInnerWidth;
+  if (dragging.value === 'leftPane') {
+    const newWidth = clampLeftPane(e.clientX - containerRect.left, totalInnerWidth);
+    leftPaneWidth.value = Math.round(newWidth);
+    localStorage.setItem(`${props.id}.leftPaneWidth`, String(leftPaneWidth.value));
+  } else if (dragging.value === 'rightPane') {
+    const newWidth = clampRightPane(containerRect.right - e.clientX - 4, totalInnerWidth);
+    rightPaneWidth.value = Math.round(newWidth);
+    localStorage.setItem(`${props.id}.rightPaneWidth`, String(rightPaneWidth.value));
+    // When center is collapsed, allow dragging further left to shrink the
+    // treeview. Only shrink, never grow — so dragging back right decreases
+    // rightPaneWidth without touching leftPaneWidth, letting center uncollapse.
+    if (centerPaneHidden.value && props.showLeftPane) {
+      const newLeftWidth = Math.round(clampLeftPane(e.clientX - containerRect.left, totalInnerWidth));
+      if (newLeftWidth < leftPaneWidth.value) {
+        leftPaneWidth.value = newLeftWidth;
+        localStorage.setItem(`${props.id}.leftPaneWidth`, String(leftPaneWidth.value));
+      }
+    }
+  }
+  updateCenterHidden(dragging.value === 'rightPane');
+  // Notify canvas to resize while dragging
+  window.dispatchEvent(new Event('resize'));
+}
+
+function onWindowMouseUp() {
+  if (dragging.value) {
+    dragging.value = null;
+    containerRect = null;
+    customDragMove = null;
+    document.body.style.cursor = '';
+  }
+}
+
+function startDragging(which, onMove, cursor) {
+  dragging.value = which;
+  containerRect = rootEl.value.getBoundingClientRect();
+  customDragMove = onMove || null;
+  document.body.style.cursor = cursor || 'col-resize';
+}
+
+function getRightPaneWidth() {
+  return rightPaneWidth.value;
+}
+
+function setLeftPaneWidth(px) {
+  if (!props.showLeftPane) return;
+  if (rootEl.value) {
+    containerWidth.value = rootEl.value.getBoundingClientRect().width;
+  }
+  const rightMin = props.showRightPane ? minRightPaneWidth : 0;
+  const max = Math.max(minLeftPaneWidth, containerWidth.value - rightMin);
+  const w = Math.round(Math.max(minLeftPaneWidth, Math.min(px, max)));
+  leftPaneWidth.value = w;
+  localStorage.setItem(`${props.id}.leftPaneWidth`, String(w));
+  updateCenterHidden(false);
+  nextTick(() => {
+    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+  });
+}
+
+function setRightPaneWidth(px) {
+  if (!props.showRightPane) return;
+  if (rootEl.value) {
+    containerWidth.value = rootEl.value.getBoundingClientRect().width;
+  }
+  const leftMin = props.showLeftPane ? minLeftPaneWidth : 0;
+  const max = Math.max(minRightPaneWidth, containerWidth.value - leftMin);
+  const w = Math.round(Math.max(minRightPaneWidth, Math.min(px, max)));
+  rightPaneWidth.value = w;
+  localStorage.setItem(`${props.id}.rightPaneWidth`, String(w));
+  updateCenterHidden(true);
+  // Dispatch resize twice: the first lets listeners (e.g. the 3D canvas) update
+  // their display size against the new layout, the second lets the renderer
+  // read that updated size so its framebuffer doesn't end up stretched.
+  nextTick(() => {
+    window.dispatchEvent(new Event('resize'));
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+  });
+}
+
+// Attach listeners on mount, remove on unmount
+onMounted(() => {
+  window.addEventListener('mousemove', onWindowMouseMove);
+  window.addEventListener('mouseup', onWindowMouseUp);
+  window.addEventListener('resize', onWindowResize);
+  // Initial clamp in case stored sizes don't fit current viewport
+  nextTick(() => ensureWidthsFit());
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mousemove', onWindowMouseMove);
+  window.removeEventListener('mouseup', onWindowMouseUp);
+  window.removeEventListener('resize', onWindowResize);
+});
+
+function onWindowResize() {
+  ensureWidthsFit();
+}
+
+function ensureWidthsFit() {
+  if (!rootEl.value) return;
+  const el = rootEl.value;
+  const rect = el.getBoundingClientRect();
+  containerWidth.value = rect.width;
+
+  const hasLeftPane = props.showLeftPane;
+  const hasRightPane = props.showRightPane;
+
+  let left = hasLeftPane ? leftPaneWidth.value : 0;
+  let right = hasRightPane ? rightPaneWidth.value : 0;
+
+  // Clamp to minimums first
+  if (hasLeftPane) left = Math.max(minLeftPaneWidth, left);
+  if (hasRightPane) right = Math.max(minRightPaneWidth, right);
+
+  if (hasLeftPane) {
+    leftPaneWidth.value = Math.round(left);
+    localStorage.setItem(`${props.id}.leftPaneWidth`, String(leftPaneWidth.value));
+  }
+  if (hasRightPane) {
+    rightPaneWidth.value = Math.round(right);
+    localStorage.setItem(`${props.id}.rightPaneWidth`, String(rightPaneWidth.value));
+  }
+
+  updateCenterHidden(false);
+}
+
+const centerPaneHidden = ref(false);
+
+function getCenterAvailable() {
+  let available = containerWidth.value;
+  if (props.showLeftPane) available -= leftPaneWidth.value;
+  if (props.showRightPane) available -= rightPaneWidth.value;
+  return available;
+}
+
+// Any source can collapse the center pane, but only the right pane
+// splitter can uncollapse it.
+function updateCenterHidden(canUncollapse) {
+  if (getCenterAvailable() < hideCenterThreshold) {
+    centerPaneHidden.value = true;
+  } else if (canUncollapse) {
+    centerPaneHidden.value = false;
+  }
+}
+
+// Grid column index of the center pane (used for the collapsed separator)
+const separatorColumn = computed(() => {
+  return props.showLeftPane ? 3 : 1;
+});
+
+const gridStyle = computed(() => {
+  // Use split columns as the visual gaps/handles; container gap is 0
+  const split = `var(--gap)`;
+  const hideCenter = centerPaneHidden.value;
+  if (props.showLeftPane && props.showRightPane) {
+    const left = `${leftPaneWidth.value}px`;
+    if (hideCenter) {
+      return `grid-template-columns: ${left} ${split} 1px ${split} 1fr;`;
+    }
+    const right = `${rightPaneWidth.value}px`;
+    return `grid-template-columns: ${left} ${split} 1fr ${split} ${right};`;
+  } else if (props.showLeftPane && !props.showRightPane) {
+    const left = `${leftPaneWidth.value}px`;
+    return `grid-template-columns: ${left} ${split} 1fr;`;
+  } else if (!props.showLeftPane && props.showRightPane) {
+    if (hideCenter) {
+      return `grid-template-columns: 1px ${split} 1fr;`;
+    }
+    const right = `${rightPaneWidth.value}px`;
+    return `grid-template-columns: 1fr ${split} ${right};`;
+  } else {
+    return `grid-template-columns: 1fr;`;
+  }
+});
+
+defineExpose({startDragging, centerPaneHidden, dragging, getRightPaneWidth, setRightPaneWidth, setLeftPaneWidth});
+
+</script>
+
+<style scoped>
+
+.center-collapsed-separator {
+  width: 1px;
+  background: var(--border);
+  justify-self: center;
+  align-self: stretch;
+}
+
+</style>

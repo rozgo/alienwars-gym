@@ -34,7 +34,7 @@ const scenes=[
    }
    if(scene.explorer){
     const handle=await page.$('#explorer-frame');const frame=await handle.contentFrame();
-    await frame.waitForSelector('.entity-inspector-component');
+    await frame.waitForSelector('.component-header');
    }
    await page.$eval('aside',e=>e.scrollTop=0);
    await new Promise(r=>setTimeout(r,1800));

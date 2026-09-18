@@ -1,54 +1,98 @@
 {
   "generator_version": 11,
-  "viewer_source": "cd01ce171623f5ee610aae6ea3dc3d090ec9e9eb",
+  "viewer_source": "79f53c30cd4b060a799d7478556dad45742645ed",
+  "capture": "Live Chrome screenshots through browser UI; lossless WebP encoding; no image retouching. Source revisions differ only in packaging/docs.",
   "images": [
     {
       "file": "temperate.webp",
-      "caption": "Temperate terrain with mirrored bases, lakes and ocean.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&sensors=0",
+      "caption": "Temperate terrain with warmer soil, natural greens, mirrored bases, lakes and ocean.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=0&sym=1&a=6&b=6&tunnels=1&cut=1",
       "hash": "f6969e6d",
-      "bytes": 100594,
-      "sha256": "7918d889889b7296dc64e109d7ba1583b5bafe657858914f883f52de87fa9edf"
+      "controls": "Default view, one zoom-in step.",
+      "bytes": 646406,
+      "sha256": "9010a7041434573788ad3144628bc9e843779b6e470071696905d25640c92bfe",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "7b7b89b3",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     },
     {
       "file": "desert.webp",
-      "caption": "Asymmetric desert with independently placed bases.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0",
+      "caption": "Asymmetric desert with independently placed bases, bridges and inland water.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0&tunnels=1&cut=1",
       "hash": "416f652a",
-      "bytes": 106912,
-      "sha256": "01db81c60d534c33a88c23db5dca6d545285431bd1631ab753230fc272ae19a3"
+      "controls": "Default map view.",
+      "bytes": 546254,
+      "sha256": "616b56491cc54145da8f50db1aed9f60c959852402662910d361867a6952dc1b",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "7b7b89b3",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     },
     {
       "file": "frozen.webp",
       "caption": "Frozen terrain with connected roads, cliffs and water.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&tunnels=1&cut=1",
       "hash": "0169f7aa",
-      "bytes": 129334,
-      "sha256": "25000f6b44e47dfd699f707260c2e2193336162e9706e5a3d7caf1c67500ff4e"
+      "controls": "Default map view.",
+      "bytes": 560736,
+      "sha256": "08adef78e35c1eb2b56d9886f250e9f78b4613725305ea1d20245c85c950c97c",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "79f53c30",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     },
     {
       "file": "tunnels.webp",
-      "caption": "Underground network isolated from the surface.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&isolate=1",
+      "caption": "Underground network isolated from the surface, including ramps and chambers.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&tunnels=1&cut=1&isolate=1",
       "hash": "0169f7aa",
-      "bytes": 67970,
-      "sha256": "aaaaca397eca040aa760b893119c00aa96c142e77ade159fa30e3264c1ba6d62"
+      "controls": "Isolate tunnels, reset view to frame network, two zoom-in steps.",
+      "bytes": 279888,
+      "sha256": "d6dd95cf494fc6cc057a621894659e1f7d30188c58a17996bfbfae18f846a08b",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "79f53c30",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     },
     {
       "file": "sensors.webp",
       "caption": "Live LiDAR, sonar, RF and depth-camera overlays across the fleet.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&sensors=15&sensorsAll=1&unit=7",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sym=1&a=6&b=6&tunnels=1&cut=1&sensors=15&sensorsAll=1&unit=7",
       "hash": "f6969e6d",
-      "bytes": 163084,
-      "sha256": "005af2cd83f96aa6c846864bbe240bc71a282fbda9d70846f9eaf31abe579a81"
+      "controls": "Default map view; all unit overlays enabled.",
+      "bytes": 664052,
+      "sha256": "061b215119780cc16cd96ad5ceacd77c61152255a74b68965e0c236b22bb5a39",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "7b7b89b3",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     },
     {
       "file": "submarine.webp",
-      "caption": "Heavy submarine with sonar and visibility through water.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&sensors=2&unit=11",
+      "caption": "Heavy submarine visible through ocean water with live sonar returns.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sym=1&a=6&b=6&tunnels=1&cut=1&sensors=2&unit=11",
       "hash": "f6969e6d",
-      "bytes": 69778,
-      "sha256": "6158ecdf2e8128b127050710598e2c2647baf9ca072b6f7b7d433832c87e3e41"
+      "controls": "Focus heavy submarine, follow enabled, four zoom-in steps.",
+      "bytes": 375776,
+      "sha256": "421652b97799a3deacb6d5f880cb3c0a429e5caac7b6d14d140d1ece4b0ce943",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "7b7b89b3",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
+    },
+    {
+      "file": "explorer.webp",
+      "caption": "Official Flecs Explorer inspecting the live Recon wing mission and policy inputs.",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sym=1&a=6&b=6&tunnels=1&cut=1&sensors=15&unit=7&explorer=1",
+      "hash": "f6969e6d",
+      "controls": "Map Lab Explorer opened for selected unit; AwMission expanded.",
+      "bytes": 502736,
+      "sha256": "54df4b5b16007fde53e54a6263a5a5dd26a7f84f42cb030f80847d43024fef11",
+      "width": 1728,
+      "height": 941,
+      "viewer_source": "7b7b89b3",
+      "viewer_wasm_sha256": "c9c54d02192ccf34e475ec4d478ea67f5b5bb87da4fe0a027b06d43975e8e7bd"
     }
   ]
 }

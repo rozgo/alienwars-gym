@@ -1,0 +1,203 @@
+<template>
+  <div :class="css" :style="showList ? { zIndex: 1000 } : {}" ref="dropdown">
+    <div class="dropdown-container" @click="onClick">
+      <div class="dropdown-text noselect">
+        <template v-if="label">
+          {{ label }}&nbsp;
+        </template>
+        <template v-if="activeItem">
+          <span class="dropdown-text-active">
+            {{ activeItem }}
+            <template v-if="postfix">
+              {{ postfix }}
+            </template>
+          </span>
+        </template>
+      </div>
+      <div class="dropdown-button">
+        <icon src="chevron-down" :opacity="0.7"></icon>
+      </div>
+    </div>
+
+    <Teleport to="body">
+      <template v-if="showList">
+        <div
+          class="dropdown-list"
+          ref="listEl"
+          :style="listStyle">
+          <ul>
+            <li class="dropdown-item noselect" v-for="item in items" @click="onSelect(item)">
+              {{ item }}
+              <template v-if="postfix">
+                {{ postfix }}
+              </template>
+            </li>
+          </ul>
+        </div>
+      </template>
+    </Teleport>
+  </div>
+</template>
+
+<script>
+export default { name: "dropdown" };
+</script>
+
+<script setup>
+import { computed, defineProps, defineModel, onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue';
+
+const props = defineProps({
+  items: {type: Array, required: true},
+  label: {type: String, required: false},
+  postfix: {type: String, required: false},
+  transparent: {type: Boolean, required: false, default: false},
+  auto_select_first: {type: Boolean, required: false, default: true},
+});
+
+const activeItem = defineModel("active_item");
+const showList = ref(false);
+const dropdown = ref(null);
+const listEl = ref(null);
+const listStyle = ref({});
+
+onMounted(() => {
+  if (props.auto_select_first && !activeItem.value) {
+    activeItem.value = props.items[0];
+  }
+
+  window.addEventListener('click', onWindowClick);
+  window.addEventListener('resize', updateListPosition);
+  window.addEventListener('scroll', updateListPosition, true);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', onWindowClick);
+  window.removeEventListener('resize', updateListPosition);
+  window.removeEventListener('scroll', updateListPosition, true);
+});
+
+watch(showList, (val) => {
+  if (val) {
+    nextTick(updateListPosition);
+  }
+});
+
+function updateListPosition() {
+  if (!showList.value || !dropdown.value) return;
+  const rect = dropdown.value.getBoundingClientRect();
+  listStyle.value = {
+    position: 'fixed',
+    top: `${rect.bottom}px`,
+    left: `${rect.left}px`,
+    minWidth: `${rect.width}px`,
+  };
+}
+
+const css = computed(() => {
+  let classes = ["dropdown"];
+  if (props.transparent) {
+    classes.push("dropdown-transparent");
+  }
+  return classes;
+});
+
+function onClick() {
+  showList.value = !showList.value;
+}
+
+function onWindowClick(event) {
+  if (!dropdown.value) {
+    return;
+  }
+
+  if (dropdown.value.contains(event.target)) {
+    return;
+  }
+  if (listEl.value && listEl.value.contains(event.target)) {
+    return;
+  }
+  showList.value = false;
+}
+
+function onSelect(item) {
+  activeItem.value = item;
+  showList.value = false;
+}
+
+</script>
+
+<style>
+
+div.dropdown {
+  display: inline-block;
+  position: relative;
+  border-radius: var(--border-radius-medium);
+  color: var(--secondary-text);
+  background-color: var(--bg-button);
+  transition: background-color var(--animation-duration) ease-in;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+div.dropdown-transparent {
+  background-color: rgba(0, 0, 0, 0.0);
+}
+
+div.dropdown:hover {
+  background-color: var(--bg-button-hover);
+}
+
+div.dropdown-container {
+  display: grid;
+  grid-template-columns: auto 32px;
+  overflow: auto;
+}
+
+div.dropdown-text {
+  grid-column: 1;
+  padding: 8px;
+  padding-right: 0px;
+}
+
+span.dropdown-text-active {
+  color: var(--primary-text);
+}
+
+div.dropdown-button {
+  grid-column: 2;
+  padding: 8px;
+}
+
+div.dropdown-list {
+  position: fixed;
+  z-index: 1000;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: var(--border-radius-medium);
+  border-color: var(--border);
+  color: var(--primary-text);
+  background-color: var(--bg-content);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: rise-in 0.12s ease-out;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0px;
+  padding: 4px;
+}
+
+li.dropdown-item {
+  padding: 6px 32px 6px 8px;
+  border-radius: var(--border-radius-small);
+  white-space: nowrap;
+  color: var(--primary-text);
+  cursor: pointer;
+  transition: background-color var(--animation-duration-fast);
+}
+
+li.dropdown-item:hover {
+  background-color: var(--accent-muted);
+}
+
+</style>

@@ -1,0 +1,296 @@
+@import "colors.css";
+
+html, body {
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.0rem;
+  margin: 0.0rem;
+  background: var(--bg-color);
+  font-family: Inter, Helvetica, sans-serif;
+  color: var(--primary-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: rgba(66, 185, 131, 0.25);
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 0.0rem 2.5rem calc(100% - 2.5rem - 3 * var(--gap)) 0.0rem;
+  grid-template-rows: 0.0rem var(--header-height) 1.0fr var(--footer-height);
+  gap: var(--gap);
+}
+
+div.top-bar {
+  grid-column: 2 / 5;
+  grid-row: 2;
+}
+
+div.left-bar {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+div.page-content {
+  grid-column: 3;
+  grid-row: 3;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  animation: fade-in 0.1s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  #app {
+    grid-template-columns: 0.0rem calc(100% - 2 * var(--gap)) 0.0rem;
+    grid-template-rows: 0.0rem var(--header-height) calc(100% - var(--header-height) - var(--footer-height) - 3 * var(--gap)) 0.0rem var(--footer-height);
+  }
+
+  div.top-bar {
+    grid-column: 2 / 4;
+  }
+
+  div.left-bar {
+    display: none !important;
+  }
+
+  div.page-content {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+pre {
+  font: 14px/normal 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Source Code Pro', 'source-code-pro', monospace;
+  background-color: var(--bg-content);
+  border-radius: var(--border-radius-medium);
+  padding: 1rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+input {
+  all: unset;
+  border: 0;
+  outline: 0;
+  color: var(--primary-text);
+  caret-color: var(--secondary-text);
+  font-size: inherit;
+  font-family: inherit;
+  background-color: var(--bg-input);
+  transition: background-color var(--animation-duration);
+}
+
+input:focus {
+  background-color: var(--bg-input-select) !important;
+}
+
+button {
+  padding: 0.5rem;
+	background: none;
+	border: none;
+  text-transform: capitalize;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: var(--border-radius-medium);
+  background-color: var(--bg-button);
+  color: var(--primary-text);
+  transition: background-color var(--animation-duration);
+
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+button:hover {
+  background-color: var(--bg-button-hover) !important;
+}
+
+button:active {
+  opacity: 0.8;
+  transform: translateY(0.5px);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+input:focus {
+  outline: none !important;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  background-color: var(--border);
+  border: none;
+}
+
+div.pane, input.pane {
+  background-color: var(--bg-pane);
+  color: var(--primary-text);
+  border-color: var(--border);
+  border-width: 1px;
+  border-style: solid;
+  border-radius: var(--border-radius-medium);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+div.input-wrapper {
+  position: relative;
+  /* display: inline-block; */
+}
+
+div.input-wrapper input {
+  border: none;
+  outline: none;
+}
+
+div.input-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: var(--green);
+  transition: width var(--animation-duration) ease;
+}
+
+div.input-wrapper:focus-within::after {
+  width: 100%;
+}
+
+div.pane-alt {
+  background-color: var(--bg-pane-alt);
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+/* Customizes the scrollbar's track */
+::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0);
+}
+
+/* Customizes the scrollbar's thumb */
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.14);
+  border: 2.5px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+
+/* Customizes the scrollbar thumb on hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+  border-width: 2px;
+}
+
+/* Sets the scrollbar width */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+span.code-function {
+  color: var(--blue);
+}
+
+span.code-operator {
+  color: var(--secondary-text);
+}
+
+span.code-string {
+  color: var(--yellow);
+}
+
+span.code-member {
+  color: var(--primary-text);
+}
+
+span.code-variable {
+  color: var(--green);
+}
+
+span.code-qualifier {
+  color: var(--blue);
+}
+
+span.code-keyword {
+  color: var(--purple);
+}
+
+span.code-comment {
+  color: var(--secondary-text);
+}
+
+span.code-type {
+  color: var(--green);
+}
+
+span.code-identifier {
+  color: var(--primary-text);
+}
+
+span.code-number {
+  color: var(--yellow);
+}
+
+.flecs-logo {
+  background-image: url('../img/flecs_logo.png');
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  width: 100%;
+  height: 100%;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Live viewer: inspection only. */
+.component-delete-icon,.entity-tree-item-actions,.entity-tree-new,.pane-inspector-actions {display:none!important}

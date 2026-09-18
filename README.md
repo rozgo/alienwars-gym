@@ -10,7 +10,7 @@ simulation, sensing and policy inference in your browser.
 [Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html) ·
 [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
 
-[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
+[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=9010a7041434)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
 
 ## Worlds worth exploring
 
@@ -22,7 +22,7 @@ coherent terrain palette: **Temperate, Desert or Frozen**.
 
 | Asymmetric desert | Frozen frontier |
 | --- | --- |
-| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
+| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp?v=616b56491cc5)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp?v=08adef78e35c)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
 
 ## Twelve vehicles. Five learning families. One shared world.
 
@@ -38,7 +38,7 @@ Select a unit or family and issue destinations, then follow their progress.
 
 | See beneath the landscape | Navigate beneath the ocean |
 | --- | --- |
-| [![Isolated volumetric tunnel network with ramps and underground chambers](docs/demo/images/tunnels.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&biome=3&isolate=1&sensors=0) | [![Heavy submarine visible through water with its sonar range](docs/demo/images/submarine.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=11&sensors=2) |
+| [![Isolated volumetric tunnel network with ramps and underground chambers](docs/demo/images/tunnels.webp?v=d6dd95cf494f)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&biome=3&isolate=1&sensors=0) | [![Heavy submarine visible through water with its sonar range](docs/demo/images/submarine.webp?v=421652b97799)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=11&sensors=2) |
 
 The [recorded evaluation](docs/runs/shared-navigation-2026-09-16.md) covers three
 training seeds and 49.5 million steps. Local navigation remains experimental;
@@ -59,7 +59,7 @@ for motion. Toggle sensor overlays for one unit or the whole fleet, inspect
 returns through terrain and water, and view the live depth image. Equipment
 changes policy inputs; overlay visibility only changes the display.
 
-[![All-unit sensor overlays showing range fans, camera fields and radio connections across the battlefield](docs/demo/images/sensors.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=15&sensorsAll=1&unit=7)
+[![All-unit sensor overlays showing range fans, camera fields and radio connections across the battlefield](docs/demo/images/sensors.webp?v=061b21511978)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=15&sensorsAll=1&unit=7)
 
 Generation, collision, navigation and sensing share a renderer-independent C
 model. Sensor sampling uses fixed buffers and runs without graphics during
@@ -72,7 +72,7 @@ Open **Flecs Explorer** in Map Lab to inspect the selected unit's live body stat
 mission, odometry, sensors and PPO inputs. The official Explorer reads the same
 Flecs world used by the viewer; the training build keeps these inspection addons disabled.
 
-[![Official Flecs Explorer inspecting a live unit beside the Temperate battlefield](docs/demo/images/explorer.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=7&explorer=1)
+[![Official Flecs Explorer inspecting a live unit beside the Temperate battlefield](docs/demo/images/explorer.webp?v=54df4b5b1600)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=7&explorer=1)
 
 ## Try it
 
