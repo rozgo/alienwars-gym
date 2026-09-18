@@ -125,13 +125,19 @@
     @media(max-width:540px) { aside { grid-template-columns:1fr; } .panel-section { border-right:0; } }
     @media(max-width:430px) { .brand { font-size:11px; } .brand span { font-size:10px; } nav { font-size:10px; } .view-controls { top:86px; } }
     @media(pointer:coarse) { button,select,.toggle { min-height:36px; } .view-controls { grid-template-columns:repeat(3,36px); } .view-controls button { width:36px; } }
+    body.play-view .workspace { grid-template-columns:1fr; height:calc(100svh - 44px); }
+    body.play-view aside { display:none; }
+    body.play-view .viewport { height:100%; }
+    body.play-view .map-heading .eyebrow,body.play-view .map-heading p:last-child { display:none; }
+    body.play-view h1 { font-size:14px; letter-spacing:.03em; }
+    body.play-view .gesture-help { display:none; }
     @media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
   </style>
 </head>
 <body>
   <header>
     <a class="brand" href="../">ALIENWARS<span>MAP LAB / 011</span></a>
-    <nav aria-label="Project"><button id="open-explorer" aria-controls="explorer-panel" aria-expanded="false">Flecs Explorer</button><a href="../navigation/?kind=1">Navigation Lab</a><a href="../training/">Training</a><a href="../demo/">Demo</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
+    <nav aria-label="Project"><button id="play-view" aria-pressed="false" title="Expand the world and tuck away the inspector">Play view</button><button id="open-explorer" aria-controls="explorer-panel" aria-expanded="false">Flecs Explorer</button><a href="../navigation/?kind=1">Navigation Lab</a><a href="../training/">Training</a><a href="../demo/">Demo</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <section id="explorer-panel" aria-label="Flecs live world inspector" hidden>
     <div class="explorer-heading"><span>FLECS EXPLORER · LIVE / READ ONLY</span><button id="close-explorer">Close explorer</button></div>
@@ -311,6 +317,13 @@
   <script>
     const $ = id => document.getElementById(id);
     const params = new URLSearchParams(location.search);
+    function setPlayView(enabled) {
+      document.body.classList.toggle('play-view',enabled);
+      $('play-view').setAttribute('aria-pressed',String(enabled));
+      $('play-view').textContent=enabled?'Show controls':'Play view';
+    }
+    setPlayView(params.get('view')==='play');
+    $('play-view').addEventListener('click',()=>{setPlayView(!document.body.classList.contains('play-view'));syncUrl();});
     const validSeed = value => /^\d{1,10}$/.test(value) && Number(value) <= 4294967295;
     let currentSeed = validSeed(params.get('seed') || '') ? Number(params.get('seed')) : 73;
     let ready = false, playbackPaused = false, lastReport = null;
@@ -385,6 +398,7 @@
     function syncUrl() {
       const url = new URL(location.href);
       url.searchParams.set('seed', String(currentSeed));
+      if(document.body.classList.contains('play-view'))url.searchParams.set('view','play');else url.searchParams.delete('view');
       if ($('walkability').checked) url.searchParams.set('grid','1'); else url.searchParams.delete('grid');
       if (!$('surface-detail').checked) url.searchParams.set('detail','0'); else url.searchParams.delete('detail');
       if (!$('baked-occlusion').checked) url.searchParams.set('ao','0'); else url.searchParams.delete('ao');

@@ -21,7 +21,7 @@ typedef struct {
     Mesh terrain, scenery, overlay, ocean_overlay, water, tunnels, tunnel_lights;
     Material land_material, water_material;
     Shader land_shader, water_shader;
-    Texture2D coast, detail, surface_mask;
+    Texture2D coast, detail, surface_mask, forest_scan, rock_scan;
     RenderTexture2D shadow, reflection;
     Shader shadow_shader;
     Material shadow_material;
@@ -30,7 +30,7 @@ typedef struct {
     float reflected_reveal;
     int reflection_valid;
     int land_view, water_view, render_pass, light_matrix, reflection_matrix;
-    int land_reveal, water_time, cut_eye, cut_target, cut_mode, tunnel_view;
+    int land_reveal, water_time, land_wind, water_wake_pose, water_wake_motion, cut_eye, cut_target, cut_mode, tunnel_view;
     int ao_enabled, ao_location, detail_enabled, detail_location;
     int built;
 } AwScene;
@@ -109,6 +109,7 @@ static void aw_rock(AwBuilder *b,Vector3 p,float radius,float height,uint32_t se
     }
 }
 
+#include "art.h"
 #include "props.h"
 
 static const Color aw_palette[AW_TILES]={
@@ -202,7 +203,7 @@ static void aw_destroy_scene(AwScene*s){
     UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->ocean_overlay);UnloadMesh(s->water);
     MemFree(s->land_material.maps);MemFree(s->water_material.maps);MemFree(s->shadow_material.maps);
     UnloadRenderTexture(s->shadow);if(s->reflection.id)UnloadRenderTexture(s->reflection);UnloadShader(s->shadow_shader);
-    UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);UnloadTexture(s->detail);UnloadTexture(s->surface_mask);
+    UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);UnloadTexture(s->detail);UnloadTexture(s->surface_mask);UnloadTexture(s->forest_scan);UnloadTexture(s->rock_scan);
     memset(s,0,sizeof(*s));
 }
 typedef struct {int first,last;Vector3 base;} AwTreeBake;
@@ -266,6 +267,13 @@ static void aw_build_detail(AwScene*s,const AwMap*m){
     SetTextureFilter(s->surface_mask,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->surface_mask,TEXTURE_WRAP_CLAMP);
     s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->surface_mask;
     s->land_material.maps[MATERIAL_MAP_ROUGHNESS].texture=s->detail;
+    s->forest_scan=LoadTexture("resources/alienwars/art/forest.png");s->rock_scan=LoadTexture("resources/alienwars/art/rock.png");
+    if(!IsTextureValid(s->forest_scan)||!IsTextureValid(s->rock_scan)){fprintf(stderr,"Terrain materials missing\n");exit(2);}
+    Texture2D scans[2]={s->forest_scan,s->rock_scan};
+    for(int i=0;i<2;i++){GenTextureMipmaps(&scans[i]);SetTextureFilter(scans[i],TEXTURE_FILTER_TRILINEAR);SetTextureWrap(scans[i],TEXTURE_WRAP_REPEAT);}
+    s->forest_scan=scans[0];s->rock_scan=scans[1];
+    s->land_material.maps[MATERIAL_MAP_NORMAL].texture=s->forest_scan;
+    s->land_material.maps[MATERIAL_MAP_OCCLUSION].texture=s->rock_scan;
 }
 /* Bridge seams are visual detail outside the validated walking strip.
  * The deck itself is authoritative volume geometry, not this decorative mesh. */
@@ -314,6 +322,10 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
                     aw_boulder(&scenery,q,.09f,.1f,h+i,ground,rank);
                 }
             }else if((mat==AW_GRASS||mat==AW_DIRT||mat==AW_SAND)&&h%4==0)aw_grass(&scenery,p,h,rank,mat!=AW_GRASS);
+            if(m->options.biome==AW_TEMPERATE&&(mat==AW_FOREST||mat==AW_GRASS)&&h%3==0){
+                for(int j=0;j<3;j++){Vector3 q=p;q.x+=cosf(h+j*2.4f)*.43f;q.z+=sinf(h+j*2.4f)*.43f;
+                    q.y=aw_ground_y(m,c,q.x/AW_UNIT-x,q.z/AW_UNIT-z);aw_grass(&scenery,q,h+j*733u,rank,0);}
+            }
             if(tree)trees[tree_count++]=(AwTreeBake){first,scenery.count,p};
         }
         if(m->walkable[c]){
@@ -345,7 +357,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
         }
     }
     for(int side=0;side<2;side++){
-        Vector3 p=aw_center(m,m->spawns[side]);aw_outpost(&scenery,p,side);
+        Vector3 p=aw_center(m,m->spawns[side]);aw_art_nursery(&scenery,p,side);
         aw_ao_contact_add(ao,p.x,p.y,p.z,2.7f,2.5f,1.5f,.9f);
     }
     /* Model the playable ocean shelf; its inner edge is exactly the land
@@ -387,6 +399,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->ao_location=GetShaderLocation(s->land_shader,"aoEnabled");s->ao_enabled=1;
     SetShaderValue(s->land_shader,s->ao_location,&s->ao_enabled,SHADER_UNIFORM_INT);
     s->land_reveal=GetShaderLocation(s->land_shader,"reveal");s->water_time=GetShaderLocation(s->water_shader,"time");
+    s->land_wind=GetShaderLocation(s->land_shader,"windTime");
+    s->water_wake_pose=GetShaderLocation(s->water_shader,"wakePose");s->water_wake_motion=GetShaderLocation(s->water_shader,"wakeMotion");
     s->cut_eye=GetShaderLocation(s->land_shader,"cutEye");s->cut_target=GetShaderLocation(s->land_shader,"cutTarget");s->cut_mode=GetShaderLocation(s->land_shader,"cutMode");
     s->tunnel_view=GetShaderLocation(s->land_shader,"tunnelView");
     s->land_view=GetShaderLocation(s->land_shader,"viewDirection");s->water_view=GetShaderLocation(s->water_shader,"viewDirection");
@@ -395,6 +409,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->land_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->land_shader,"texture0");
     s->land_shader.locs[SHADER_LOC_MAP_ROUGHNESS]=GetShaderLocation(s->land_shader,"texture2");
     s->land_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->land_shader,"texture1");
+    s->land_shader.locs[SHADER_LOC_MAP_NORMAL]=GetShaderLocation(s->land_shader,"texture3");
+    s->land_shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(s->land_shader,"texture4");
     s->water_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->water_shader,"texture0");
     s->water_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->water_shader,"texture1");
     s->shadow_shader=LoadShaderFromMemory(aw_vertex_shader,aw_shadow_fragment);
@@ -419,7 +435,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     Image coast=GenImageColor(RES,RES,WHITE);Color*pixels=coast.data;
     for(int z=0;z<RES;z++)for(int x=0;x<RES;x++){
         int i=z*RES+x;
-        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),0,255,height[i]>1.44f?0:255};
+        pixels[i]=(Color){(unsigned char)Clamp(distance[i]*.5f/12*255,0,255),(unsigned char)Clamp((1.08f-height[i]*.75f)/12*255,0,255),255,height[i]>1.44f?0:255};
     }
     free(height);free(distance);
     s->coast=LoadTextureFromImage(coast);UnloadImage(coast);SetTextureFilter(s->coast,TEXTURE_FILTER_BILINEAR);SetTextureWrap(s->coast,TEXTURE_WRAP_CLAMP);
@@ -474,7 +490,7 @@ static void aw_draw_scene(AwScene*s,float reveal,float time,int overlay,int ocea
     SetShaderValue(s->land_shader,s->cut_eye,&eye,SHADER_UNIFORM_VEC3);
     SetShaderValue(s->land_shader,s->cut_target,&target,SHADER_UNIFORM_VEC3);
     SetShaderValue(s->land_shader,s->cut_mode,&cut,SHADER_UNIFORM_INT);
-    SetShaderValue(s->water_shader,s->water_time,&time,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(s->water_shader,s->water_time,&time,SHADER_UNIFORM_FLOAT);SetShaderValue(s->land_shader,s->land_wind,&time,SHADER_UNIFORM_FLOAT);
     Matrix identity=MatrixIdentity();
     if(tunnel_view){
         /* Cave faces point into their void. Two-sided inspection also exposes

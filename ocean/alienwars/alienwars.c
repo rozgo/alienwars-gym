@@ -6,6 +6,7 @@
 #include "unit_visibility.h"
 #include "unit_lighting.h"
 #include "command_fleet.h"
+#include "bio_render.h"
 #include <inttypes.h>
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -91,7 +92,7 @@ AW_EXPORT void aw_new(uint32_t seed,int watch) {
         aw_publish();
         return;
     }
-    aw_patrol_build(&world,&patrols);aw_command_fleet_init(&fleet,&world,&patrols);memset(unit_motion,0,sizeof(unit_motion));
+    aw_patrol_build(&world,&patrols);aw_command_fleet_init(&fleet,&world,&patrols);memset(unit_motion,0,sizeof(unit_motion));memset(aw_bio_phase,0,sizeof(aw_bio_phase));memset(aw_bio_speed,0,sizeof(aw_bio_speed));aw_bio_pose_valid=0;
     generation_ms=(GetTime()-start)*1000;
     aw_build_scene(&scene,&world);aw_set_occlusion(&scene,baked_occlusion);aw_set_detail(&scene,surface_detail);
     if(isolate_tunnels)aw_set_isolation(world.cave_count>0);
@@ -371,9 +372,33 @@ AW_EXPORT int aw_inspect_patrol(void){
 
 static void aw_draw_vehicle(int i){
     if(!fleet.active[i])return;AwVehicle pose=aw_command_fleet_pose(&fleet,i);const AwVehicle*v=&pose;
+    int asset=v->family==AW_VEHICLE_GROUND&&v->variant==0?0:v->family==AW_VEHICLE_BOAT&&v->variant==0?1:v->family==AW_VEHICLE_WING&&v->variant==1?2:-1;
+    if(asset>=0){aw_bio_draw(asset,v,i,Vector3Subtract(camera.position,camera.target));return;}
     rlPushMatrix();rlTranslatef(v->position.x,v->position.y,v->position.z);rlRotatef(v->yaw*RAD2DEG,0,1,0);rlRotatef(-v->pitch*RAD2DEG,1,0,0);
     if(v->family==AW_VEHICLE_WING)rlRotatef(-v->yaw_rate*42,0,0,1);
     aw_patrol_model(i?patrols.units[i-1].layer:0,v->variant,animation_time);rlPopMatrix();
+}
+/* Small contact shadows follow the existing support surface, including bridges.
+ * Cosmetic only, with no additions to collision or perception geometry. */
+static void aw_contact_shadows(void){
+    rlDrawRenderBatchActive();rlDisableDepthMask();rlBegin(RL_TRIANGLES);
+    for(int unit=0;unit<3;unit++)if(fleet.active[unit]&&(unit==0||patrol_mode!=2)){
+        AwVehicle v=aw_command_fleet_pose(&fleet,unit);AwVehicleSpec spec=aw_vehicle_spec(v.family,v.variant);
+        float q=(v.position.y+1.2f)/.75f;
+        for(int segment=0;segment<20;segment++){
+            Vector3 points[3]={{v.position.x,v.position.y+.032f,v.position.z}};
+            for(int k=1;k<3;k++){
+                float a=(segment+k-1)*2*PI/20,x=cosf(a)*spec.width*1.35f,z=sinf(a)*spec.length*1.35f;
+                points[k].x=v.position.x+x*cosf(v.yaw)+z*sinf(v.yaw);
+                points[k].z=v.position.z-x*sinf(v.yaw)+z*cosf(v.yaw);
+                float support=aw_support_q(&world,points[k].x/AW_UNIT,points[k].z/AW_UNIT,q);
+                points[k].y=aw_y(support/4)+.032f;
+            }
+            if(fabsf(points[1].y-points[0].y)>.6f||fabsf(points[2].y-points[0].y)>.6f)continue;
+            for(int k=2;k>=0;k--){rlColor4ub(13,22,19,k==0?80:0);rlNormal3f(0,1,0);rlTexCoord2f(0,0);rlVertex3f(points[k].x,points[k].y,points[k].z);}
+        }
+    }
+    rlEnd();rlDrawRenderBatchActive();rlEnableDepthMask();
 }
 static void aw_draw_unit(void){aw_draw_vehicle(0);}
 static void aw_draw_fleet(void){for(int i=1;i<AW_UNITS;i++)aw_draw_vehicle(i);}
@@ -383,6 +408,14 @@ static void aw_update(void) {
     animation_time+=dt;
     if(!paused&&revealed<AW_CELLS)revealed=fminf(AW_CELLS,revealed+dt*320);
     if(revealed>=AW_CELLS)aw_command_fleet_step(&fleet,&world,dt,!unit_paused,patrol_mode==0);
+    for(int i=0;i<AW_UNITS;i++){
+        AwVehicle pose=aw_command_fleet_pose(&fleet,i);AwSVec delta=aw_sv_add(pose.position,aw_sv_scale(aw_bio_previous[i],-1));
+        float distance=sqrtf(delta.x*delta.x+delta.y*delta.y+delta.z*delta.z);
+        if(!aw_bio_pose_valid||!fleet.active[i]||distance>2)distance=0;
+        aw_bio_previous[i]=pose.position;aw_bio_speed[i]=distance/fmaxf(dt,.0001f);
+        aw_bio_phase[i]=fmodf(aw_bio_phase[i]+distance*7,2*PI*100);
+    }
+    aw_bio_pose_valid=1;
     Vector2 mouse=GetMouseDelta();
     int orbit_modifier=IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT);
     if(IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&!orbit_modifier)){
@@ -423,6 +456,13 @@ static void aw_update(void) {
         Vector3 eye=Vector3Add(target,Vector3Scale(Vector3Normalize(Vector3Subtract(camera.position,camera.target)),190));
         int blocked=aw_occluded(&world,eye.x/AW_UNIT,(eye.y+1.2f)/0.75f,eye.z/AW_UNIT,target.x/AW_UNIT,(target.y+1.2f)/0.75f,target.z/AW_UNIT);
         cut_active=!isolate_tunnels&&(cut_mode==2||(cut_mode==1&&blocked));
+        Vector4 wake_pose[3]={{0}},wake_motion[3]={{0}};
+        for(int i=0;i<3;i++){int unit=i+3;AwVehicle v=aw_command_fleet_pose(&fleet,unit);
+            float speed=sqrtf(v.velocity.x*v.velocity.x+v.velocity.z*v.velocity.z);
+            wake_pose[i]=(Vector4){v.position.x,v.position.z,speed>.01f?v.velocity.x/speed:sinf(v.yaw),speed>.01f?v.velocity.z/speed:cosf(v.yaw)};
+            wake_motion[i].x=patrol_mode==2||!fleet.active[unit]?0:aw_bio_speed[unit];}
+        SetShaderValueV(scene.water_shader,scene.water_wake_pose,wake_pose,SHADER_UNIFORM_VEC4,3);
+        SetShaderValueV(scene.water_shader,scene.water_wake_motion,wake_motion,SHADER_UNIFORM_VEC4,3);
         aw_draw_scene(&scene,revealed-1,animation_time,show_overlay,show_ocean,eye,target,cut_active?cut_mode:0,isolate_tunnels?(show_tunnel_ceilings?2:1):0);
         if(revealed>=AW_CELLS||isolate_tunnels){
             if(show_tiles&&!isolate_tunnels){
@@ -463,11 +503,12 @@ static void aw_update(void) {
                 }
                 rlDrawRenderBatchActive();rlEnableDepthMask();rlEnableDepthTest();
             }
-            aw_units_through_begin();
+            if(!isolate_tunnels)aw_contact_shadows();
+            aw_bio_through=1;aw_units_through_begin();
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
             if(!isolate_tunnels&&patrol_mode!=2)aw_draw_fleet();
             aw_units_through_end();
-            aw_units_lit_begin();
+            aw_bio_through=0;aw_units_lit_begin();
             if(!isolate_tunnels||scout_layer)aw_draw_unit();
             if(!isolate_tunnels&&patrol_mode!=2)aw_draw_fleet();
             aw_units_lit_end();
@@ -498,10 +539,11 @@ static void aw_update(void) {
 
 int main(int argc,char **argv) {
     uint32_t seed=73;
-    int headless=0,watch=0;
+    int headless=0,watch=0,frames=0;
     for(int i=1;i<argc;i++){
         if(strncmp(argv[i],"--seed=",7)==0)seed=(uint32_t)strtoul(argv[i]+7,NULL,10);
         if(strcmp(argv[i],"--headless")==0)headless=1;
+        if(strncmp(argv[i],"--frames=",9)==0)frames=atoi(argv[i]+9);
         if(strcmp(argv[i],"--watch")==0)watch=1;
         if(strncmp(argv[i],"--symmetry=",11)==0)settings.symmetry=atoi(argv[i]+11);
         if(strncmp(argv[i],"--floor-a=",10)==0)settings.floors_a=atoi(argv[i]+10);
@@ -530,8 +572,8 @@ int main(int argc,char **argv) {
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(aw_update,0,1);
 #else
-    while(!WindowShouldClose())aw_update();
-    aw_command_fleet_close(&fleet);aw_destroy_scene(&scene);CloseWindow();
+    while(!WindowShouldClose()){aw_update();if(frames>0&&--frames==0)break;}
+    aw_command_fleet_close(&fleet);aw_destroy_scene(&scene);aw_art_close();if(aw_bio_shader.id)UnloadShader(aw_bio_shader);CloseWindow();
 #endif
     return 0;
 }

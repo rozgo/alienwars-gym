@@ -1,0 +1,42 @@
+{
+  "forest": {
+    "asset": "forest_ground_04",
+    "source": "https://polyhaven.com/a/forest_ground_04",
+    "license": "CC0-1.0",
+    "inputs": {
+      "Diffuse": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_ground_04/forest_ground_04_diff_1k.jpg",
+        "size": 1113899,
+        "md5": "6ad9df4d731a238299806f739a26af83"
+      },
+      "Displacement": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_ground_04/forest_ground_04_disp_1k.jpg",
+        "size": 223545,
+        "md5": "bc4bc69e809d50f2a662f5a48bd2a2aa"
+      }
+    },
+    "packed": "RGB albedo (sRGB), alpha height (linear), 512x512",
+    "sha256": "dd5af847429edc7aa99b62e50239f39854e679bb5184987ce8120109277c1d36",
+    "bytes": 700323
+  },
+  "rock": {
+    "asset": "rock_face_03",
+    "source": "https://polyhaven.com/a/rock_face_03",
+    "license": "CC0-1.0",
+    "inputs": {
+      "Diffuse": {
+        "size": 927082,
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_diff_1k.jpg",
+        "md5": "e4c34abb1aad5befe12754fad507147a"
+      },
+      "Displacement": {
+        "size": 264231,
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_disp_1k.jpg",
+        "md5": "9d51d6b2496de79f97b80d43ff1dd7fb"
+      }
+    },
+    "packed": "RGB albedo (sRGB), alpha height (linear), 512x512",
+    "sha256": "38ab75033e07f3df7a32066ef6fd5341784487003df6333dc5d9dc7494eba2c0",
+    "bytes": 606527
+  }
+}

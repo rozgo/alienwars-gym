@@ -82,6 +82,12 @@ current minimal template. Inspect headers before following an older tutorial.
 - `docs/maplab/index.html`, `maplab.js`, `maplab.wasm`, `maplab.data`, `build.json`: deliberate
   compiled Pages artifacts; regenerate with `scripts/build_maplab.sh`, never hand-edit.
 
+Authored Map Lab meshes/materials live in `resources/alienwars/art/`; see
+`docs/ART_PIPELINE.md` for sources, licenses and regeneration. These compact
+assets are deliberate Git/Pages artifacts. Keep raw source downloads and editable
+Blender outputs ignored. Preserve +Z-forward mesh orientation and unit envelopes;
+asset articulation must follow actual body motion and remain viewer-only.
+
 ## Environment implementation
 
 1. Specify observations, legal actions, reward terms, terminal conditions,

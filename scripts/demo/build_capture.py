@@ -30,7 +30,7 @@ command=[str(ROOT/'.local/emsdk/upstream/emscripten/emcc'),str(OUT/'viewer.c'),'
     '-DPLATFORM_WEB','-DGRAPHICS_API_OPENGL_ES3','-sUSE_GLFW=3','-sUSE_WEBGL2=1',
     '-sMIN_WEBGL_VERSION=2','-sMAX_WEBGL_VERSION=2','-sALLOW_MEMORY_GROWTH=1',
     '-sINITIAL_MEMORY=64MB','-sSTACK_SIZE=1MB','-sASSERTIONS=1','-sENVIRONMENT=web,node',
-    '--shell-file','web/maplab/shell.html']
+    '--shell-file','web/maplab/shell.html','--preload-file','resources/alienwars/art@resources/alienwars/art']
 subprocess.run(command,cwd=ROOT,check=True)
 # The shell's locateFile hook uses the supplied asset version for both assets.
 html=(OUT/'index.html').read_text().replace('__MAPLAB_ASSET_VERSION__','capture-v3')

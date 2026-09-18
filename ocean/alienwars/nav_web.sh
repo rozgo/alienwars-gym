@@ -1,7 +1,8 @@
 # Sourced by build.sh alienwars --web --rl. Explicit policy; no fallback weights.
 mkdir -p build/web/alienwars-nav
 cp web/navigation/theme.css build/web/alienwars-nav/theme.css
-NAV_PRELOAD=(--preload-file config/default.ini@config/default.ini
+NAV_PRELOAD=(--preload-file resources/alienwars/art@resources/alienwars/art
+             --preload-file config/default.ini@config/default.ini
              --preload-file config/alienwars.ini@config/alienwars.ini)
 if [ -n "${AW_NAV_MODEL:-}" ]; then
     test -f "$AW_NAV_MODEL"
@@ -26,7 +27,7 @@ manifest={'contract':1,'checkpoint':Path(model).name if model else None,
           'hidden':int(os.environ.get('AW_NAV_HIDDEN','128')),
           'layers':int(os.environ.get('AW_NAV_LAYERS','2')),
           'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-          'dirty':bool(subprocess.check_output(['git','status','--porcelain','--','build.sh','ocean/alienwars','src','vendor','config','web/navigation']))}
+          'dirty':bool(subprocess.check_output(['git','status','--porcelain','--','resources/alienwars/art','scripts/art','build.sh','ocean/alienwars','src','vendor','config','web/navigation']))}
 if os.environ.get('AW_NAV_PUBLIC')=='1':
     manifest['site_links']={'maplab':'../maplab/','training':'../training/','demo':'../demo/'}
 manifest['files']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.suffix in ('.html','.css','.js','.wasm','.data')}

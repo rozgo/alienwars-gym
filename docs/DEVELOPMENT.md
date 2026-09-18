@@ -2,9 +2,9 @@
 
 ## Next development slice
 
-The current architecture step ports the existing fleet to the [Flecs C runtime](FLECS.md)
-while preserving PufferLib and Raylib behavior. Validate that port before adding
-new gameplay or changing the policy contract.
+The fleet port to the [Flecs C runtime](FLECS.md) is validated, including native/WASM
+behavior and a five-family training smoke. The [first biological visual slice](ART_PIPELINE.md)
+adds an authored asset kit and terrain/water detail without changing the policy contract.
 
 The accepted direction is [biological warfare and cultivation](BIOLOGICAL_WARFARE.md):
 an entirely alien world where military organisms and equipment are grown.

@@ -59,7 +59,7 @@ static void aw_nav_manual(float actions[2]){
 int aw_nav_view_paused(void){return nav_view.paused;}
 int aw_nav_view_reset(void){int reset=nav_view.reset;nav_view.reset=0;return reset;}
 void aw_nav_render_close(void){
-    if(IsWindowReady()){aw_destroy_scene(&nav_view.scene);CloseWindow();}
+    if(IsWindowReady()){aw_destroy_scene(&nav_view.scene);aw_art_close();CloseWindow();}
     memset(&nav_view,0,sizeof(nav_view));
 }
 static void aw_nav_line(Vector3 a,Vector3 b,Color color){a.y+=.12f;b.y+=.12f;DrawLine3D(a,b,color);}

@@ -413,7 +413,7 @@ The height channels drive low-amplitude albedo variation, roughness and
 Hardware mipmaps and trilinear filtering soften detail at distant views;
 there is no extra mesh displacement or collision geometry. **Surface detail**
 provides an immediate comparison, also shareable with `detail=0`; toggling it
-refreshes the cached reflection. Texture synthesis is local and adds no download.
+refreshes the cached reflection. Procedural detail is synthesized locally; the viewer also packages two CC0 material scans, as described below.
 
 An environment color grade preserves linear luminance while reducing chroma
 more strongly for saturated colors: retention ranges from 82% down to 58%.
@@ -466,10 +466,13 @@ deliberately absent.
 
 `props.h` builds seeded cosmetic meshes: tapered trunks, roots, branches,
 twigs and two-sided leaves, broadleaf trees and conifers, irregular smooth
-boulders, pebbles, grass tufts, mineral clusters and industrial outposts. These
+boulders, pebbles, grass tufts and mineral clusters. These
 use a separate hash stream and do not change WFC, navigation or collision.
-All geometry, detail textures and materials are authored in C/GLSL; there are no
-external model, texture, CDN or asset-license dependencies.
+The [biological visual slice](ART_PIPELINE.md) adds three original Blender-authored
+unit meshes and a grown nursery form at both bases. Two CC0 Poly Haven scans
+supply rock and forest-floor albedo/height detail. Sources, licenses, hashes and
+rebuild instructions live in [the art kit](../resources/alienwars/art/README.md).
+Everything is packaged with the viewer; there is no runtime CDN dependency.
 
 The ocean has animated wave normals, Fresnel reflection, deep/shallow color,
 subtle caustics, restrained sun highlights and moving shoreline foam. It samples
@@ -477,14 +480,15 @@ a planar reflection of the actual terrain and static props. The reflection is
 1,024 pixels wide, follows the viewport aspect ratio (height bounded to
 256–1,536), and refreshes when the camera, viewport or assembly changes. A still
 view reuses the reflection while waves keep moving. Shore distance and the
-water mask share a 384-square texture. Frame rate is visible under **Map checks**.
+water mask and sampled seabed depth share a 384-square texture. Surface boats
+produce movement-dependent wakes, and ground units have soft support-aware
+contact shadows. Frame rate is visible under **Map checks**.
 Regeneration paints a busy state and disables controls before the synchronous
 WASM work runs outside the input event. Shader inputs retain the rank attribute
 required by Raylib 5.5's non-VAO path; the default batch's unused normal slot is
 also initialized to prevent invalid WebGL attribute calls.
 
-This is a first realism pass, not a finished AAA asset pipeline. Vegetation is
-static, there is no reflection of the moving scout, and the ocean is a visual
+This is a first realism pass, not a finished AAA asset pipeline. Vegetation has subtle shader wind with static shadows; there is no reflection of moving units, and the ocean is a visual
 surface rather than a fluid simulation. The single shadow map loses detail at
 extreme zoom. Mesh construction and GPU upload happen at world creation;
 **Generation** reports only the authoritative generator, not these rendering

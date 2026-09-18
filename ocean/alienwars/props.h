@@ -45,7 +45,7 @@ static void aw_tree(AwBuilder*b,Vector3 p,uint32_t seed,float rank,int pine,int 
         float a=phase+root*2*PI/5;Vector3 foot={p.x+cosf(a)*.38f,p.y+.02f,p.z+sinf(a)*.38f},join=p;join.y+=.45f;
         aw_branch(b,foot,join,.05f,.09f,bark,rank,4,5);
     }
-    int branches=pine?35:13;
+    int branches=pine?35:17;
     for(int i=0;i<branches;i++){
         uint32_t h=aw_hash(seed+i*117u);float tier=(float)i/branches;
         float y=pine?.2f+tier*.7f:.35f+tier*.48f;
@@ -61,13 +61,13 @@ static void aw_tree(AwBuilder*b,Vector3 p,uint32_t seed,float rank,int pine,int 
             Vector3 base=Vector3Lerp(stem,tip,.35f+.6f*j/twigs);
             Vector3 end={base.x+cosf(a)*.32f,base.y+(pine?.07f:.18f),base.z+sinf(a)*.32f};
             aw_branch(b,base,end,.014f,.004f,bark,rank,4,4);
-            for(int k=0;k<(pine?4:7);k++){
+            for(int k=0;k<(pine?4:9);k++){
                 uint32_t r=aw_hash(h+j*73u+k*1879u);float az=aw_prop_random(r)*2*PI;
                 Vector3 leaf=Vector3Lerp(base,end,.3f+.7f*aw_prop_random(r+1));
                 leaf.y+=pine?0:aw_prop_random(r+3)*.13f;
                 Color c=aw_tint(leaves,.72f+aw_prop_random(r+4)*.6f);
                 if(snow&&k%4==0)c=(Color){180,191,184,255};
-                aw_leaf(b,leaf,(Vector3){cosf(az),.25f+aw_prop_random(r+5)*.75f,sinf(az)},pine?.25f:.38f,pine?.085f:.15f,aw_prop_random(r+6)*1.3f,c,rank);
+                aw_leaf(b,leaf,(Vector3){cosf(az),.25f+aw_prop_random(r+5)*.75f,sinf(az)},pine?.25f:.46f,pine?.085f:.17f,aw_prop_random(r+6)*1.3f,c,rank);
             }
         }
     }
