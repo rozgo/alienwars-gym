@@ -20,6 +20,8 @@ for item in args.models:
     assert (json.loads(metadata.read_text())['contract']==args.contract if metadata.exists() else args.contract==2),'Explicit checkpoint contract required'
     runs.append((label,directory))
 report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip()),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist and args.contract>=3,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
+if report['frozen_pool']:
+    report['frozen_hashes']=[hashlib.sha256((Path(report['frozen_pool'])/f'mission-{f}.bin').read_bytes()).hexdigest() for f in range(5)]
 for label,directory in runs:
     command=[binary,directory,str(args.seed),str(args.maps),str(args.scenarios_per_map*args.maps),str(args.curriculum),'json']
     jobs=min(args.jobs,args.scenarios_per_map*args.maps) if directory!='random' else 1
