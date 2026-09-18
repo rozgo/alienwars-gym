@@ -3,7 +3,8 @@
 #include "patrols.h"
 #include "sensor_rays.h"
 #include "motion.h"
-typedef struct {int family,variant,contact,failed;AwSVec position,velocity;float yaw,yaw_rate,pitch; } AwVehicle;
+enum {AW_CONTACT_TERRAIN=1,AW_CONTACT_UNIT=2};
+typedef struct {int family,variant,contact,failed;AwSVec position,velocity;float yaw,yaw_rate,pitch;int contact_kind; } AwVehicle;
 typedef struct {AwSVec position,velocity;float yaw,width,length,height;int active;} AwBody;
 static int aw_vehicle_family(int layer,int variant){return layer==0?AW_VEHICLE_GROUND:layer==1?AW_VEHICLE_BOAT:layer==3?AW_VEHICLE_SUB:variant==0?AW_VEHICLE_QUAD:AW_VEHICLE_WING;}
 static AwBody aw_vehicle_body(const AwVehicle*v){AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);AwSVec p=v->position;if(v->family==AW_VEHICLE_GROUND)p.y+=s.height*.5f;if(v->family==AW_VEHICLE_BOAT)p.y+=.2f;return (AwBody){p,v->velocity,v->yaw,s.width,s.length,s.height*.5f,1};}
@@ -88,10 +89,10 @@ static void aw_vehicle_drive(const AwMap*m,AwVehicle*v,AwDrive drive,float dt,co
     v->velocity.x=sy*forward+cy*lateral;v->velocity.z=cy*forward-sy*lateral;
     v->position=aw_sv_add(v->position,aw_sv_scale(v->velocity,dt));
     v->pitch=atan2f(v->velocity.y,fmaxf(.1f,fabsf(forward)));
-    int valid=aw_vehicle_clear(m,v);AwBody body=aw_vehicle_body(v);
-    for(int i=0;valid&&i<count;i++)if(i!=self&&aw_bodies_overlap(body,bodies[i],.04f))valid=0;
+    int valid=aw_vehicle_clear(m,v),kind=valid?0:AW_CONTACT_TERRAIN;AwBody body=aw_vehicle_body(v);
+    for(int i=0;valid&&i<count;i++)if(i!=self&&aw_bodies_overlap(body,bodies[i],.04f)){valid=0;kind=AW_CONTACT_UNIT;}
     if(!valid){v->position=old.position;v->yaw=old.yaw;v->pitch=old.pitch;v->yaw_rate=0;v->contact=1;
-        if(v->family==AW_VEHICLE_WING)v->failed=1;else v->velocity=(AwSVec){0};}
+        v->contact_kind|=kind;if(v->family==AW_VEHICLE_WING)v->failed=1;else v->velocity=(AwSVec){0};}
 }
 static void aw_vehicle_step(const AwMap*m,AwVehicle*v,const int action[4],float dt,const AwBody*bodies,int count,int self){
     AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);
@@ -113,7 +114,7 @@ static void aw_vehicles_step_masked(const AwMap*m,AwVehicle*v,const AwDrive*driv
             if(!aw_bodies_overlap(a,b,.04f))continue;
             if(!blocked[i]){blocked[i]=1;changed=1;}if(!blocked[j]){blocked[j]=1;changed=1;}
         }
-        for(int i=0;i<count;i++)if(blocked[i]){v[i]=before[i];if(frozen&&frozen[i])continue;v[i].contact=1;v[i].velocity=(AwSVec){0};v[i].yaw_rate=0;if(v[i].family==AW_VEHICLE_WING)v[i].failed=1;}
+        for(int i=0;i<count;i++)if(blocked[i]){int kind=v[i].contact_kind;v[i]=before[i];if(frozen&&frozen[i])continue;v[i].contact=1;v[i].contact_kind|=kind|AW_CONTACT_UNIT;v[i].velocity=(AwSVec){0};v[i].yaw_rate=0;if(v[i].family==AW_VEHICLE_WING)v[i].failed=1;}
         if(!changed)break;
     }
 }

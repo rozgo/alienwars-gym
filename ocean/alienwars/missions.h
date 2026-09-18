@@ -12,6 +12,7 @@ typedef struct {
     AwVehicle vehicle;
     const AwMissionRoute *route;
     int cursor,ticks,limit,arrived,timeout,contacts,blocked_ticks,blocked_total,collision_events,invalid;
+    int terrain_contacts,unit_contacts,max_blocked_ticks;
     float along,remaining,reward,total,previous_potential,odometry_origin;
     float observation[AW_MISSION_INPUTS];
 } AwMissionAgent;
@@ -207,7 +208,7 @@ static void aw_mission_tick(AwMissionWorld*w,const AwMap*m,const float actions[]
     aw_mission_world_bind(w);
     AwVehicle vehicle[AW_SENSOR_UNITS];AwDrive drive[AW_SENSOR_UNITS];unsigned char moving[AW_SENSOR_UNITS];
     for(int i=0;i<w->count;i++){
-        AwMissionAgent*a=&w->agents[i];vehicle[i]=a->vehicle;vehicle[i].contact=0;a->reward=0;
+        AwMissionAgent*a=&w->agents[i];vehicle[i]=a->vehicle;vehicle[i].contact=0;vehicle[i].contact_kind=0;a->reward=0;
         moving[i]=w->active[i];drive[i]=(AwDrive){0};
         if(moving[i]&&!w->paused[i]&&!a->arrived&&!a->timeout&&!a->vehicle.failed)drive[i]=aw_mission_control(a,actions[i]);
     }
@@ -217,9 +218,12 @@ static void aw_mission_tick(AwMissionWorld*w,const AwMap*m,const float actions[]
         AwMissionAgent*a=&w->agents[i];int finished=w->paused[i]||a->arrived||a->timeout||a->vehicle.failed;
         int previous_contact=a->vehicle.contact;a->vehicle=vehicle[i];if(finished)continue;
         a->ticks++;a->contacts+=a->vehicle.contact;
+        a->terrain_contacts+=!!(a->vehicle.contact_kind&AW_CONTACT_TERRAIN);
+        a->unit_contacts+=!!(a->vehicle.contact_kind&AW_CONTACT_UNIT);
         a->collision_events+=a->vehicle.contact&&!previous_contact;
         float potential=aw_mission_project(a),progress=potential-a->previous_potential;a->previous_potential=potential;
         if(progress<.01f){a->blocked_ticks++;a->blocked_total++;}else a->blocked_ticks=0;
+        if(a->blocked_ticks>a->max_blocked_ticks)a->max_blocked_ticks=a->blocked_ticks;
         AwSVec goal=a->route->point[a->route->count-1];float distance=aw_sv_length(aw_sv_add(goal,aw_sv_scale(a->vehicle.position,-1)));
         float tolerance=a->vehicle.family==AW_VEHICLE_WING?4:1;
         a->arrived=distance<tolerance&&a->remaining<tolerance*2;

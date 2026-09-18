@@ -15,7 +15,7 @@ int main(int argc,char**argv){
         if(!weights[f]||weights[f]->size-7!=expected){fprintf(stderr,"Missing or wrong-sized family %d checkpoint\n",f);return 2;}
         for(int j=0;j<expected;j++)if(!isfinite(weights[f]->data[j]))return 2;
     }for(int i=0;i<12;i++){Weights*w=weights[aw_shared_family(i)];w->idx=0;net[i]=make_puffernet(w,1,AW_SHARED_OBS,128,2,sizes,4);}}
-    int attempted[5]={0},unavailable[5]={0},wins[5]={0},contacts[5]={0},events[5]={0},blocked[5]={0},steps[5]={0};
+    int attempted[5]={0},unavailable[5]={0},wins[5]={0},contacts[5]={0},events[5]={0},blocked[5]={0},steps[5]={0},clean[5]={0},terrain[5]={0},units[5]={0},stalls[5]={0};
     for(int episode=0;episode<scenarios;episode++){
         aw_shared_reset_at(t,(episode/3)%maps,episode%3);float terminal[12];int present[12];
         for(int i=0;i<12;i++){terminal[i]=1;present[i]=t->world.active[i];attempted[aw_shared_family(i)]++;unavailable[aw_shared_family(i)]+=!present[i];}
@@ -27,15 +27,15 @@ int main(int argc,char**argv){
             aw_shared_step(t);
             for(int i=0;i<12;i++){terminal[i]=t->terminal[i];if(t->event[i]){
                 AwMissionAgent*a=&t->world.agents[i];int f=aw_shared_family(i);
-                wins[f]+=a->arrived;contacts[f]+=a->contacts;events[f]+=a->collision_events;blocked[f]+=a->blocked_total;steps[f]+=a->ticks;
+                wins[f]+=a->arrived;clean[f]+=a->arrived&&!a->contacts;terrain[f]+=a->terrain_contacts;units[f]+=a->unit_contacts;stalls[f]+=a->max_blocked_ticks>=100;contacts[f]+=a->contacts;events[f]+=a->collision_events;blocked[f]+=a->blocked_total;steps[f]+=a->ticks;
             }}
         }
         for(int i=0;i<12;i++){
             AwMissionAgent*a=&t->world.agents[i];
-            printf("{\"scenario\":%d,\"map_seed\":%u,\"layout\":%d,\"unit\":%d,\"family\":%d,\"available\":%s,\"arrived\":%d,\"impact\":%d,\"timeout\":%d,\"ticks\":%d,\"contact_decisions\":%d,\"collision_events\":%d,\"blocked_decisions\":%d,\"route_length\":%.4f}\n",
-                episode,t->map->map.seed,t->scenario,i,aw_shared_family(i),present[i]?"true":"false",a->arrived,a->vehicle.failed,a->timeout,a->ticks,a->contacts,a->collision_events,a->blocked_total,present[i]?a->route->distance[a->route->count-1]:0);
+            printf("{\"scenario\":%d,\"map_seed\":%u,\"layout\":%d,\"unit\":%d,\"family\":%d,\"available\":%s,\"arrived\":%d,\"impact\":%d,\"timeout\":%d,\"ticks\":%d,\"contact_decisions\":%d,\"collision_events\":%d,\"blocked_decisions\":%d,\"route_length\":%.4f,\"terrain_contacts\":%d,\"unit_contacts\":%d,\"max_blocked_ticks\":%d,\"remaining\":%.4f}\n",
+                episode,t->map->map.seed,t->scenario,i,aw_shared_family(i),present[i]?"true":"false",a->arrived,a->vehicle.failed,a->timeout,a->ticks,a->contacts,a->collision_events,a->blocked_total,present[i]?a->route->distance[a->route->count-1]:0,a->terrain_contacts,a->unit_contacts,a->max_blocked_ticks,a->remaining);
         }fflush(stdout);
     }
-    for(int f=0;f<5;f++)printf("{\"family\":%d,\"attempted\":%d,\"unavailable\":%d,\"arrivals\":%d,\"steps\":%d,\"contact_decisions\":%d,\"collision_events\":%d,\"blocked_decisions\":%d}\n",f,attempted[f],unavailable[f],wins[f],steps[f],contacts[f],events[f],blocked[f]);
+    for(int f=0;f<5;f++)printf("{\"family\":%d,\"attempted\":%d,\"unavailable\":%d,\"arrivals\":%d,\"steps\":%d,\"contact_decisions\":%d,\"collision_events\":%d,\"blocked_decisions\":%d,\"collision_free_arrivals\":%d,\"terrain_contacts\":%d,\"unit_contacts\":%d,\"stalled_10s\":%d}\n",f,attempted[f],unavailable[f],wins[f],steps[f],contacts[f],events[f],blocked[f],clean[f],terrain[f],units[f],stalls[f]);
     for(int i=0;i<12;i++)if(net[i])free_puffernet(net[i]);for(int f=0;f<5;f++)free(weights[f]);aw_shared_destroy(t);return 0;
 }

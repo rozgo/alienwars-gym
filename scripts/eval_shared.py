@@ -20,6 +20,7 @@ for label,directory in runs:
     assert len(result['families'])==5 and sum('scenario' in v for v in records)==36*args.maps
     for family in result['families']:
         family['requested_arrival_rate']=family['arrivals']/family['attempted']
+        family['collision_free_arrival_rate']=family['collision_free_arrivals']/family['attempted']
         available=family['attempted']-family['unavailable'];family['available_arrival_rate']=family['arrivals']/available if available else None
     if directory not in ['reference','random']:result['hashes']=[hashlib.sha256((Path(directory)/f'mission-{f}.bin').read_bytes()).hexdigest() for f in range(5)]
     report['results'][label]=result;(out/'summary.json').write_text(json.dumps(report,indent=2)+'\n')
