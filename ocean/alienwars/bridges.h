@@ -44,7 +44,7 @@ static void aw_bridges(AwMap*m){
     for(int c=0;c<AW_CELLS;c++){
         if(m->options.symmetry&&c>2047)continue;
         if(!bank[c])continue;
-        for(int axis=0;axis<2;axis++)for(int length=6;length<=20;length++){
+        for(int axis=0;axis<2;axis++)for(int length=6;length<=(AW_VERSION>=12?24:20);length++){
             int dx=!axis,dz=axis,x=c%64,z=c/64,bx=x+dx*length,bz=z+dz*length;
             if(bx>60||bz>60)break;
             int end=bz*64+bx;if(!bank[end])continue;

@@ -15,9 +15,9 @@
         "md5": "bc4bc69e809d50f2a662f5a48bd2a2aa"
       }
     },
-    "packed": "RGB albedo (sRGB), alpha height (linear), 512x512",
-    "sha256": "dd5af847429edc7aa99b62e50239f39854e679bb5184987ce8120109277c1d36",
-    "bytes": 700323
+    "packed": "RGB albedo (sRGB), alpha height (linear), 1024x1024",
+    "sha256": "756bd65428e33b60907931436d8cfe21b92d0c800ae259ee0a5aaa9fec781a29",
+    "bytes": 2849242
   },
   "rock": {
     "asset": "rock_face_03",
@@ -35,8 +35,48 @@
         "md5": "9d51d6b2496de79f97b80d43ff1dd7fb"
       }
     },
-    "packed": "RGB albedo (sRGB), alpha height (linear), 512x512",
-    "sha256": "38ab75033e07f3df7a32066ef6fd5341784487003df6333dc5d9dc7494eba2c0",
-    "bytes": 606527
+    "packed": "RGB albedo (sRGB), alpha height (linear), 1024x1024",
+    "sha256": "4d40364c111321a1203a46caef2ecea76cb1c74447f8b5d435cff107d81a26c4",
+    "bytes": 2399031
+  },
+  "grass": {
+    "asset": "leafy_grass",
+    "source": "https://polyhaven.com/a/leafy_grass",
+    "license": "CC0-1.0",
+    "inputs": {
+      "Diffuse": {
+        "size": 1195394,
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg",
+        "md5": "0dbc071e91d6905edfcfbe8eb785a1ab"
+      },
+      "Displacement": {
+        "size": 742755,
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_disp_1k.jpg",
+        "md5": "df6cb89fb7072d00f2de804bf9e4584d"
+      }
+    },
+    "packed": "RGB albedo (sRGB), alpha height (linear), 1024x1024",
+    "sha256": "b302c4966c6ac52f147a0201e5973d46d2c518923e339c773a4a0cbc2b6c911f",
+    "bytes": 2996062
+  },
+  "bark": {
+    "asset": "bark_brown_02",
+    "source": "https://polyhaven.com/a/bark_brown_02",
+    "license": "CC0-1.0",
+    "inputs": {
+      "Diffuse": {
+        "size": 659592,
+        "md5": "6669cca520594bdca19f94084984ab72",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_diff_1k.jpg"
+      },
+      "Displacement": {
+        "size": 176442,
+        "md5": "88dbb65ff3ade168ab5bea53b035cf82",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/bark_brown_02/bark_brown_02_disp_1k.jpg"
+      }
+    },
+    "packed": "RGB albedo (sRGB), alpha height (linear), 1024x1024",
+    "sha256": "f7667eb4fe230d2ab0e339901f313016a5541d41eabbaefe91070c21f1d5dd8b",
+    "bytes": 2612497
   }
 }

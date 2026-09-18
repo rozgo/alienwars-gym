@@ -302,3 +302,16 @@ CUDA joint gather test, single-policy regression and actual Chrome destination/
 endurance checks. Keep source/checkpoint contracts exact (645 inputs, 4/3/3/3
 heads); do not preload the historical 96-input policies into this viewer. Group
 commands are independent destinations, not learned formation coordination.
+
+Version 12 shapes the global layout inside a seeded horizontal elliptical envelope.
+Keep the road search and lowland corridors inside that footprint before pinning
+heights; do not crop finished routes to an oval. Preserve noisy coastlines, lakes,
+180-degree symmetry, floor-10 access and the existing cave/bridge validation.
+The historical Navigation Lab stays on generator 11 through `nav_core.h`; its
+evaluated maps must not silently change. The Flecs pre-port trace also compiles
+with generator 11 to compare the original distribution.
+
+User art direction: replace conventional broadleaf/conifer trees with original
+Felucia-inspired alien flora: fungal parasols, membrane fans and pod towers.
+Keep environmental emission subordinate to unit and sensor signals. These remain
+viewer-only props until explicitly incorporated into collision and sensing.

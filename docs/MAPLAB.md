@@ -111,11 +111,10 @@ flooding. Navigation combines surface cells, passage centerlines and sampled
 walkable floor spans; it is not a continuous navmesh. Decorative props do not
 participate in collision.
 
-Lighting is deliberately subdued and has a narrow contrast range. Broad
-hemispheric fill carries the environment, with a weaker directional key and
-restrained baked ambient occlusion. Cast shadows attenuate 60% of the key light;
-cliffs and tree shadows retain readable detail. Terrain lighting uses 0.62
-exposure before emission and tone mapping. Fine material variation, wet-surface
+Lighting balances a cool hemispheric fill with warmer directional sunlight
+and baked ambient occlusion. Cast shadows attenuate 78% of the key light;
+cliffs and tree shadows retain readable ambient detail. Terrain exposure is
+0.68 in Temperate and 0.62 in the other palettes before emission and tone mapping. Fine material variation, wet-surface
 specular response, leaf backlighting and water highlights are restrained.
 Emissive effects retain their response; navigation overlays use stable unlit
 color so units, effects and inspection information stand out from the world.
@@ -413,14 +412,15 @@ The height channels drive low-amplitude albedo variation, roughness and
 Hardware mipmaps and trilinear filtering soften detail at distant views;
 there is no extra mesh displacement or collision geometry. **Surface detail**
 provides an immediate comparison, also shareable with `detail=0`; toggling it
-refreshes the cached reflection. Procedural detail is synthesized locally; the viewer also packages two CC0 material scans, as described below.
+refreshes the cached reflection. Procedural detail is synthesized locally; the viewer also packages four CC0 material scans, as described below.
 
 An environment color grade preserves linear luminance while reducing chroma
 more strongly for saturated colors: retention ranges from 82% down to 58%.
 It covers terrain, foliage, props, water and environmental fog. Emissive surfaces
 retain 88% at full emission; navigation overlays and separate scout/UI passes
-keep their signal colors. The broad fill, 40% retained shadowed key light and
-baked-occlusion strength are unchanged.
+keep their signal colors. The current art pass keeps broad ambient fill while strengthening both baked
+occlusion and cast shadows: shadowed key light retains 22%, and ambient AO uses
+`mix(.44, 1, visibility²)`. Moving units also have deeper contact shadows.
 
 `occlusion.h` bakes static accessibility into opaque vertex alpha at world
 creation. A normal-aware horizon integral samples eight directions and eight
@@ -443,8 +443,8 @@ repeat the horizon integral for every leaf corner. No AO rays run each frame and
 The accessibility approach follows [GPU Gems, Ambient Occlusion](https://developer.nvidia.com/gpugems/gpugems/part-iii-materials/chapter-17-ambient-occlusion).
 
 **Baked occlusion** toggles the ambient contribution without rebuilding (also
-shareable as `ao=0`). The shader retains at least 68% of the ambient fill;
-actual darkening is usually much smaller. Direct light, emission, scout and
+shareable as `ao=0`). The shader retains at least 44% of the ambient fill, using squared
+accessibility for stronger shading in sheltered areas. Direct light, emission, scout and
 navigation overlays keep their response. Opaque alpha carries accessibility;
 transparent kind-2 overlays retain real alpha. Reflections refresh on a toggle.
 Isolated tunnels copy the world geometry and its same baked accessibility.
@@ -457,7 +457,7 @@ features; this is restrained static AO, not a global illumination solution.
 
 A static 2,048-square shadow map captures the terrain and decorative props;
 nine filtered depth comparisons soften the edges. The shaded key light retains
-40% of its intensity. Auto cutaway and horizontal sections retain the intact
+22% of its intensity. Auto cutaway and horizontal sections retain the intact
 world's cast shadows: revealing the scout is a camera visibility change, so it
 must not switch off sunlight occlusion across the landscape. The retained rock
 also keeps shading the revealed tunnel floor. Cast shadows are suppressed only
@@ -465,12 +465,12 @@ during assembly and isolated tunnel inspection, where the surrounding world is
 deliberately absent.
 
 `props.h` builds seeded cosmetic meshes: tapered trunks, roots, branches,
-twigs and two-sided leaves, broadleaf trees and conifers, irregular smooth
+two-sided fungal membranes, parasols, spiral fans and pod towers, irregular smooth
 boulders, pebbles, grass tufts and mineral clusters. These
 use a separate hash stream and do not change WFC, navigation or collision.
 The [biological visual slice](ART_PIPELINE.md) adds three original Blender-authored
-unit meshes and a grown nursery form at both bases. Two CC0 Poly Haven scans
-supply rock and forest-floor albedo/height detail. Sources, licenses, hashes and
+unit meshes and a grown nursery form at both bases. Four 1K CC0 Poly Haven scans
+supply rock, forest floor, leafy grass and bark albedo/height detail. Sources, licenses, hashes and
 rebuild instructions live in [the art kit](../resources/alienwars/art/README.md).
 Everything is packaged with the viewer; there is no runtime CDN dependency.
 
@@ -565,3 +565,25 @@ Keep SDKs, credentials, raw logs and local binaries ignored.
 The PufferLib observation/action/reward contract remains future work. Keep
 `map.h`, `caves.h` and `volume.h` independent of Raylib, Python and browser APIs.
 Generate worlds at reset or use validated map pools, never solve during a step.
+
+## Elliptical land regions — version 12
+
+The logical 64 × 64 terrain grid and 96 × 96 ocean grid remain unchanged. A seeded
+horizontal elliptical envelope shapes the land before shape Wave Function
+Collapse runs. Low-frequency coast noise creates coves and headlands; existing
+warped landforms and a lowland field retain islands and inland relief. Road
+search nodes and lowland connectors obey the same envelope before their graded
+sockets are pinned. Lakes and entrance districts are fitted inside it. Completed
+roads and tunnels are never clipped by a final visual mask.
+
+The half-axes vary between 30–32 and 23–25 tiles. Rotational layouts pair coast
+noise and height fields exactly; asymmetric layouts retain independent bases
+and entrance sites. A bounded slope projection keeps lowland lift to one
+quarter-floor per neighboring vertex. Bridges can span up to 24 cells where the
+existing terrain provides valid banks and open water underneath.
+
+Version 12 changes worlds for existing seed URLs. The five local navigation
+checkpoints and observation/action contracts are retained; their recorded
+training evaluation describes the earlier distribution, not a new v12 score.
+The historical Navigation Lab remains on generator 11 to preserve its evaluated
+bridge/tunnel tasks. Use `AW_GENERATOR_VERSION=11` only for historical reproductions.

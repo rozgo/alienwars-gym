@@ -35,8 +35,10 @@ Powered by [Poly Haven](https://polyhaven.com/). These scans are released under
 
 - [Forest Ground 04](https://polyhaven.com/a/forest_ground_04)
 - [Rock Face 03](https://polyhaven.com/a/rock_face_03)
+- [Leafy Grass](https://polyhaven.com/a/leafy_grass)
+- [Bark Brown 02](https://polyhaven.com/a/bark_brown_02)
 
-`forest.png` and `rock.png` pack 512×512 sRGB albedo in RGB and linear height in
+`forest.png`, `rock.png`, `grass.png` and `bark.png` pack 1024×1024 sRGB albedo in RGB and linear height in
 alpha. Original 1K diffuse/displacement JPEGs are downloaded and hash-verified
 by `scripts/art/build_materials.py` (Python + Pillow). `materials.json` contains
 source URLs, source MD5s, transformations and output SHA-256s. Source downloads

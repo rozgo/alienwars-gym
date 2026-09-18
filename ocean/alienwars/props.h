@@ -1,7 +1,7 @@
 #ifndef ALIENWARS_PROPS_H
 #define ALIENWARS_PROPS_H
 /* Cosmetic geometry only. Seeds do not consume the authoritative map RNG.
- * All vegetation is actual geometry: branch cylinders and two-sided leaves. */
+ * Alien vegetation uses ribbed stalks and two-sided fungal membranes. */
 static float aw_prop_random(uint32_t seed){return (aw_hash(seed)&65535)/65535.0f;}
 static Color aw_tint(Color c,float v){return (Color){(unsigned char)Clamp(c.r*v,0,255),(unsigned char)Clamp(c.g*v,0,255),(unsigned char)Clamp(c.b*v,0,255),c.a};}
 static void aw_smooth_triangle(AwBuilder*b,Vector3 a,Vector3 c,Vector3 d,Vector3 na,Vector3 nc,Vector3 nd,Color color,float rank,float kind){
@@ -36,42 +36,7 @@ static void aw_leaf(AwBuilder*b,Vector3 p,Vector3 direction,float length,float w
         aw_triangle(b,pairs[i][2],pairs[i][1],pairs[i][0],color,rank,3);
     }
 }
-static void aw_tree(AwBuilder*b,Vector3 p,uint32_t seed,float rank,int pine,int snow){
-    float height=3.4f+aw_prop_random(seed)*1.6f,phase=aw_prop_random(seed+1)*2*PI;
-    Color bark={91,77,61,255},leaves=pine?(Color){58,79,49,255}:(Color){77,98,49,255};
-    Vector3 top={p.x+.18f*cosf(phase),p.y+height,p.z+.18f*sinf(phase)};
-    aw_branch(b,p,top,.13f,0.015f,bark,rank,4,8);
-    for(int root=0;root<5;root++){
-        float a=phase+root*2*PI/5;Vector3 foot={p.x+cosf(a)*.38f,p.y+.02f,p.z+sinf(a)*.38f},join=p;join.y+=.45f;
-        aw_branch(b,foot,join,.05f,.09f,bark,rank,4,5);
-    }
-    int branches=pine?35:17;
-    for(int i=0;i<branches;i++){
-        uint32_t h=aw_hash(seed+i*117u);float tier=(float)i/branches;
-        float y=pine?.2f+tier*.7f:.35f+tier*.48f;
-        float angle=phase+i*2.399963f;
-        float spread=pine?(1.0f-tier*.82f):(sinf((tier*.7f+.18f)*PI)*1.08f);
-        spread*=.85f+aw_prop_random(h)*.35f;
-        Vector3 stem=Vector3Lerp(p,top,y);
-        Vector3 tip={stem.x+cosf(angle)*spread,stem.y+(pine?-.08f:.42f),stem.z+sinf(angle)*spread};
-        aw_branch(b,stem,tip,pine?.026f:.045f,.008f,bark,rank,4,5);
-        int twigs=pine?3:4;
-        for(int j=0;j<twigs;j++){
-            float a=angle+(j%2?1:-1)*(.45f+j*.11f);
-            Vector3 base=Vector3Lerp(stem,tip,.35f+.6f*j/twigs);
-            Vector3 end={base.x+cosf(a)*.32f,base.y+(pine?.07f:.18f),base.z+sinf(a)*.32f};
-            aw_branch(b,base,end,.014f,.004f,bark,rank,4,4);
-            for(int k=0;k<(pine?4:9);k++){
-                uint32_t r=aw_hash(h+j*73u+k*1879u);float az=aw_prop_random(r)*2*PI;
-                Vector3 leaf=Vector3Lerp(base,end,.3f+.7f*aw_prop_random(r+1));
-                leaf.y+=pine?0:aw_prop_random(r+3)*.13f;
-                Color c=aw_tint(leaves,.72f+aw_prop_random(r+4)*.6f);
-                if(snow&&k%4==0)c=(Color){180,191,184,255};
-                aw_leaf(b,leaf,(Vector3){cosf(az),.25f+aw_prop_random(r+5)*.75f,sinf(az)},pine?.25f:.46f,pine?.085f:.17f,aw_prop_random(r+6)*1.3f,c,rank);
-            }
-        }
-    }
-}
+#include "alien_flora.h"
 static void aw_boulder(AwBuilder*b,Vector3 p,float radius,float height,uint32_t seed,Color color,float rank){
     enum {RINGS=5,SIDES=11};Vector3 v[RINGS][SIDES],norm[RINGS][SIDES];
     float phase=aw_prop_random(seed)*2*PI;
@@ -93,6 +58,20 @@ static void aw_grass(AwBuilder*b,Vector3 p,uint32_t seed,float rank,int dry){
         uint32_t h=aw_hash(seed+i*73);float a=aw_prop_random(h)*2*PI,r=aw_prop_random(h+1)*.22f;
         Vector3 q={p.x+cosf(a)*r,p.y,p.z+sinf(a)*r};
         aw_leaf(b,q,(Vector3){cosf(a)*.3f,1,sinf(a)*.3f},.19f+aw_prop_random(h+3)*.26f,.024f,a,dry?(Color){133,119,79,255}:(Color){88,105,53,255},rank);
+    }
+}
+/* Low fern clumps dress forest floors without adding apparent body obstacles. */
+static void aw_fern(AwBuilder*b,Vector3 p,uint32_t seed,float rank){
+    for(int f=0;f<5;f++){
+        float angle=f*2.399963f+aw_prop_random(seed)*6.28f;Vector3 last=p;
+        for(int k=1;k<=6;k++){
+            float t=k/6.0f,r=.48f*t;
+            Vector3 q={p.x+cosf(angle)*r,p.y+.08f+.38f*sinf(t*2.4f),p.z+sinf(angle)*r};
+            aw_branch(b,last,q,.009f,.006f,(Color){83,100,48,255},rank,3,3);
+            for(int side=-1;side<=1;side+=2){float a=angle+side*1.05f;
+                aw_leaf(b,q,(Vector3){cosf(a),.2f,sinf(a)},.19f*(1-t*.72f),.045f*(1-t*.6f),0,(Color){66,103,45,255},rank);}
+            last=q;
+        }
     }
 }
 static void aw_box(AwBuilder*b,Vector3 p,Vector3 size,Color color,float rank,float kind){

@@ -395,7 +395,7 @@ static void aw_contact_shadows(void){
                 points[k].y=aw_y(support/4)+.032f;
             }
             if(fabsf(points[1].y-points[0].y)>.6f||fabsf(points[2].y-points[0].y)>.6f)continue;
-            for(int k=2;k>=0;k--){rlColor4ub(13,22,19,k==0?80:0);rlNormal3f(0,1,0);rlTexCoord2f(0,0);rlVertex3f(points[k].x,points[k].y,points[k].z);}
+            for(int k=2;k>=0;k--){rlColor4ub(13,22,19,k==0?118:0);rlNormal3f(0,1,0);rlTexCoord2f(0,0);rlVertex3f(points[k].x,points[k].y,points[k].z);}
         }
     }
     rlEnd();rlDrawRenderBatchActive();rlEnableDepthMask();

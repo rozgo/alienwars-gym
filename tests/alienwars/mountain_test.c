@@ -98,6 +98,7 @@ int main(void){
         if((i+1)%8==0)fprintf(stderr,"mountain %d/32\n",sym*16+i+1);
     }
     int distinct=0;for(int i=0;i<found;i++){int seen=0;for(int j=0;j<i;j++)seen|=topologies[i]==topologies[j];distinct+=!seen;}
+    fprintf(stderr,"coverage regions=%d sym=%d/%d topologies=%d profiles=%d grades=%d covered=%d large=%d\n",found,by_sym[0],by_sym[1],distinct,__builtin_popcount((unsigned)shapes),raised,min_covered,min_large);
     assert(found>=8&&by_sym[0]>0&&by_sym[1]>0&&distinct>=8&&__builtin_popcount((unsigned)shapes)>=6&&raised>=8&&min_covered>=4&&min_large==1000);
     printf("MOUNTAIN_TEST version=%d worlds=32 terrain_invariance=PASS optional_regions=%d digest=%08" PRIx32 " topologies=%d profiles=%d graded_edges=%d multiple_tunnels=%d full_regions=%d min_covered=%d min_large_permille=%d stacked_spans=PASS clearance=PASS contradictions=PASS\n",AW_VERSION,found,digest,distinct,__builtin_popcount((unsigned)shapes),raised,multiple,normal,min_covered,min_large);
 }

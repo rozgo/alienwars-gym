@@ -25,7 +25,7 @@ for name in ['index.html','maplab.js','maplab.wasm','maplab.data']:
     if not (pathlib.Path('docs/maplab')/name).exists(): continue
     data=(pathlib.Path('docs/maplab')/name).read_bytes()
     artifacts[name]={'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
-report={'generator_version':11,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+report={'generator_version':12,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
     'source_dirty':dirty,'emscripten':subprocess.check_output(['emcc','--version'],text=True).splitlines()[0],
     'raylib':'5.5','flecs':json.loads(pathlib.Path('vendor/flecs/version.json').read_text()),'explorer':json.loads(pathlib.Path('vendor/flecs-explorer/version.json').read_text()),'viewer_inspection':True,'artifacts':artifacts}
 pathlib.Path('docs/maplab/build.json').write_text(json.dumps(report,indent=2)+'\n')

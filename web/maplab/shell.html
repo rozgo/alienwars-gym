@@ -136,7 +136,7 @@
 </head>
 <body>
   <header>
-    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 011</span></a>
+    <a class="brand" href="../">ALIENWARS<span>MAP LAB / 012</span></a>
     <nav aria-label="Project"><button id="play-view" aria-pressed="false" title="Expand the world and tuck away the inspector">Play view</button><button id="open-explorer" aria-controls="explorer-panel" aria-expanded="false">Flecs Explorer</button><a href="../navigation/?kind=1">Navigation Lab</a><a href="../training/">Training</a><a href="../demo/">Demo</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
   <section id="explorer-panel" aria-label="Flecs live world inspector" hidden>
@@ -146,7 +146,7 @@
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag or right-drag to pan, Shift-drag to orbit, scroll to zoom. Camera buttons are also available."></canvas>
-      <div class="map-heading"><p class="eyebrow">Terrain study 11</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
+      <div class="map-heading"><p class="eyebrow">Terrain study 12</p><h1>Strata Frontier</h1><p>Land + ocean · 96 × 96 tiles</p></div>
       <div class="view-controls" aria-label="Camera controls">
         <button data-camera="3" aria-label="Rotate left" title="Rotate left">↶</button><button data-camera="7" aria-label="Pan up" title="Pan up">↑</button><button data-camera="4" aria-label="Rotate right" title="Rotate right">↷</button>
         <button data-camera="5" aria-label="Pan left" title="Pan left">←</button><button data-camera="0" class="home" title="Reset view" aria-label="Reset view">⌂</button><button data-camera="6" aria-label="Pan right" title="Pan right">→</button>
@@ -260,7 +260,7 @@
       </section>
       <section class="panel-section">
         <details><summary>How this world is built</summary><p>The 64 × 64 land region sits inside a 96 × 96 ocean domain. Beaches and cliffs meet a continuous submerged coastline. Sea depth and connectivity guide naval patrols, separately from inland lakes. Every seed creates a new landmass plan, base sites, road network and enclosed lakes. Roads and dry tunnels route around lake basins. Symmetric worlds mirror the whole plan; asymmetric worlds choose each side independently.</p><p>WFC resolves corner-height tile shapes with matching edge profiles. Beveled cliffs, slopes and shorelines continue across tile boundaries. Procedural tunnel entrances occupy the northeast/southwest diagonal, opposite the bases. Surface approaches remain reachable, and ramps descend to seeded underground chambers. A 3D route search connects both sides; symmetric worlds mirror entrances, depths and passages, while asymmetric worlds plan each side independently. Passage WFC matches arch profiles; Boolean excavation and marching tetrahedra form the terrain, ramps, walls and ceilings. Surface openings occur where excavation meets the terrain. Signed elevations allow passages below ground and overlapping routes at different depths.</p><p>Broad seeded hills add rolling ground between roads while cliff bands retain their sharper contours. Bridges fit existing banks over water, with graded decks and separate walkable floors above the unchanged bed. Cross a bridge follows a validated crossing.</p><p>The landscape is completed first. Directional WFC sockets fit optional passages and shallow surface bypasses to existing hills, with compatible grades and eight arch profiles. No peaks or route foundations are added to force a crossing; unsuitable worlds keep their original terrain. Walkable floor spans connect chambers, ramps and natural surface openings; stacked floors remain separate. Mountain passage and Mountain bypass let the scout explore each route.</p><p>The assembly view replays the shape solver’s recorded resolution order, including pinned tiles and propagated edge constraints. Navigation checks run on the completed map.</p><p>A* supplies global route targets. Separate local controllers operate ground vehicles, boats, quadcopters, fixed wings and submarines using shared collision and sensing. The controller status identifies whether checkpoints are loaded. Combat is not implemented.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/MAPLAB.md">Map specification and checks ↗</a></p></details>
-        <p class="provenance">Generator v11 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
+        <p class="provenance">Generator v12 · <span id="map-hash">—</span><br>Raylib + WebAssembly</p>
       </section>
     </aside>
   </main>

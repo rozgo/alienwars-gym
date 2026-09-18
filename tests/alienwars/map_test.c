@@ -48,6 +48,9 @@ int main(int argc,char**argv){
                 int v=aw_corner_vertex(c,k),x=v%65,z=v/65;
                 if(x<=AW_OCEAN_MARGIN||z<=AW_OCEAN_MARGIN||x>=64-AW_OCEAN_MARGIN||z>=64-AW_OCEAN_MARGIN)assert(a->q[k]==0);
                 if(a->road)assert(!map.lake_mask[v]);
+                /* Empty corners distinguish an oval shore from square road
+                 * footprints; test actual WFC output, not just its mask. */
+                if(AW_VERSION>=12&&(x<=7||x>=57)&&(z<=7||z>=57))assert(a->q[k]==0);
             }
             if(o.symmetry){AwCell*b=&map.cells[AW_CELLS-1-c];assert(a->material==b->material&&a->road==b->road&&a->tunnel==b->tunnel&&a->portal==b->portal);for(int k=0;k<4;k++)assert(a->q[k]==b->q[(k+2)%4]);}
             for(int d=0;d<4;d++){

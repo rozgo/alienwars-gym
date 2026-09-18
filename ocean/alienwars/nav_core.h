@@ -2,6 +2,10 @@
 #define ALIENWARS_NAV_CORE_H
 /* Shared headless navigation task. Immutable maps and goal-distance fields are
  * prepared before rollouts; only unit state changes during an episode. */
+/* Historical evaluated MVP keeps its original map distribution. */
+#ifndef AW_GENERATOR_VERSION
+#define AW_GENERATOR_VERSION 11
+#endif
 #include "sensors.h"
 #include "motion.h"
 #include <assert.h>

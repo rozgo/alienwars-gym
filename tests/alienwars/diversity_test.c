@@ -21,7 +21,7 @@ int main(void){
     uint32_t digest=2166136261u;
     for(int symmetry=0;symmetry<=1;symmetry++){
         int bases[AW_CELLS]={0},entrances[AW_CELLS]={0},room_types=0,lake_counts=0,form_counts=0;
-        int base_count=0,entrance_count=0;
+        int base_count=0,entrance_count=0;long long moment_x=0,moment_z=0;
         for(int i=0;i<WORLDS;i++){
             uint32_t seed=i<4?(uint32_t[]){0,1,73,UINT32_MAX}[i]:aw_hash(i);
             assert(aw_generate_options(&map,seed,(AwOptions){symmetry,6,6,1,1}));
@@ -31,6 +31,7 @@ int main(void){
             base_count+=!bases[s->base]++;entrance_count+=!entrances[s->entrance]++;
             room_types|=1<<s->rooms;lake_counts|=1<<s->lakes;form_counts|=1<<s->forms;
             for(int c=0;c<AW_CELLS;c++){
+                if(map.cells[c].q[0]>=4){int dx=2*(c%64)+1-64,dz=2*(c/64)+1-64;moment_x+=dx*dx;moment_z+=dz*dz;}
                 s->road[c]=map.cells[c].road;
                 s->lake[c]=map.lake_mask[aw_corner_vertex(c,0)];
             }
@@ -54,6 +55,9 @@ int main(void){
             for(int c=0;c<256;c++)height+=aw_abs(a->height[c]-b->height[c]);
             road+=difference(a->road,b->road);cave+=difference(a->cave,b->cave);lake+=difference(a->lake,b->lake);
         }
+        /* Measure the generated land footprint across the cohort, not camera
+         * framing. It must be wider along X without sacrificing seed variety. */
+        if(AW_VERSION>=12)assert(moment_x*10>moment_z*13);
         /* Floors/palette/symmetry stay identical within each cohort. */
         assert(base_count>=WORLDS*3/4&&entrance_count>=WORLDS*3/4);
         assert(__builtin_popcount(room_types)>=2&&__builtin_popcount(lake_counts)>=2&&__builtin_popcount(form_counts)>=4);

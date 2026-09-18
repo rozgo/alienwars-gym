@@ -21,7 +21,7 @@ typedef struct {
     Mesh terrain, scenery, overlay, ocean_overlay, water, tunnels, tunnel_lights;
     Material land_material, water_material;
     Shader land_shader, water_shader;
-    Texture2D coast, detail, surface_mask, forest_scan, rock_scan;
+    Texture2D coast, detail, surface_mask, forest_scan, rock_scan, grass_scan, bark_scan;
     RenderTexture2D shadow, reflection;
     Shader shadow_shader;
     Material shadow_material;
@@ -203,7 +203,7 @@ static void aw_destroy_scene(AwScene*s){
     UnloadMesh(s->terrain);UnloadMesh(s->scenery);UnloadMesh(s->overlay);UnloadMesh(s->ocean_overlay);UnloadMesh(s->water);
     MemFree(s->land_material.maps);MemFree(s->water_material.maps);MemFree(s->shadow_material.maps);
     UnloadRenderTexture(s->shadow);if(s->reflection.id)UnloadRenderTexture(s->reflection);UnloadShader(s->shadow_shader);
-    UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);UnloadTexture(s->detail);UnloadTexture(s->surface_mask);UnloadTexture(s->forest_scan);UnloadTexture(s->rock_scan);
+    UnloadShader(s->land_shader);UnloadShader(s->water_shader);UnloadTexture(s->coast);UnloadTexture(s->detail);UnloadTexture(s->surface_mask);UnloadTexture(s->forest_scan);UnloadTexture(s->rock_scan);UnloadTexture(s->grass_scan);UnloadTexture(s->bark_scan);
     memset(s,0,sizeof(*s));
 }
 typedef struct {int first,last;Vector3 base;} AwTreeBake;
@@ -268,12 +268,14 @@ static void aw_build_detail(AwScene*s,const AwMap*m){
     s->land_material.maps[MATERIAL_MAP_ALBEDO].texture=s->surface_mask;
     s->land_material.maps[MATERIAL_MAP_ROUGHNESS].texture=s->detail;
     s->forest_scan=LoadTexture("resources/alienwars/art/forest.png");s->rock_scan=LoadTexture("resources/alienwars/art/rock.png");
-    if(!IsTextureValid(s->forest_scan)||!IsTextureValid(s->rock_scan)){fprintf(stderr,"Terrain materials missing\n");exit(2);}
-    Texture2D scans[2]={s->forest_scan,s->rock_scan};
-    for(int i=0;i<2;i++){GenTextureMipmaps(&scans[i]);SetTextureFilter(scans[i],TEXTURE_FILTER_TRILINEAR);SetTextureWrap(scans[i],TEXTURE_WRAP_REPEAT);}
-    s->forest_scan=scans[0];s->rock_scan=scans[1];
+    s->grass_scan=LoadTexture("resources/alienwars/art/grass.png");s->bark_scan=LoadTexture("resources/alienwars/art/bark.png");
+    if(!IsTextureValid(s->forest_scan)||!IsTextureValid(s->rock_scan)||!IsTextureValid(s->grass_scan)||!IsTextureValid(s->bark_scan)){fprintf(stderr,"Terrain materials missing\n");exit(2);}
+    Texture2D scans[4]={s->forest_scan,s->rock_scan,s->grass_scan,s->bark_scan};
+    for(int i=0;i<4;i++){GenTextureMipmaps(&scans[i]);SetTextureFilter(scans[i],TEXTURE_FILTER_TRILINEAR);SetTextureWrap(scans[i],TEXTURE_WRAP_REPEAT);}
+    s->forest_scan=scans[0];s->rock_scan=scans[1];s->grass_scan=scans[2];s->bark_scan=scans[3];
     s->land_material.maps[MATERIAL_MAP_NORMAL].texture=s->forest_scan;
     s->land_material.maps[MATERIAL_MAP_OCCLUSION].texture=s->rock_scan;
+    s->land_material.maps[MATERIAL_MAP_EMISSION].texture=s->grass_scan;s->land_material.maps[MATERIAL_MAP_HEIGHT].texture=s->bark_scan;
 }
 /* Bridge seams are visual detail outside the validated walking strip.
  * The deck itself is authoritative volume geometry, not this decorative mesh. */
@@ -307,11 +309,9 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
             p.x+=jitter;p.z-=jitter;
             p.y=aw_ground_y(m,c,.5f+jitter/AW_UNIT,.5f-jitter/AW_UNIT);
             int first=scenery.count;
-            int tree=mat==AW_FOREST||(mat==AW_SNOW&&h%19==0)||(mat==AW_GRASS&&h%31==0);
+            int tree=mat==AW_FOREST||(mat==AW_SNOW&&h%19==0)||(mat==AW_GRASS&&h%31==0)||((mat==AW_SAND||mat==AW_DIRT)&&h%43==0);
             if(tree)aw_ao_contact_add(ao,p.x,p.y,p.z,1.15f,1.15f,1.1f,.65f);
-            if(mat==AW_FOREST)aw_tree(&scenery,p,h,rank,h%4==0,0);
-            else if(mat==AW_SNOW&&h%19==0)aw_tree(&scenery,p,h,rank,1,1);
-            else if(mat==AW_GRASS&&h%31==0)aw_tree(&scenery,p,h,rank,0,0);
+            if(tree)aw_alien_flora(&scenery,p,h,rank,mat==AW_SNOW,m->options.biome==AW_DESERT);
             else if((mat==AW_ROCK||mat==AW_SNOW||mat==AW_DIRT||mat==AW_SAND)&&h%5==0){
                 float radius=.3f+aw_prop_random(h+1)*.38f,height=.35f+aw_prop_random(h+2)*.45f;
                 aw_boulder(&scenery,p,radius,height,h,ground,rank);
@@ -326,7 +326,15 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
                 for(int j=0;j<3;j++){Vector3 q=p;q.x+=cosf(h+j*2.4f)*.43f;q.z+=sinf(h+j*2.4f)*.43f;
                     q.y=aw_ground_y(m,c,q.x/AW_UNIT-x,q.z/AW_UNIT-z);aw_grass(&scenery,q,h+j*733u,rank,0);}
             }
+            if(mat==AW_FOREST&&h%2==0)aw_fern(&scenery,p,h,rank);
             if(tree)trees[tree_count++]=(AwTreeBake){first,scenery.count,p};
+        }
+        if(!m->walkable[c]&&!t->road&&!m->cave_access[c]&&!m->cave_bin_count[c]&&!m->trail_bin_count[c]&&!m->bridge_bins[c]&&h%7==0&&p.y>1.2f){
+            float support=aw_support_q(m,p.x/AW_UNIT,p.z/AW_UNIT,(p.y+1.2f)/.75f);
+            if(fabsf(aw_y(support/4)-p.y)<.5f){
+                p.y=aw_y(support/4)-.1f;aw_boulder(&scenery,p,.58f,.46f+aw_prop_random(h+7)*.32f,h,(Color){104,107,94,255},rank);
+                aw_ao_contact_add(ao,p.x,p.y,p.z,.8f,.8f,.85f,.8f);
+            }
         }
         if(m->walkable[c]){
             for(int k=0;k<4;k++){v[k].y=aw_y(t->q[k]/4.0f)+0.04f;}
@@ -411,6 +419,8 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->land_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->land_shader,"texture1");
     s->land_shader.locs[SHADER_LOC_MAP_NORMAL]=GetShaderLocation(s->land_shader,"texture3");
     s->land_shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(s->land_shader,"texture4");
+    s->land_shader.locs[SHADER_LOC_MAP_EMISSION]=GetShaderLocation(s->land_shader,"texture5");
+    s->land_shader.locs[SHADER_LOC_MAP_HEIGHT]=GetShaderLocation(s->land_shader,"texture6");
     s->water_shader.locs[SHADER_LOC_MAP_ALBEDO]=GetShaderLocation(s->water_shader,"texture0");
     s->water_shader.locs[SHADER_LOC_MAP_METALNESS]=GetShaderLocation(s->water_shader,"texture1");
     s->shadow_shader=LoadShaderFromMemory(aw_vertex_shader,aw_shadow_fragment);

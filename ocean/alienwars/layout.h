@@ -4,8 +4,21 @@
  * Roads are self-avoiding walks on a jittered coarse lattice, never a stored
  * zigzag. Flat connectors use a weighted shortest path around graded roads. */
 typedef struct {int x[160],z[160],ramp[160],n;} AwRoadPlan;
-typedef struct {int xs[4],zs[4],nodes[16],goal,wanted,drop,budget;uint32_t salt;AwRoadPlan *out;} AwRoadSearch;
+typedef struct {int xs[4],zs[4],nodes[16],goal,wanted,drop,budget;uint16_t allowed;uint32_t salt;AwRoadPlan *out;} AwRoadSearch;
 static uint32_t aw_plan_random(uint32_t*s){*s+=0x9e3779b9u;return aw_hash(*s);}
+/* Integer elliptical envelope, in doubled tile coordinates. Its long axis is
+ * horizontal; varying radii and coast noise retain seed-specific outlines.
+ * Planning and coast shaping share this metric, before anything is pinned. */
+static int aw_continent_metric(const AwMap*m,int x2,int z2){
+    int rx=60+(aw_hash(m->layout_seed^0x193bu)%5),rz=46+(aw_hash(m->layout_seed^0x795du)%5);
+    int dx=x2-64,dz=z2-64;
+    return dx*dx*1000/(rx*rx)+dz*dz*1000/(rz*rz);
+}
+static int aw_coast_limit(const AwMap*m,int x,int z){
+    int a=aw_noise(m->layout_seed^0x291bu,x,z,12),b=aw_noise(m->layout_seed^0x317fu,x,z,5);
+    if(m->options.symmetry){a=(a+aw_noise(m->layout_seed^0x291bu,64-x,64-z,12))/2;b=(b+aw_noise(m->layout_seed^0x317fu,64-x,64-z,5))/2;}
+    return 970+(a-128)*2+(b-128)/2-aw_continent_metric(m,x*2,z*2);
+}
 static int aw_raster_road(AwRoadSearch*s,int count){
     AwRoadPlan*p=s->out;p->n=1;p->x[0]=s->xs[s->nodes[0]%4];p->z[0]=s->zs[s->nodes[0]/4];
     int turns[16],nt=0;
@@ -30,7 +43,7 @@ static int aw_road_search(AwRoadSearch*s,int count,uint16_t used){
     int next[4],n=0;uint32_t keys[4];
     for(int d=0;d<4;d++){
         int v=d==0?c-4:d==1?c+1:d==2?c+4:c-1;
-        if(v<0||v>=16||(d==1&&c%4==3)||(d==3&&c%4==0)||(used&(1u<<v)))continue;
+        if(v<0||v>=16||(d==1&&c%4==3)||(d==3&&c%4==0)||(used&(1u<<v))||!(s->allowed&(1u<<v)))continue;
         uint32_t key=aw_hash(s->salt^(uint32_t)used*719u^(uint32_t)v*7919u);int i=n++;
         while(i&&key<keys[i-1]){keys[i]=keys[i-1];next[i]=next[i-1];i--;}
         keys[i]=key;next[i]=v;
@@ -42,12 +55,17 @@ static int aw_road(AwMap*m,int side){
     uint32_t salt=aw_hash(m->layout_seed^(side&&!m->options.symmetry?0x391714u:0x3197u)),rng=salt;
     AwRoadPlan p={0};AwRoadSearch search={.drop=4*((side?m->options.floors_b:m->options.floors_a)-1),.out=&p,.salt=salt};
     search.xs[0]=5+aw_plan_random(&rng)%3;search.zs[0]=5+aw_plan_random(&rng)%3;
-    for(int i=1;i<4;i++){search.xs[i]=search.xs[i-1]+6+aw_plan_random(&rng)%2;search.zs[i]=search.zs[i-1]+6+aw_plan_random(&rng)%2;}
+    if(AW_VERSION>=12){search.xs[0]=8+aw_plan_random(&rng)%3;search.zs[0]=9+aw_plan_random(&rng)%3;}
+    for(int i=1;i<4;i++){search.xs[i]=search.xs[i-1]+6+aw_plan_random(&rng)%2;search.zs[i]=search.zs[i-1]+6+aw_plan_random(&rng)%2;
+        if(AW_VERSION>=12&&search.xs[i]>29)search.xs[i]=29;}
+    search.allowed=0;
+    for(int i=0;i<16;i++)if(AW_VERSION<12||aw_continent_metric(m,search.xs[i%4]*2+1,search.zs[i/4]*2+1)<=930)search.allowed|=1u<<i;
     int solved=0;
     for(int attempt=0;attempt<24&&!solved;attempt++){
         search.nodes[0]=(aw_plan_random(&rng)%3)*4+aw_plan_random(&rng)%3;
         int edge=aw_plan_random(&rng)%7;search.goal=edge<4?edge*4+3:12+edge-4;
-        search.wanted=7+aw_plan_random(&rng)%7;search.budget=30000;search.salt=aw_plan_random(&rng);
+        if(!(search.allowed&(1u<<search.nodes[0]))||!(search.allowed&(1u<<search.goal)))continue;
+        search.wanted=7+aw_plan_random(&rng)%(AW_VERSION>=12?5:7);search.budget=30000;search.salt=aw_plan_random(&rng);
         solved=aw_road_search(&search,1,1u<<search.nodes[0]);
     }
     if(!solved)return 0;
@@ -97,14 +115,19 @@ static int aw_land_score(const AwMap*m,int x,int z,int *height){
         if(score>0&&top>q)q=top;
     }
     int edge=x<z?x:z;edge=edge<64-x?edge:64-x;edge=edge<64-z?edge:64-z;
-    if(edge<8)land-=(8-edge)*(8-edge)*40;
+    if(AW_VERSION>=12){
+        int lowland=560-aw_continent_metric(m,x*2,z*2)+(aw_noise(m->layout_seed^0x72b7u,x,z,10)-128)*2;
+        if(lowland>land)land=lowland;
+        int limit=aw_coast_limit(m,x,z);if(land>limit)land=limit;
+    }
+    else if(edge<8)land-=(8-edge)*(8-edge)*40;
     *height=q;return land+(aw_noise(m->layout_seed^913u,x,z,3)-128);
 }
 static int aw_flat_corridor(AwMap*m,int start,int goal,int mirror,uint32_t salt){
     int dist[AW_CELLS],prev[AW_CELLS];uint8_t closed[AW_CELLS]={0},blocked[AW_CELLS]={0};
     for(int c=0;c<AW_CELLS;c++){
         dist[c]=INT_MAX;prev[c]=-1;
-        int x=c%64,z=c/64;if(x<4||z<4||x>59||z>59){blocked[c]=1;continue;}
+        int x=c%64,z=c/64;if(x<4||z<4||x>59||z>59||(AW_VERSION>=12&&aw_continent_metric(m,x*2+1,z*2+1)>850)){blocked[c]=1;continue;}
         for(int dz=-2;dz<=2;dz++)for(int dx=-2;dx<=2;dx++){
             int n=(z+dz)*64+x+dx;if(!m->cells[n].road)continue;
             for(int k=0;k<4;k++)if(m->cells[n].q[k]!=4)blocked[c]=1;
@@ -146,7 +169,12 @@ static void aw_plan_lakes(AwMap*m,uint32_t*rng){
     int pair=m->options.symmetry?2:1,wanted=1+aw_plan_random(rng)%3;
     for(int attempt=0;attempt<240&&m->lake_count<wanted*pair;attempt++){
         int x=7+aw_plan_random(rng)%50,z=7+aw_plan_random(rng)%(m->options.symmetry?22:50);
-        int rx=3+aw_plan_random(rng)%5,rz=3+aw_plan_random(rng)%5,ok=1;
+        int rx=3+aw_plan_random(rng)%(AW_VERSION>=12?3:5),rz=3+aw_plan_random(rng)%(AW_VERSION>=12?3:5),ok=1;
+        if(AW_VERSION>=12)for(int d=0;d<8;d++){
+            static const int dx[8]={1,1,0,-1,-1,-1,0,1},dz[8]={0,1,1,1,0,-1,-1,-1};
+            int diagonal=d%2?181:256;
+            if(aw_continent_metric(m,x*2+dx[d]*(rx+3)*2*diagonal/256,z*2+dz[d]*(rz+3)*2*diagonal/256)>1080)ok=0;
+        }
         for(int side=0;side<2;side++){
             int c=m->landmarks[side],dx=x-c%64,dz=z-c/64;
             if(dx*dx+dz*dz<(rx+6)*(rz+6))ok=0;
@@ -195,6 +223,7 @@ static void aw_carve_lakes(AwMap*m){
  * complete noise fields before sampling symmetric worlds: no half-map seam.
  * The shoreline and entrance districts retain their required dry sockets. */
 static void aw_rolling_hills(AwMap*m){
+    uint8_t base[AW_VERT*AW_VERT];memcpy(base,m->macro_q,sizeof(base));
     for(int z=0;z<AW_VERT;z++)for(int x=0;x<AW_VERT;x++){
         int v=z*AW_VERT+x,q=m->macro_q[v];if(q<4||q>8||m->lake_mask[v])continue;
         int n=aw_noise(m->layout_seed^0x7a191u,x,z,16)*3+aw_noise(m->layout_seed^0x913fu,x,z,9);
@@ -210,7 +239,8 @@ static void aw_rolling_hills(AwMap*m){
             int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=64||nz>=64)continue;
             if(m->cells[nz*64+nx].road){int d=aw_abs(2*dx+1)+aw_abs(2*dz+1);if(d<distance)distance=d;}
         }
-        relief=relief*aw_clamp(distance-2,0,10)/10;
+        int shoulder=AW_VERSION>=12?8:10;
+        relief=relief*aw_clamp(distance-2,0,shoulder)/shoulder;
         /* Low riparian shoulders separate rolling uplands from water. The
          * original high cliffs are outside this lowland field. */
         int shore=6;
@@ -218,8 +248,25 @@ static void aw_rolling_hills(AwMap*m){
             int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>64||nz>64)continue;
             if(m->macro_q[nz*65+nx]<4){int d=aw_abs(dx)+aw_abs(dz);if(d<shore)shore=d;}
         }
-        relief=relief*aw_clamp(shore-2,0,4)/4;
+        relief=AW_VERSION>=12?relief*aw_clamp(shore-1,0,5)/5:relief*aw_clamp(shore-2,0,4)/4;
         m->macro_q[v]=q+relief;m->rolling[v]=1;
+    }
+    if(AW_VERSION>=12){
+        /* Bound lowland lift to a quarter-floor per edge. Narrow coast/road
+         * shoulders otherwise quantize into unwalkable two-step ridges. */
+        for(int pass=0;pass<10;pass++){
+            int changed=0;
+            for(int v=0;v<AW_VERT*AW_VERT;v++)if(m->rolling[v]){
+                int lift=m->macro_q[v]-base[v],x=v%AW_VERT,z=v/AW_VERT;
+                for(int dz=-1;dz<=1;dz++)for(int dx=-1;dx<=1;dx++){
+                    int nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=AW_VERT||nz>=AW_VERT)continue;
+                    int n=nz*AW_VERT+nx,other=m->rolling[n]?m->macro_q[n]-base[n]:0;
+                    if(lift>other+1){lift=other+1;changed=1;}
+                }
+                m->macro_q[v]=base[v]+lift;
+            }
+            if(!changed)break;
+        }
     }
 }
 static int aw_layout(AwMap*m){
@@ -238,7 +285,10 @@ static int aw_layout(AwMap*m){
     }
     for(int side=0;side<2;side++){
         if(side&&m->options.symmetry){m->landmarks[1]=4095-m->landmarks[0];continue;}
-        int x=39+aw_plan_random(&rng)%16,z=9+aw_plan_random(&rng)%18,c=z*64+x;
+        int x,z;
+        do{x=39+aw_plan_random(&rng)%16;z=9+aw_plan_random(&rng)%18;}
+        while(AW_VERSION>=12&&(aw_continent_metric(m,x*2+1,z*2+1)>740||x-z<23));
+        int c=z*64+x;
         m->landmarks[side]=side?4095-c:c;
     }
     for(int side=0;side<2;side++){
