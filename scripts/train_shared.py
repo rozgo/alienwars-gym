@@ -5,18 +5,25 @@ Run in a clean isolated GPU checkout; output retains all configs and weights.
 import argparse,hashlib,json,os,shutil,subprocess,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];os.chdir(ROOT)
-p=argparse.ArgumentParser();p.add_argument('--seeds',type=int,nargs='+',default=[373,474,575]);p.add_argument('--prefix',default='shared-v2');p.add_argument('--binary',default='build/puffer-shared');args=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--seeds',type=int,nargs='+',default=[373,474,575]);p.add_argument('--prefix',default='reliability-v3');p.add_argument('--binary',default='build/puffer-shared');p.add_argument('--epochs',type=int,nargs=3,default=[128,256,512]);p.add_argument('--maps',type=int,default=32);p.add_argument('--frozen',required=True);args=p.parse_args()
+assert 1<=args.maps<=32 and min(args.epochs)>0
+manifest_path=ROOT/'web/maplab/policies.json'
+historical=json.loads(manifest_path.read_text())
+assert historical['contract']==2
+for f,policy in enumerate(historical['policies']):
+    assert hashlib.sha256((Path(args.frozen)/f'mission-{f}.bin').read_bytes()).hexdigest()==policy['sha256']
+os.environ['AW_SHARED_FROZEN_DIR']=str(Path(args.frozen).resolve())
 assert not subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip(),'Use a clean source checkout'
 source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
 root=Path('outputs/shared')/args.prefix;root.mkdir(parents=True,exist_ok=True)
-manifest={'source_commit':source,'seeds':args.seeds,'stages':[]}
+manifest={'source_commit':source,'seeds':args.seeds,'generator':13,'contract':3,'frozen_hashes':[p['sha256'] for p in historical['policies']],'stages':[]}
 for seed in args.seeds:
     previous=None
-    for curriculum,epochs in [(0,128),(1,256),(2,512)]:
+    for curriculum,epochs in enumerate(args.epochs):
         steps=epochs*288*64;run=f'{args.prefix}-s{seed}-c{curriculum}'
         command=[args.binary,'train',f'--base.seed={seed}',f'--base.run_id={run}',
                  '--base.checkpoint_dir=outputs/shared/checkpoints',f'--train.total_timesteps={steps}',
-                 f'--env.curriculum={curriculum}','--env.maps=8','--env.map_seed=301',
+                 f'--env.curriculum={curriculum}',f'--env.maps={args.maps}','--env.map_seed=301',
                  f'--train.learning_rate={.012 if curriculum==0 else .004}',
                  f'--train.ent_coef={.003 if curriculum==0 else .008}']
         if previous:command.append(f'--base.load_model_dir={previous}')
@@ -29,6 +36,7 @@ for seed in args.seeds:
             src=checkpoint if family==0 else Path(f'{checkpoint}.policy-{family}.bin')
             assert src.stat().st_size==730624
             dst=selected/f'mission-{family}.bin';shutil.copyfile(src,dst);hashes.append(hashlib.sha256(dst.read_bytes()).hexdigest())
+        (selected/'contract.json').write_text(json.dumps({'contract':3,'generator':13,'source_commit':source,'sha256':hashes},indent=2)+'\n')
         manifest['stages'].append({'seed':seed,'curriculum':curriculum,'agent_steps':steps,'run':run,'command':command,'process_seconds':time.monotonic()-start,'checkpoints':hashes})
         (root/'runs.json').write_text(json.dumps(manifest,indent=2)+'\n')
         previous=selected

@@ -1,5 +1,8 @@
 #ifndef ALIENWARS_COMMAND_FLEET_H
 #define ALIENWARS_COMMAND_FLEET_H
+#ifndef AW_NAV_VERSION
+#define AW_NAV_VERSION 2 /* Public checkpoint manifest; release build overrides explicitly. */
+#endif
 #include "missions.h"
 #include "local_navigation.h"
 #include "../../src/puffercpu.c"
@@ -17,6 +20,7 @@ typedef struct {
     float accumulator,terminal[AW_UNITS];
     int ready,trained,arrivals[AW_UNITS],automatic[AW_UNITS],status[AW_UNITS],arrival_handled[AW_UNITS];
     int selection,command_result,command_requested;
+    int recovery_attempts[AW_UNITS],recovery_after[AW_UNITS];
     int total_contacts[AW_UNITS],total_blocked[AW_UNITS],total_collisions[AW_UNITS];
 } AwCommandFleet;
 static void aw_command_fleet_close(AwCommandFleet*f){
@@ -105,8 +109,16 @@ static AwVehicle aw_command_fleet_pose(const AwCommandFleet*f,int i){
 /* Planning is outside the fixed simulation tick and reuses its prepared
  * scratch. A rejected user command leaves the current mission intact. */
 static void aw_command_fleet_continue(AwCommandFleet*f,const AwMap*m){
+    /* Retry from the current pose; never respawn a stuck unit. Reuse the
+     * full planner's fixed scratch outside the 10 Hz physics tick. */
+    for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&!f->world.paused[i]&&!f->unit[i].vehicle.failed&&
+        f->unit[i].control_version>=3&&(f->unit[i].timeout||f->unit[i].max_deadlock_ticks>=100)&&
+        f->world.ticks>=f->recovery_after[i]&&f->recovery_attempts[i]<3){
+        f->recovery_attempts[i]++;f->recovery_after[i]=f->world.ticks+300;
+        aw_command_fleet_destination(f,m,i,f->destination[i],f->automatic[i]);
+    }
     for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&f->unit[i].arrived&&!f->arrival_handled[i]){
-        f->arrivals[i]++;f->status[i]=AW_MISSION_ARRIVED;f->arrival_handled[i]=1;
+        f->arrivals[i]++;f->recovery_attempts[i]=0;f->status[i]=AW_MISSION_ARRIVED;f->arrival_handled[i]=1;
         if(f->automatic[i]||f->unit[i].vehicle.family==AW_VEHICLE_WING){
             AwSVec target=f->home[i],previous=f->destination[i];
             if(aw_command_fleet_destination(f,m,i,target,1))f->home[i]=previous;

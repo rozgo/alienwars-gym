@@ -56,3 +56,46 @@ All step/reset buffers remain preallocated; expensive route preparation belongs
 outside the physics loop or in explicitly bounded, allocation-free recovery work.
 Rendering stays optional. Changes to observation/action meaning require a new
 contract and explicit checkpoint provenance; retain the old baseline for comparison.
+
+## Contract 3 implementation
+
+The candidate keeps 645 inputs and categorical heads `[4, 3, 3, 3]`, but changes
+steering to bounded biases around the route tracker. Inputs 27–31 now describe
+RF-history closing speed, nearest measured range, yielding, recovery phase and
+passing-side retention. This is a semantic contract change: contract-2 weights
+must use the legacy action interpretation. The published viewer still defaults
+to contract 2 until a replacement release is explicitly selected.
+
+The deterministic assistance is separate from PPO. It checks short trajectories
+with the actual actuator model, passes on the right, yields by stable slot order
+where a passing pocket is blocked, and searches a bounded local detour after
+persistent lack of progress. No dynamic neighbor velocity is read from simulator
+state: tracks come from actual timestamped RF observations and expire when RF
+is disabled or lost. Raw lidar, sonar and camera channels remain policy inputs.
+This does not guarantee safety against unobserved traffic. Contacts, intervention
+decisions, physical deadlocks, yielding and replans are recorded separately.
+
+The boat collision check no longer treats the conservative water-route graph's
+3×3 cell neighborhood as an invisible physical wall. Actual oriented hull
+samples still enforce ocean connectivity, draft and mast clearance.
+
+Eight route preparations target corridor travel, head-on traffic, overtaking,
+crossing traffic, queues, tunnel approaches, long trips and a second destination.
+These are scenario intentions: generated geometry can make a route unavailable
+or prevent a planned interaction. Availability is retained in evaluation. Return
+missions preserve body pose, momentum and sensors, emit a terminal for recurrent
+state, then provide the next mission observation. Expensive preparation is done
+once; reset and step use fixed storage.
+
+Training adds up to four frozen contract-2 actors in slots 12–15, separate from
+the twelve learner Agent rows. Their checkpoints are pinned to the published
+manifest; each actor has independent recurrent state. Their inference is tested
+against native PufferNet. Some generated scenarios cannot place all four actors;
+they are not silently substituted with learner actions. This is historical
+traffic, not competitive self-play.
+
+On diagnostic seeds 31001–31008, the exact deployed baseline at `463b3789` had
+collision-free requested arrival rates of 55.6% ground, 63.9% boat, 91.7% quad,
+72.9% fixed wing and 73.6% submarine. These are measurements on the current
+terrain, not the older release's original validation scores. Candidate results
+and three-seed training are pending; no new policy is approved for deployment.

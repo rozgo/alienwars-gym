@@ -17,6 +17,8 @@ int main(void){
         assert(env.agents[i].policy==aw_shared_family(i));
         env.agents[i].observations=obs[i];env.agents[i].actions=actions[i];env.agents[i].rewards=&rewards[i];env.agents[i].terminals=&terminals[i];env.agents[i].action_mask=masks[i];
     }
+    /* Four frozen actors are additional bodies, never learner Agent rows. */
+    for(int f=0;f<5;f++)env.task->bank->frozen[f]=calloc(AW_FROZEN_FLOATS,sizeof(float));
     int64_t ecs_allocations=ecs_os_api_malloc_count+ecs_os_api_calloc_count+ecs_os_api_realloc_count;
     guard=1;puf_reset(&env);
     int available=0;
@@ -32,6 +34,7 @@ int main(void){
         float clearance=aw_vehicle_spec(a->family,a->variant).length+aw_vehicle_spec(b->family,b->variant).length+2;
         assert(aw_sv_length(aw_sv_add(a->point[a->count-1],aw_sv_scale(b->point[b->count-1],-1)))>=clearance);
     }
+    assert(env.task->world.count==16&&env.num_agents==12);
     assert(available>=5);puf_step(&env);assert(env.log.n==0);puf_step(&env);assert(env.log.n==available);
     for(int i=0;i<12;i++)assert(terminals[i]==1);
     puf_step(&env);assert(env.task->world.ticks==0&&env.log.n==available);
@@ -45,8 +48,19 @@ int main(void){
         puf_step(&env);
         for(int i=0;i<12;i++){assert(isfinite(rewards[i]));for(int j=0;j<OBS_SIZE;j++)assert(isfinite(obs[i][j])&&fabsf(obs[i][j])<=1);}
     }
+    for(int i=0;i<12;i++)if(env.task->world.active[i]&&env.task->world.agents[i].vehicle.family!=3){aw_navigation_replan(&env.task->world,&env.task->map->map,i);break;}
+    /* A return mission emits the completed reward/terminal with the next
+     * observation. Actual position, velocity and lifetime odometry persist. */
+    aw_shared_reset_at(env.task,0,7);
+    int repeat=-1;for(int i=0;i<12;i++)if(env.task->world.active[i]&&env.task->map->return_route[i].count>1&&aw_shared_family(i)==2)repeat=i;
+    assert(repeat>=0);AwMissionAgent*ra=&env.task->world.agents[repeat];
+    ra->vehicle.position=ra->route->point[ra->route->count-1];ra->vehicle.velocity=(AwSVec){0};ra->cursor=ra->route->count-1;aw_mission_project(ra);
+    AwVehicle before=ra->vehicle;for(int i=0;i<12;i++){actions[i][0]=1;actions[i][1]=actions[i][2]=actions[i][3]=1;}
+    puf_step(&env);assert(terminals[repeat]==1&&env.task->pending_renew[repeat]);
+    assert(!ra->arrived&&env.task->event_arrived[repeat]);assert(aw_sv_length(aw_sv_add(before.position,aw_sv_scale(ra->vehicle.position,-1)))<.2f);
+    puf_step(&env);assert(!terminals[repeat]&&!env.task->pending_renew[repeat]);
     assert(allocations==0);
     assert(ecs_allocations==ecs_os_api_malloc_count+ecs_os_api_calloc_count+ecs_os_api_realloc_count);
     guard=0;puf_close(&env);dict_clear(&settings);
-    printf("SHARED_ADAPTER policies=5 agents=12 available=%d terminal_and_reward_reset=PASS independent_state=PASS no_step_reset_allocations=PASS finite_invalid_actions=PASS valid_spawns=PASS\n",available);
+    printf("SHARED_ADAPTER policies=5 agents=12 available=%d terminal_and_reward_reset=PASS independent_state=PASS no_step_reset_allocations=PASS finite_invalid_actions=PASS valid_spawns=PASS frozen_not_learners=PASS repeated_mission_boundary=PASS\n",available);
 }

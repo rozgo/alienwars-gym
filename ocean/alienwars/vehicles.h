@@ -3,6 +3,9 @@
 #include "patrols.h"
 #include "sensor_rays.h"
 #include "motion.h"
+#ifndef AW_NAV_VERSION
+#define AW_NAV_VERSION 3
+#endif
 enum {AW_CONTACT_TERRAIN=1,AW_CONTACT_UNIT=2};
 typedef struct {int family,variant,contact,failed;AwSVec position,velocity;float yaw,yaw_rate,pitch;int contact_kind; } AwVehicle;
 typedef struct {AwSVec position,velocity;float yaw,width,length,height;int active;} AwBody;
@@ -43,7 +46,15 @@ static int aw_vehicle_clear(const AwMap*m,AwVehicle*v){
     if(v->family==AW_VEHICLE_BOAT){
         v->position.y=-.12f;
         int cell=((int)floorf(p.z*.5f)+16)*96+(int)floorf(p.x*.5f)+16;
-        if(cell<0||cell>=AW_OCEAN_CELLS||!aw_patrol_water_cell(m,cell,v->variant))return 0;
+        if(cell<0||cell>=AW_OCEAN_CELLS)return 0;
+#if AW_VERSION >= 13 && AW_NAV_VERSION >= 3
+        /* The 3x3-cell graph clearance is a conservative route filter, not a
+         * physical wall. Actual draft, sea connectivity and mast are sampled
+         * over the oriented hull below. */
+        if(!m->ocean_connected[cell])return 0;
+#else
+        if(!aw_patrol_water_cell(m,cell,v->variant))return 0;
+#endif
         static const float draft[3]={1,2.5f,5},mast[3]={.8f,1.7f,2.4f};
         float cy=cosf(v->yaw),sy=sinf(v->yaw);
         for(int z=-1;z<=1;z++)for(int x=-1;x<=1;x++){

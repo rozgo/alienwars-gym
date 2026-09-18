@@ -36,7 +36,7 @@ for backend in ['native','wasm']:
     for version,include,extra in [('baseline',base,[]),('flecs',ROOT,[runtime])]:
         binary=OUT/f'{version}-{backend}'
         if backend=='wasm':binary=binary.with_suffix('.js')
-        command=['clang' if backend=='native' else emcc,'-std=c11','-O3','-DAW_GENERATOR_VERSION=11',f'-I{include}',trace,*extra,'-lm','-o',str(binary)]
+        command=['clang' if backend=='native' else emcc,'-std=c11','-O3','-DAW_GENERATOR_VERSION=11','-DAW_NAV_VERSION=2',f'-I{include}',trace,*extra,'-lm','-o',str(binary)]
         if backend=='wasm':command+=['-sSTACK_SIZE=2MB','-sALLOW_MEMORY_GROWTH=1','-sASSERTIONS=1','-sENVIRONMENT=node']
         run(command)
         timings=[]
