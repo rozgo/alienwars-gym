@@ -38,7 +38,12 @@ static int aw_navigation_replan(AwMissionWorld*w,const AwMap*m,int id){
         for(int j=0;j<w->count&&clear;j++)if(j!=id&&a->tracks[j].valid){
             AwVehicleSpec other=aw_vehicle_spec(w->agents[j].vehicle.family,w->agents[j].vehicle.variant);AwSVec p=a->tracks[j].position;
             if(fabsf(p.y-aw_vehicle_body(&probe).position.y)>(own.height+other.height)*.5f+.2f+a->tracks[j].vertical_uncertainty)continue;
-            if(hypotf(p.x-probe.position.x,p.z-probe.position.z)<hypotf(own.width,own.length)+hypotf(other.width,other.length)+.3f+a->tracks[j].horizontal_uncertainty)clear=0;
+            float radius=hypotf(own.width,own.length)+hypotf(other.width,other.length)+.3f+a->tracks[j].horizontal_uncertainty;
+            float initial=hypotf(p.x-origin.x,p.z-origin.z),distance=hypotf(p.x-probe.position.x,p.z-probe.position.z);
+            /* A visible-surface uncertainty bubble can contain a physically
+             * clear start. Permit outward escape instead of isolating A*'s
+             * first node; the actuator probe still checks every executed move. */
+            if(distance<radius&&(initial>=radius||distance<initial))clear=0;
         }
         g.point[n]=probe.position;g.allowed[n]=clear;
     }

@@ -3,6 +3,11 @@
 /* Bounded local safety/recovery planner. It simulates the actual actuator model
  * against known static terrain and only sensor-derived dynamic tracks. It is an
  * explicit assist, measured separately from PPO, not a learned safety claim. */
+static float aw_navigation_body_distance(const AwVehicle*v,AwSVec point){
+    AwVehicleSpec s=aw_vehicle_spec(v->family,v->variant);
+    float dx=point.x-v->position.x,dz=point.z-v->position.z,sy=sinf(v->yaw),cy=cosf(v->yaw);
+    return hypotf(fmaxf(0,fabsf(dx*cy-dz*sy)-s.width),fmaxf(0,fabsf(dx*sy+dz*cy)-s.length));
+}
 static int aw_navigation_dynamic_clear(const AwMissionWorld*w,int id,const AwVehicle*v,float future){
     const AwMissionAgent*a=&w->agents[id];AwVehicleSpec self=aw_vehicle_spec(v->family,v->variant);
     for(int j=0;j<w->count;j++)if(j!=id&&a->tracks[j].valid){
@@ -11,14 +16,16 @@ static int aw_navigation_dynamic_clear(const AwMissionWorld*w,int id,const AwVeh
         AwSVec other=aw_sv_add(t->position,aw_sv_scale(t->velocity,future+fmaxf(0,age)));
         AwVehicleSpec spec=aw_vehicle_spec(w->agents[j].vehicle.family,w->agents[j].vehicle.variant);
         float vertical=(self.height+spec.height)*.5f+.3f+t->vertical_uncertainty;
-        if(fabsf(other.y-aw_vehicle_body(v).position.y)>vertical)continue;
-        float radius=hypotf(self.width,self.length)+hypotf(spec.width,spec.length)+.35f+t->horizontal_uncertainty;
-        float separation=hypotf(other.x-v->position.x,other.z-v->position.z);
+        float vertical_gap=fabsf(other.y-aw_vehicle_body(v).position.y)-vertical;
+        if(vertical_gap>0)continue;
+        float radius=hypotf(spec.width,spec.length)+.35f+t->horizontal_uncertainty;
+        float separation=aw_navigation_body_distance(v,other);
         AwSVec now=aw_sv_add(t->position,aw_sv_scale(t->velocity,fmaxf(0,age)));
-        float initial=hypotf(now.x-a->vehicle.position.x,now.z-a->vehicle.position.z);
+        float initial=aw_navigation_body_distance(&a->vehicle,now);
+        float initial_vertical=fabsf(now.y-aw_vehicle_body(&a->vehicle).position.y)-vertical;
         /* A conservative measurement envelope may already contain a valid
          * physical spawn. Always permit motion that opens that gap. */
-        if(separation<radius&&separation<initial-.00001f)return 0;
+        if(separation<radius&&(separation<initial-.00001f||vertical_gap<initial_vertical-.00001f))return 0;
     }return 1;
 }
 static int aw_navigation_probe(const AwMissionWorld*w,const AwMap*m,int id,AwDrive d,AwVehicle*out){
@@ -33,7 +40,7 @@ static int aw_navigation_probe(const AwMissionWorld*w,const AwMap*m,int id,AwDri
         if(step==2)brake_start=v;
         if(step==moving-1)*out=v;
     }
-    if(v.family==AW_VEHICLE_SUB){
+    if(v.family==AW_VEHICLE_SUB||v.family==AW_VEHICLE_BOAT){
         v=brake_start; /* A stop can be requested at the very next decision. */
         AwVehicleSpec spec=aw_vehicle_spec(v.family,v.variant);
         int braking=aw_clamp((int)ceilf(aw_sv_length(v.velocity)/spec.accel*30)+3,3,120);

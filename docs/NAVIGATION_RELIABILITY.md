@@ -95,7 +95,12 @@ returns from lidar, sonar and depth cameras as a fallback. Unobserved body-cente
 offsets have conservative uncertainty bounds. Tracks expire when measurements
 are lost; raw sensor channels remain policy inputs. Hover-capable units yield
 vertically to forward-only aircraft when a physically clear climb is available.
-Submarine probes include braking distance at the next control decision.
+Boat and submarine probes include braking distance at the next control decision.
+Close-quarters probes account for the rotating body's footprint and vertical
+closure. Local detours permit outward escape from a conservative sensor margin
+that already contains a physically clear spawn. These safety refinements were
+made after training from diagnostic/endurance cases, before final-world testing;
+they are runtime assistance changes, not additional learned behavior.
 This does not guarantee safety against unobserved traffic. Contacts, intervention
 decisions, physical deadlocks, yielding and replans are recorded separately.
 

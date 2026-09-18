@@ -31,6 +31,16 @@ int main(void){
     for(int z=31;z<=33;z++)for(int x=31;x<=33;x++)map.shelf_drop[(z+16)*AW_OCEAN_VERT+x+16]=0;
     aw_ocean_build(&map);assert(!aw_vehicle_clear(&map,&boat));
 
+    flat(0);for(int i=0;i<AW_OCEAN_VERT*AW_OCEAN_VERT;i++)map.shelf_drop[i]=1200;
+    for(int z=0;z<AW_OCEAN_VERT;z++)for(int x=50;x<AW_OCEAN_VERT;x++)map.shelf_drop[z*AW_OCEAN_VERT+x]=0;
+    aw_ocean_build(&map);assert(aw_mission_world_init(&world));aw_mission_world_reset(&world,&map,1);
+    boat=(AwVehicle){.family=AW_VEHICLE_BOAT,.variant=1,.position={64,-.12f,64},.yaw=AW_MOTION_PI/2,.velocity={2.4f,0,0}};
+    assert(aw_vehicle_clear(&map,&boat));world.agents[0].vehicle=boat;AwVehicle short_probe=boat,stop_probe;
+    for(int i=0;i<6;i++)aw_vehicle_drive(&map,&short_probe,(AwDrive){.speed=2.4f},1.0f/30,NULL,0,-1);
+    assert(!short_probe.contact);assert(!aw_navigation_probe(&world,&map,0,(AwDrive){.speed=2.4f},&stop_probe));
+    world.agents[0].vehicle.velocity=(AwSVec){0};assert(aw_navigation_probe(&world,&map,0,(AwDrive){.speed=2.4f},&stop_probe));
+    aw_mission_world_close(&world);
+
     flat(4);assert(aw_mission_world_init(&world));aw_mission_world_reset(&world,&map,2);
     route(0,(AwSVec){64,1.8f,40},(AwSVec){64,1.8f,78});
     route(1,(AwSVec){64,1.8f,78},(AwSVec){64,1.8f,40});
@@ -71,6 +81,14 @@ int main(void){
     fprintf(stderr,"RANGE_DETOUR ticks=%d arrived=%d contacts=%d\n",ticks,world.agents[0].arrived,world.agents[0].contacts);
     assert(world.agents[0].arrived&&!world.agents[0].contacts);
     aw_mission_world_reset(&world,&map,2);
+    route(0,(AwSVec){64,1.8f,62.65f},(AwSVec){64,1.8f,78});route(1,(AwSVec){64,1.8f,64},(AwSVec){64,1.8f,64.1f});world.paused[1]=1;
+    assert(!aw_bodies_overlap(aw_vehicle_body(&world.agents[0].vehicle),aw_vehicle_body(&world.agents[1].vehicle),0));
+    AwSensorConfig near_rf=world.sensors.units[0].config[AW_SENSOR_RF];near_rf.enabled=0;aw_sensor_attach(&world.sensors,0,AW_SENSOR_RF,near_rf);
+    aw_mission_sense(&world,&map,.1f);assert(world.agents[0].tracks[1].valid);assert(aw_navigation_replan(&world,&map,0));
+    for(ticks=0;ticks<1200&&!world.agents[0].arrived;ticks++)aw_mission_tick(&world,&map,actions);
+    fprintf(stderr,"BUFFER_ESCAPE ticks=%d arrived=%d contacts=%d\n",ticks,world.agents[0].arrived,world.agents[0].contacts);
+    assert(world.agents[0].arrived&&!world.agents[0].contacts);
+    aw_mission_world_reset(&world,&map,2);
     route(0,(AwSVec){64,15,60},(AwSVec){64,15,80});route(1,(AwSVec){82,15,64},(AwSVec){30,15,64});
     routes[0].family=routes[0].start.family=AW_VEHICLE_QUAD;
     routes[1].family=routes[1].start.family=AW_VEHICLE_WING;routes[1].variant=routes[1].start.variant=1;routes[1].start.velocity=(AwSVec){-5,0,0};
@@ -79,6 +97,12 @@ int main(void){
     for(ticks=0;ticks<600&&!(world.agents[0].arrived&&world.agents[1].arrived);ticks++)aw_mission_tick(&world,&map,actions);
     fprintf(stderr,"AIR_CROSS ticks=%d arrived=%d,%d contacts=%d,%d\n",ticks,world.agents[0].arrived,world.agents[1].arrived,world.agents[0].contacts,world.agents[1].contacts);
     assert(world.agents[0].arrived&&world.agents[1].arrived&&!world.agents[0].contacts&&!world.agents[1].contacts&&!world.agents[1].vehicle.failed);
+    aw_mission_world_reset(&world,&map,2);
+    route(0,(AwSVec){64,15,64},(AwSVec){64,15,80});route(1,(AwSVec){64,16,64},(AwSVec){64,16,80});
+    for(int i=0;i<2;i++){routes[i].family=routes[i].start.family=AW_VEHICLE_QUAD;aw_mission_agent_reset(&world.agents[i],&routes[i],600);aw_mission_equip(&world,i);}
+    aw_mission_sense(&world,&map,.1f);AwVehicle climbing=world.agents[0].vehicle;
+    assert(aw_navigation_dynamic_clear(&world,0,&climbing,0));climbing.position.y+=.5f;
+    assert(!aw_navigation_dynamic_clear(&world,0,&climbing,.2f));
     aw_mission_world_close(&world);
     printf("NAV_RELIABILITY physical_boat_clearance=PASS draft=PASS measured_track_expiry=PASS head_on_clear_arrivals=2 parked_obstacle_detour=PASS range_fallback=PASS no_hidden_pose=PASS crossing_aircraft=PASS\n");
 }
