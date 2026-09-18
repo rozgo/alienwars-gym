@@ -10,19 +10,21 @@ simulation, sensing and policy inference in your browser.
 [Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html) ·
 [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
 
-[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=0c01bb1b9934)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
+[![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=d509f2556754)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
 
 ## Worlds worth exploring
 
 **Wave Function Collapse** connects terrain tiles, road grades and tunnel
 profiles. Irregular oval coastlines, seeded landforms, rolling hills, beaches, ocean cliffs and lakes create
 varied terrain; bridges and mountain passages fit the generated landscape.
+The ocean floor follows the coastline, descending smoothly from shallow shelves
+into deep water with the same geometry used by sonar and submarine navigation.
 Choose symmetric or asymmetric layouts, bases up to ten floors high, and one
 coherent terrain palette: **Temperate, Desert or Frozen**.
 
 | Asymmetric desert | Frozen frontier |
 | --- | --- |
-| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp?v=0862cd60ee8e)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp?v=56088aa07732)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
+| [![Asymmetric desert with different base heights and a winding coastline](docs/demo/images/desert.webp?v=e7342be1e120)](https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0) | [![Frozen landscape with snow, ice, roads and coastal cliffs](docs/demo/images/frozen.webp?v=0e5501f9a145)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0) |
 
 ## A living art direction
 
@@ -36,7 +38,7 @@ presence. **Play view** expands the battlefield and tucks away the inspector.
 
 The [art pipeline](docs/ART_PIPELINE.md) includes reproducible Blender sources and
 asset licenses. Cultivation and combat remain planned. Rendering changes preserve
-the trained navigation policies; generator-v12 terrain has not been reevaluated
+the trained navigation policies; generator-v13 terrain has not been reevaluated
 for the historical training scores.
 
 ## Twelve vehicles. Five learning families. One shared world.

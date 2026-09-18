@@ -1,46 +1,47 @@
 {
-  "generator_version": 12,
-  "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-  "capture": "Live Chrome screenshots through browser UI; WebP quality 90 encoding; no image retouching.",
+  "capture": "Live Chrome screenshots through browser UI; WebP quality 90 encoding; no image retouching. Generator and viewer provenance is recorded per image.",
   "images": [
     {
       "file": "temperate.webp",
       "caption": "Oval Temperate sporewilds with teal and violet fungi, graded shores and lakes.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=0&sym=1&a=6&b=6&tunnels=1&cut=1",
-      "hash": "9dd82f86",
-      "controls": "Default view, one zoom-in step.",
-      "bytes": 147874,
-      "sha256": "0c01bb1b99344c6cc7d95942e148183054d07e09eee54245358d341163b2803e",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&sensors=0&sym=1&a=6&b=6&tunnels=1&cut=1&view=play",
+      "hash": "f4b6bd9c",
+      "controls": "Play view, default camera, one zoom-in step.",
+      "bytes": 123954,
+      "sha256": "d509f2556754f1706b4ddffad3dd157405ba58383959a22205c3aecaa0c7f8d8",
       "width": 1728,
-      "height": 941,
-      "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "height": 997,
+      "viewer_source": "e0032dd055e1cbcecc7bc62dea62b95581d5264e",
+      "viewer_wasm_sha256": "aa7a4a3b4ecfda1d514a2d2991e3dd507ac6d9d2389b13bbecc5d669fb548d50",
+      "generator_version": 13
     },
     {
       "file": "desert.webp",
       "caption": "Asymmetric resin wastes with mushroom-cacti, independent base heights and lakes.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0&tunnels=1&cut=1",
-      "hash": "9c9d75fb",
-      "controls": "Default map view.",
-      "bytes": 134606,
-      "sha256": "0862cd60ee8e829fe885b8abde585a328ecd70d6e7af4ade81a89c43290764ee",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=175847449&sym=0&a=2&b=9&biome=2&sensors=0&tunnels=1&cut=1&view=play",
+      "hash": "1f760c98",
+      "controls": "Play view, default camera.",
+      "bytes": 96628,
+      "sha256": "e7342be1e120465c96431fa98291a0539a94dfdaba5e0b19fbde33dd647d1001",
       "width": 1728,
-      "height": 941,
-      "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "height": 997,
+      "viewer_source": "e0032dd055e1cbcecc7bc62dea62b95581d5264e",
+      "viewer_wasm_sha256": "aa7a4a3b4ecfda1d514a2d2991e3dd507ac6d9d2389b13bbecc5d669fb548d50",
+      "generator_version": 13
     },
     {
       "file": "frozen.webp",
       "caption": "Frozen world with frost-harp colonies, snow, icy seams and coastal cliffs.",
-      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&tunnels=1&cut=1",
-      "hash": "4222ebd9",
-      "controls": "Default view, one zoom-in step.",
-      "bytes": 149130,
-      "sha256": "56088aa077321588d869b3bc4095ce34201e6261abef768cda4766599ec9df18",
+      "url": "https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&tunnels=1&cut=1&view=play",
+      "hash": "58b8c42f",
+      "controls": "Play view, default camera, one zoom-in step.",
+      "bytes": 115354,
+      "sha256": "0e5501f9a1456747ccd716d5903ad42f08d8bb67db925a729792c324c3675e6a",
       "width": 1728,
-      "height": 941,
-      "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "height": 997,
+      "viewer_source": "e0032dd055e1cbcecc7bc62dea62b95581d5264e",
+      "viewer_wasm_sha256": "aa7a4a3b4ecfda1d514a2d2991e3dd507ac6d9d2389b13bbecc5d669fb548d50",
+      "generator_version": 13
     },
     {
       "file": "tunnels.webp",
@@ -53,7 +54,8 @@
       "width": 1728,
       "height": 941,
       "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3",
+      "generator_version": 12
     },
     {
       "file": "sensors.webp",
@@ -66,7 +68,8 @@
       "width": 1728,
       "height": 941,
       "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3",
+      "generator_version": 12
     },
     {
       "file": "submarine.webp",
@@ -79,7 +82,8 @@
       "width": 1728,
       "height": 941,
       "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3",
+      "generator_version": 12
     },
     {
       "file": "explorer.webp",
@@ -92,7 +96,8 @@
       "width": 1728,
       "height": 941,
       "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
-      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3",
+      "generator_version": 12
     },
     {
       "file": "biological.webp",
@@ -105,7 +110,12 @@
       "height": 941,
       "viewer_source": "8164781ebb751143af064f981d088f097c3fabd7",
       "viewer_wasm_sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3",
-      "caption": "Biological scout and hovering unit among the Temperate alien canopy."
+      "caption": "Biological scout and hovering unit among the Temperate alien canopy.",
+      "generator_version": 12
     }
+  ],
+  "generator_versions": [
+    12,
+    13
   ]
 }

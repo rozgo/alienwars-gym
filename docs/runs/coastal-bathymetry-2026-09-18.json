@@ -1,0 +1,298 @@
+{
+  "source_commit": "e0032dd055e1cbcecc7bc62dea62b95581d5264e",
+  "generator_version": 13,
+  "cache_bytes_per_world": 18818,
+  "map": {
+    "generator_version": 13,
+    "native": "MAP_TEST version=13 seeds=256 digest=902c2041 terrains=11 max_structure=134 geometry_choices=45807 entrance_sites=93 depths=7 independent=60 PASS",
+    "wasm": "MAP_TEST version=13 seeds=256 digest=902c2041 terrains=11 max_structure=134 geometry_choices=45807 entrance_sites=93 depths=7 independent=60 PASS",
+    "volume_native": "VOLUME_TEST spans=3 fixtures=4 mountain_joins=PASS bridge_joins=PASS slope_winding=PASS triangles=254924 edges=383162 boundary=1552 manifold=PASS",
+    "volume_wasm": "VOLUME_TEST spans=3 fixtures=4 mountain_joins=PASS bridge_joins=PASS slope_winding=PASS triangles=254924 edges=383162 boundary=1552 manifold=PASS",
+    "mountain_native": "MOUNTAIN_TEST version=13 worlds=32 terrain_invariance=PASS optional_regions=12 digest=91bc0ec4 topologies=12 profiles=8 graded_edges=26 multiple_tunnels=3 full_regions=12 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+    "mountain_wasm": "MOUNTAIN_TEST version=13 worlds=32 terrain_invariance=PASS optional_regions=12 digest=91bc0ec4 topologies=12 profiles=8 graded_edges=26 multiple_tunnels=3 full_regions=12 min_covered=4 min_large_permille=1000 stacked_spans=PASS clearance=PASS contradictions=PASS",
+    "relief_native": "RELIEF_TEST version=13 worlds=32 digest=91bc0ec4 bridge_worlds=11 bridges=17 min_walkable_slopes=32 graded_segments=70 water_spans=79 deck_support=PASS underpass=PASS symmetry=PASS ocean_unchanged=PASS",
+    "relief_wasm": "RELIEF_TEST version=13 worlds=32 digest=91bc0ec4 bridge_worlds=11 bridges=17 min_walkable_slopes=32 graded_segments=70 water_spans=79 deck_support=PASS underpass=PASS symmetry=PASS ocean_unchanged=PASS",
+    "patrol_native": "PATROL_TEST worlds=8 routes=88 digest=dea49a49 ground_nodes=1752 naval_nodes=3508 air_nodes=663 large_body=PASS draft_and_mast=PASS flight_clearance=PASS deterministic=PASS map_unchanged=PASS",
+    "patrol_wasm": "PATROL_TEST worlds=8 routes=88 digest=dea49a49 ground_nodes=1752 naval_nodes=3508 air_nodes=663 large_body=PASS draft_and_mast=PASS flight_clearance=PASS deterministic=PASS map_unchanged=PASS",
+    "beach_native": "BEACH_TEST quarter_grades=PASS dry_shore_navigation=PASS wet_shore_blocked=PASS linear_support=PASS shared_edges=PASS cliffs=PASS roads=PASS symmetry=PASS",
+    "beach_wasm": "BEACH_TEST quarter_grades=PASS dry_shore_navigation=PASS wet_shore_blocked=PASS linear_support=PASS shared_edges=PASS cliffs=PASS roads=PASS symmetry=PASS",
+    "bathymetry_native": "BATHYMETRY_TEST coast_distance=PASS ellipse=PASS lakes=PASS dry_shore=PASS symmetry=PASS boundary_seams=PASS mesh_density=PASS rng_unchanged=PASS",
+    "bathymetry_wasm": "BATHYMETRY_TEST coast_distance=PASS ellipse=PASS lakes=PASS dry_shore=PASS symmetry=PASS boundary_seams=PASS mesh_density=PASS rng_unchanged=PASS",
+    "detail_native": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+    "detail_wasm": "DETAIL_TEST periodicity=257 edge continuity, finite channels, shared material weights/corners PASS",
+    "occlusion_native": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "occlusion_wasm": "OCCLUSION_TEST open/foot/top, contacts/floor separation, density parity=3000, stacked caves/ceiling/breach, symmetry/cache PASS",
+    "diversity_native": "DIVERSITY sym=0 worlds=24 bases=22 entrances=23 outline_bits_x100=769 height_q_x100=272 road_change_permille=688 cave_change_permille=966 lake_change_permille=961 room_types=2 lake_counts=2 form_counts=7 PASS\nDIVERSITY sym=1 worlds=24 bases=22 entrances=22 outline_bits_x100=732 height_q_x100=261 road_change_permille=667 cave_change_permille=935 lake_change_permille=929 room_types=2 lake_counts=2 form_counts=6 PASS\nDIVERSITY_TEST version=13 digest=e2a716b4 PASS",
+    "diversity_wasm": "DIVERSITY sym=0 worlds=24 bases=22 entrances=23 outline_bits_x100=769 height_q_x100=272 road_change_permille=688 cave_change_permille=966 lake_change_permille=961 room_types=2 lake_counts=2 form_counts=7 PASS\nDIVERSITY sym=1 worlds=24 bases=22 entrances=22 outline_bits_x100=732 height_q_x100=261 road_change_permille=667 cave_change_permille=935 lake_change_permille=929 room_types=2 lake_counts=2 form_counts=6 PASS\nDIVERSITY_TEST version=13 digest=e2a716b4 PASS",
+    "packaged_viewer_seed_checks": [
+      {
+        "seed": "0",
+        "version": "13",
+        "hash": "81b138e4",
+        "walk": "1837",
+        "reached": "1742",
+        "path": "118",
+        "decisions": "1613",
+        "attempts": "9",
+        "structure": "85",
+        "tunnels": "111",
+        "cost": "1346",
+        "shapes": "251",
+        "entrance_ne": "1324",
+        "entrance_sw": "2501",
+        "depth_ne": "-6",
+        "depth_sw": "-9",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "1559",
+        "base_b": "2614",
+        "landforms": "13",
+        "plans": "2",
+        "ocean": "6827",
+        "bridges": "1"
+      },
+      {
+        "seed": "1",
+        "version": "13",
+        "hash": "2a88e502",
+        "walk": "1628",
+        "reached": "1507",
+        "path": "120",
+        "decisions": "1770",
+        "attempts": "4",
+        "structure": "83",
+        "tunnels": "51",
+        "cost": "1366",
+        "shapes": "259",
+        "entrance_ne": "1191",
+        "entrance_sw": "2636",
+        "depth_ne": "-5",
+        "depth_sw": "-9",
+        "lakes": "1",
+        "rooms": "2",
+        "base_a": "1167",
+        "base_b": "2551",
+        "landforms": "8",
+        "plans": "1",
+        "ocean": "6779",
+        "bridges": "0"
+      },
+      {
+        "seed": "73",
+        "version": "13",
+        "hash": "0fcd25ef",
+        "walk": "1834",
+        "reached": "1762",
+        "path": "139",
+        "decisions": "1838",
+        "attempts": "5",
+        "structure": "19",
+        "tunnels": "96",
+        "cost": "1574",
+        "shapes": "148",
+        "entrance_ne": "1002",
+        "entrance_sw": "3473",
+        "depth_ne": "-4",
+        "depth_sw": "-4",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "1494",
+        "base_b": "3375",
+        "landforms": "10",
+        "plans": "1",
+        "ocean": "6602",
+        "bridges": "1"
+      },
+      {
+        "seed": "4294967295",
+        "version": "13",
+        "hash": "aaa6f479",
+        "walk": "1741",
+        "reached": "1652",
+        "path": "130",
+        "decisions": "1723",
+        "attempts": "2",
+        "structure": "14",
+        "tunnels": "93",
+        "cost": "1571",
+        "shapes": "206",
+        "entrance_ne": "873",
+        "entrance_sw": "2646",
+        "depth_ne": "-8",
+        "depth_sw": "-5",
+        "lakes": "2",
+        "rooms": "4",
+        "base_a": "1552",
+        "base_b": "2729",
+        "landforms": "9",
+        "plans": "1",
+        "ocean": "6754",
+        "bridges": "1"
+      }
+    ],
+    "artifact_hashes_match": true,
+    "javascript_syntax": "passed"
+  },
+  "sensors": {
+    "sensor_version": 1,
+    "generator_version": 13,
+    "platform": "Darwin arm64",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "node": "v23.11.0",
+    "native": "SENSOR_TEST version=1 mesh_rays=960 caves/roofs/bridges/slopes=PASS sea/sonar=PASS unit_hits=PASS mounts=PASS RF=PASS odometry/reset=PASS cadence/cache=PASS finite_fixed_obs=613 no_step_alloc=PASS deterministic=PASS map_unchanged=PASS",
+    "wasm": "SENSOR_TEST version=1 mesh_rays=960 caves/roofs/bridges/slopes=PASS sea/sonar=PASS unit_hits=PASS mounts=PASS RF=PASS odometry/reset=PASS cadence/cache=PASS finite_fixed_obs=613 no_step_alloc=PASS deterministic=PASS map_unchanged=PASS",
+    "native_benchmark": {
+      "worlds": "3",
+      "units": "12",
+      "steps": "1800",
+      "simulation_seconds": "30",
+      "cpu_ms": "437.084",
+      "ms_per_world_step": "0.2428",
+      "rays": "77721",
+      "samples": "2808",
+      "state_bytes": "159144",
+      "obs_floats": "613",
+      "no_step_alloc": "PASS",
+      "map_unchanged": "PASS"
+    },
+    "wasm_benchmark": {
+      "worlds": "3",
+      "units": "12",
+      "steps": "1800",
+      "simulation_seconds": "30",
+      "cpu_ms": "802.534",
+      "ms_per_world_step": "0.4459",
+      "rays": "77721",
+      "samples": "2808",
+      "state_bytes": "159136",
+      "obs_floats": "613",
+      "no_step_alloc": "PASS",
+      "map_unchanged": "PASS"
+    },
+    "scope": "Sensor sampling and observation packing only. 12 units, 3 generated worlds, 1800 steps at 60 Hz, including an underground scout. Generation, route/pose preparation, rendering and training are excluded. Finite-observation checks are included. Optimized native timing uses process CPU time; Node timing is Emscripten clock(). No CUDA throughput claim."
+  },
+  "shared_navigation": {
+    "mission_route": "MISSION_ROUTE_TEST wing_replay=PASS wing_tracker=PASS points=181 sensor_equipment=PASS synchronous_collision=PASS invalid_goal=PASS map_unchanged=PASS",
+    "shared_adapter": "SHARED_ADAPTER policies=5 agents=12 available=12 terminal_and_reward_reset=PASS independent_state=PASS no_step_reset_allocations=PASS finite_invalid_actions=PASS valid_spawns=PASS",
+    "command_fleet": "COMMAND_FLEET valid_goal=PASS preserve_pose_momentum=PASS rejected_goal_retains_mission=PASS pause=PASS equipment_changes_observation=PASS map_unchanged=PASS",
+    "policy": "SHARED_POLICY families=5 recurrent_decisions=500 categorical_actions=2000 finite=PASS digest=6586e0b4"
+  },
+  "viewer_build": {
+    "generator_version": 13,
+    "source_commit": "e0032dd055e1cbcecc7bc62dea62b95581d5264e",
+    "source_dirty": false,
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
+    "raylib": "5.5",
+    "flecs": {
+      "repository": "https://github.com/SanderMertens/flecs",
+      "version": "4.1.6",
+      "commit": "fb55f3c25660425cfe1bc4cf5e6bff8b3f18a9b8",
+      "sha256": {
+        "flecs.c": "6005392eb13c0f3c7abdecb2f85271e50934f63919afebf0bbe85f6dfc7320d6",
+        "flecs.h": "526036a5a41678e2a43a3cb835e9eaa70fd1993868b1978950c0d275752f69b1",
+        "LICENSE": "5f89f3edd5d1e458cd48509818e23b57d85869f7d57d0ebe31bcfd3a73e5dd60"
+      }
+    },
+    "explorer": {
+      "repository": "https://github.com/flecs-hub/explorer",
+      "commit": "b72f0e28c0a03c21094b497e0afff7e5ec5898d1",
+      "archive_sha256": "bc2c66610b707569c63842140049addf83ab5f3b0b2f840f7102710b484bd99e",
+      "files": 671
+    },
+    "viewer_inspection": true,
+    "artifacts": {
+      "index.html": {
+        "bytes": 47701,
+        "sha256": "dc04a76428466a822b7ee7d67fdba454b3a42d863d9fd4b4f259bfe07e31b8d8"
+      },
+      "maplab.js": {
+        "bytes": 261141,
+        "sha256": "d103141f1633f2d9a3a1edfcbb7df287e1288faa96ea2f0a40078d572ffb567a"
+      },
+      "maplab.wasm": {
+        "bytes": 1421236,
+        "sha256": "aa7a4a3b4ecfda1d514a2d2991e3dd507ac6d9d2389b13bbecc5d669fb548d50"
+      },
+      "maplab.data": {
+        "bytes": 24148098,
+        "sha256": "ee23e37e128007cc9f16d55f4dc5994f428c987fcdd887914e3156a2659e84b7"
+      }
+    },
+    "controllers": {
+      "contract": 2,
+      "observations": 645,
+      "actions": [
+        4,
+        3,
+        3,
+        3
+      ],
+      "hidden": 128,
+      "layers": 2,
+      "training": "five independent PPO learners in shared worlds",
+      "selection_map_seeds": [
+        11001,
+        11002,
+        11003
+      ],
+      "selected_training_seed": 474,
+      "policies": [
+        {
+          "family": 0,
+          "name": "Ground",
+          "run": "shared-v3-s474-c1",
+          "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+          "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-0.bin"
+        },
+        {
+          "family": 1,
+          "name": "Surface boats",
+          "run": "shared-v3-s474-c2",
+          "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+          "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-1.bin"
+        },
+        {
+          "family": 2,
+          "name": "Quadcopters",
+          "run": "shared-v3-s474-c2",
+          "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+          "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-2.bin"
+        },
+        {
+          "family": 3,
+          "name": "Fixed wings",
+          "run": "shared-v3-s474-c1",
+          "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+          "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-3.bin"
+        },
+        {
+          "family": 4,
+          "name": "Submarines",
+          "run": "shared-v3-s474-c2",
+          "source": "4d1f2800063c92b943cdb38263e048f1ba538e4f",
+          "sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce",
+          "url": "https://github.com/rozgo/alienwars-gym/releases/download/shared-navigation-2026-09-16/mission-4.bin"
+        }
+      ]
+    }
+  },
+  "new_training_or_held_out_evaluation": false,
+  "browser_worlds": [
+    {
+      "biome": "temperate",
+      "hash": "f4b6bd9c"
+    },
+    {
+      "biome": "desert",
+      "hash": "1f760c98"
+    },
+    {
+      "biome": "frozen",
+      "hash": "58b8c42f"
+    }
+  ]
+}

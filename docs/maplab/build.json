@@ -1,6 +1,6 @@
 {
-  "generator_version": 12,
-  "source_commit": "8164781ebb751143af064f981d088f097c3fabd7",
+  "generator_version": 13,
+  "source_commit": "e0032dd055e1cbcecc7bc62dea62b95581d5264e",
   "source_dirty": false,
   "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)",
   "raylib": "5.5",
@@ -24,15 +24,15 @@
   "artifacts": {
     "index.html": {
       "bytes": 47701,
-      "sha256": "720440a67bd8357376e6c8c81705efe4ef0c501b4c8238a942e9d6fc6dfff053"
+      "sha256": "dc04a76428466a822b7ee7d67fdba454b3a42d863d9fd4b4f259bfe07e31b8d8"
     },
     "maplab.js": {
       "bytes": 261141,
-      "sha256": "62fa0b3f90a0142ade3921e41263fe3b862c03dd0cb644ee341e1dcfa32d78d9"
+      "sha256": "d103141f1633f2d9a3a1edfcbb7df287e1288faa96ea2f0a40078d572ffb567a"
     },
     "maplab.wasm": {
-      "bytes": 1389095,
-      "sha256": "70bcd4bfd27676b0078edade13b0d104e30f6de596fe09bdd1154adfd1b1fcc3"
+      "bytes": 1421236,
+      "sha256": "aa7a4a3b4ecfda1d514a2d2991e3dd507ac6d9d2389b13bbecc5d669fb548d50"
     },
     "maplab.data": {
       "bytes": 24148098,
