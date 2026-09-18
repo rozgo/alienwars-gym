@@ -316,7 +316,8 @@ unchanged tensor dimensions. Measure collision-free requested arrivals, contact
 episodes, unavailable routes, yielding and physical deadlocks separately. Keep
 the selection/final-world split in `docs/NAVIGATION_RELIABILITY.md`. Historical
 traffic is pinned in `config/alienwars_shared_frozen.json` and occupies extra
-physical slots, never learner PPO rows. Completed training is not a release gate.
+physical slots, never learner PPO rows. Require measured improvement before
+replacing published policies.
 
 Version 12 shapes the global layout inside a seeded horizontal elliptical envelope.
 Keep the road search and lowland corridors inside that footprint before pinning
