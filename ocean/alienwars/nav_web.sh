@@ -17,7 +17,7 @@ emcc ocean/alienwars/nav_viewer.c ocean/alienwars/nav_api.c \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=128MB -sSTACK_SIZE=2MB \
     -sASSERTIONS=1 -sENVIRONMENT=web \
     --shell-file web/navigation/shell.html "${NAV_PRELOAD[@]}"
-python3 - <<'PY'
+uv run python - <<'PY'
 import hashlib,json,os,subprocess
 from pathlib import Path
 root=Path('build/web/alienwars-nav')

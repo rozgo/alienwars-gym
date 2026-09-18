@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
 manifest=json.loads((ROOT/'web/maplab/policies.json').read_text())
 assert len(manifest['policies'])==5
-assert manifest['contract']==2 and manifest['observations']==645 and manifest['actions']==[4,3,3,3]
+assert manifest['contract'] in [2,3] and manifest['observations']==645 and manifest['actions']==[4,3,3,3]
 assert manifest['hidden']==128 and manifest['layers']==2
 models=ROOT/'outputs/shared/selected';models.mkdir(parents=True,exist_ok=True)
 for family,policy in enumerate(manifest['policies']):
@@ -17,7 +17,8 @@ for family,policy in enumerate(manifest['policies']):
         assert len(data)==730624 and hashlib.sha256(data).hexdigest()==policy['sha256'],'Checkpoint verification failed'
         path.write_bytes(data)
     assert path.stat().st_size==730624
-subprocess.run(['bash','scripts/build_maplab.sh'],env={**os.environ,'AW_MISSION_MODELS':str(models)},check=True)
+(models/'contract.json').write_text(json.dumps({'contract':manifest['contract']})+'\n')
+subprocess.run(['bash','scripts/build_maplab.sh'],env={**os.environ,'AW_MISSION_MODELS':str(models),'AW_MISSION_CONTRACT':str(manifest['contract'])},check=True)
 report=json.loads((ROOT/'docs/maplab/build.json').read_text())
 report['controllers']=manifest
 (ROOT/'docs/maplab/build.json').write_text(json.dumps(report,indent=2)+'\n')

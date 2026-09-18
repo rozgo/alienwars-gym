@@ -8,9 +8,20 @@ if [ -n "${AW_MISSION_MODELS:-}" ]; then
         LOCAL_PRELOAD+=(--preload-file "$AW_MISSION_MODELS/mission-$family.bin@resources/alienwars/mission-$family.bin")
     done
 fi
+# Flat files carry no semantic metadata. Select the contract explicitly, and
+# reject a mismatch even though versions 2 and 3 have the same tensor shape.
+if [ -n "${AW_MISSION_MODELS:-}" ]; then
+    MODEL_CONTRACT=$(uv run python -c 'import json,sys,pathlib; p=pathlib.Path(sys.argv[1])/"contract.json"; print(json.loads(p.read_text())["contract"] if p.exists() else 2)' "$AW_MISSION_MODELS")
+    test "${AW_MISSION_CONTRACT:-$MODEL_CONTRACT}" = "$MODEL_CONTRACT" || { echo 'Policy contract mismatch' >&2; exit 2; }
+    AW_MISSION_CONTRACT=$MODEL_CONTRACT
+else
+    AW_MISSION_CONTRACT=${AW_MISSION_CONTRACT:-3}
+fi
+case "$AW_MISSION_CONTRACT" in 2|3) ;; *) echo 'Invalid navigation contract' >&2; exit 2 ;; esac
 mkdir -p build/web/alienwars
+printf '{"contract":%s}\n' "$AW_MISSION_CONTRACT" > build/web/alienwars/contract.json
 emcc ocean/alienwars/alienwars.c ocean/alienwars/flecs_runtime.c -o build/web/alienwars/maplab.html \
-    -std=c11 -O3 -Wall -Wextra -Wno-unused-function -DAW_FLECS_EXPLORER \
+    -std=c11 -O3 -DAW_NAV_VERSION="$AW_MISSION_CONTRACT" -Wall -Wextra -Wno-unused-function -DAW_FLECS_EXPLORER \
     -I. -Iocean/alienwars "${INCLUDES[@]}" "${LINK_ARCHIVES[@]}" \
     -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 \
     -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 \
@@ -20,7 +31,7 @@ emcc ocean/alienwars/alienwars.c ocean/alienwars/flecs_runtime.c -o build/web/al
     --shell-file web/maplab/shell.html "${LOCAL_PRELOAD[@]}"
 # Keep each page paired with its compiled runtime even when Pages or the
 # browser still caches the previous build under the same asset filenames.
-python3 - <<'PY'
+uv run python - <<'PY'
 import hashlib,re
 from pathlib import Path
 root=Path('build/web/alienwars')

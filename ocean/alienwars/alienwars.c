@@ -1,4 +1,7 @@
 /* Map Lab viewer. The shared map.h also serves the PufferLib environment. */
+#ifndef AW_NAV_VERSION
+#define AW_NAV_VERSION 2 /* Release selection must explicitly opt into a new contract. */
+#endif
 #include "render.h"
 #include "patrol_render.h"
 #include "sensor_render.h"
@@ -27,6 +30,17 @@ static AwMap world;
 static AwScene scene;
 static AwPatrols patrols;
 static AwCommandFleet fleet;
+/* Read-only endurance snapshot; does not advance, reset, or alter the world. */
+AW_EXPORT const char*aw_fleet_snapshot(void){
+    static char json[8192];int n=snprintf(json,sizeof(json),"{\"seed\":%u,\"contract\":%d,\"ticks\":%d,\"trained\":%d,\"units\":[",world.seed,AW_NAV_VERSION,fleet.world.ticks,fleet.trained);
+    if(fleet.ready)for(int i=0;i<AW_UNITS;i++){
+        const AwMissionAgent*a=&fleet.unit[i];n+=snprintf(json+n,sizeof(json)-n,
+          "%s{\"id\":%d,\"family\":%d,\"active\":%d,\"arrivals\":%d,\"contacts\":%d,\"collisions\":%d,\"remaining\":%.3f,\"timeout\":%d,\"failed\":%d,\"replans\":%d,\"deadlocks\":%d,\"assists\":%d,\"position\":[%.3f,%.3f,%.3f]}",
+          i?",":"",i,a->vehicle.family,fleet.active[i],fleet.arrivals[i],fleet.total_contacts[i],fleet.total_collisions[i],a->remaining,a->timeout,a->vehicle.failed,a->replans,a->deadlock_events,a->safety_interventions,a->vehicle.position.x,a->vehicle.position.y,a->vehicle.position.z);
+    }
+    snprintf(json+n,sizeof(json)-n,"]}");return json;
+}
+
 #ifdef AW_FLECS_EXPLORER
 AW_EXPORT const char*aw_explorer_request(const char*method,const char*path){return aw_inspect_request(&fleet.world,method,path);}
 #endif
