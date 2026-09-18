@@ -23,7 +23,7 @@ report=json.loads((ROOT/'docs/maplab/build.json').read_text())
 report['controllers']=manifest
 (ROOT/'docs/maplab/build.json').write_text(json.dumps(report,indent=2)+'\n')
 
-results=(ROOT/"docs/runs/shared-navigation-2026-09-16.json").read_bytes()
+results=(ROOT/manifest.get('evaluation_report','docs/runs/shared-navigation-2026-09-16.json')).read_bytes()
 page=(ROOT/"web/training/fleet.html").read_text()
 assert '__FLEET_RESULT_VERSION__' in page
 page=page.replace('__FLEET_RESULT_VERSION__',hashlib.sha256(results).hexdigest()[:16])
