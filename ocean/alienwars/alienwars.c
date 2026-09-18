@@ -230,7 +230,7 @@ EM_JS(void,aw_sensor_report,(int unit,const float* values),{
 });
 #endif
 #ifdef PLATFORM_WEB
-EM_JS(void,aw_command_fleet_report,(int trained,int selected,const char* role,const float* values,const char*audit),{
+EM_JS(void,aw_command_fleet_report,(int trained,int selected,const char* role,const float* values,const char* audit),{
     document.body.dataset.fleetAudit=UTF8ToString(audit);
     if(window.maplabFleet)window.maplabFleet({trained:!!trained,selected,role:UTF8ToString(role),values:Array.from(HEAPF32.subarray(values>>2,(values>>2)+26))});
 });
