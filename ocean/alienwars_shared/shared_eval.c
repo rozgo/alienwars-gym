@@ -7,6 +7,9 @@ int main(int argc,char**argv){
     if(scenarios<1||scenarios>100000||per_map<1||per_map>AW_SHARED_SCENARIOS)return 2;
     int baseline=!strcmp(argv[1],"reference")?1:!strcmp(argv[1],"random")?2:0;
     int version=getenv("AW_EVAL_NAV_VERSION")?atoi(getenv("AW_EVAL_NAV_VERSION")):3,assist=!getenv("AW_EVAL_NO_ASSIST");
+    int first=getenv("AW_EVAL_EPISODE_START")?atoi(getenv("AW_EVAL_EPISODE_START")):0;
+    int stop=getenv("AW_EVAL_EPISODE_STOP")?atoi(getenv("AW_EVAL_EPISODE_STOP")):scenarios;
+    if(first<0||stop>scenarios||first>=stop||(baseline==2&&first))return 2;
     AwSharedTask*t=aw_shared_create(maps,seed,9091,curriculum);if(!t)return 2;
     Weights*weights[5]={0};PufferNet*net[12]={0};int sizes[]={4,3,3,3};
     if(!baseline){for(int f=0;f<5;f++){
@@ -15,8 +18,11 @@ int main(int argc,char**argv){
         for(int j=0;j<AW_FROZEN_FLOATS;j++)if(!isfinite(weights[f]->data[j]))return 2;
     }for(int i=0;i<12;i++){Weights*w=weights[aw_shared_family(i)];w->idx=0;net[i]=make_puffernet(w,1,AW_SHARED_OBS,128,2,sizes,4);}}
     int attempted[5]={0},unavailable[5]={0},wins[5]={0},contacts[5]={0},events[5]={0},blocked[5]={0},steps[5]={0},clean[5]={0},terrain[5]={0},units[5]={0},stalls[5]={0},deadlocks[5]={0},yields[5]={0},replans[5]={0},interventions[5]={0},renewals[5]={0};
-    for(int episode=0;episode<scenarios;episode++){
+    for(int episode=0;episode<stop;episode++){
         aw_shared_reset_at(t,(episode/per_map)%maps,episode%per_map);float terminal[12];
+        /* Reset-only prefix preserves identical equipment-dropout RNG for
+         * independently evaluated shards. Random actions remain serial. */
+        if(episode<first)continue;
         for(int i=0;i<12;i++){
             AwMissionAgent*a=&t->world.agents[i];a->control_version=version;a->assist_enabled=assist&&version>=3;
             if(t->world.active[i])a->previous_potential=aw_mission_project(a);

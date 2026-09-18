@@ -1,17 +1,19 @@
 #!/usr/bin/env -S uv run
 """Evaluate exact shared-world checkpoint sets against matched baselines."""
 import argparse,hashlib,json,os,subprocess
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];os.chdir(ROOT)
-p=argparse.ArgumentParser();p.add_argument('--models',action='append',default=[],help='label=directory with mission-N.bin');p.add_argument('--seed',type=int,required=True);p.add_argument('--maps',type=int,default=8);p.add_argument('--curriculum',type=int,default=2);p.add_argument('--out',required=True);p.add_argument('--baselines',action='store_true');p.add_argument('--scenarios-per-map',type=int,default=8);p.add_argument('--contract',type=int,choices=[2,3],default=3);p.add_argument('--no-assist',action='store_true');args=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--models',action='append',default=[],help='label=directory with mission-N.bin');p.add_argument('--seed',type=int,required=True);p.add_argument('--maps',type=int,default=8);p.add_argument('--curriculum',type=int,default=2);p.add_argument('--out',required=True);p.add_argument('--baselines',action='store_true');p.add_argument('--reference',action='store_true');p.add_argument('--scenarios-per-map',type=int,default=8);p.add_argument('--contract',type=int,choices=[2,3],default=3);p.add_argument('--no-assist',action='store_true');p.add_argument('--jobs',type=int,default=1);args=p.parse_args()
 os.environ['AW_EVAL_SCENARIOS_PER_MAP']=str(args.scenarios_per_map);os.environ['AW_EVAL_NAV_VERSION']=str(args.contract)
 if args.no_assist:os.environ['AW_EVAL_NO_ASSIST']='1'
-assert 1<=args.maps<=32
+assert 1<=args.maps<=32 and 1<=args.jobs<=16
 out=Path(args.out);out.mkdir(parents=True,exist_ok=True)
 Path('build').mkdir(exist_ok=True)
 binary=str(out/'shared-eval')
 subprocess.run(['clang','-std=c11','-O3','-I.','-Isrc','-Ivendor','-Iraylib-5.5_macos/include','-Iraylib-5.5_linux_amd64/include','ocean/alienwars_shared/shared_eval.c','ocean/alienwars/flecs_runtime.c','-lm','-o',binary],check=True)
 runs=[(v,v) for v in ['reference','random']] if args.baselines else []
+if args.reference and not args.baselines:runs.append(('reference','reference'))
 for item in args.models:
     label,directory=item.split('=',1);assert label and '/' not in label
     metadata=Path(directory)/'contract.json'
@@ -20,9 +22,27 @@ for item in args.models:
 report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip()),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist and args.contract>=3,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
 for label,directory in runs:
     command=[binary,directory,str(args.seed),str(args.maps),str(args.scenarios_per_map*args.maps),str(args.curriculum),'json']
-    with (out/f'{label}.jsonl').open('w') as data,(out/f'{label}.log').open('w') as log:subprocess.run(command,stdout=data,stderr=log,check=True)
+    jobs=min(args.jobs,args.scenarios_per_map*args.maps) if directory!='random' else 1
+    if jobs==1:
+        with (out/f'{label}.jsonl').open('w') as data,(out/f'{label}.log').open('w') as log:subprocess.run(command,stdout=data,stderr=log,check=True)
+    else:
+        total=args.scenarios_per_map*args.maps
+        def shard(index):
+            env={**os.environ,'AW_EVAL_EPISODE_START':str(total*index//jobs),'AW_EVAL_EPISODE_STOP':str(total*(index+1)//jobs)}
+            with (out/f'{label}-part{index}.jsonl').open('w') as data,(out/f'{label}-part{index}.log').open('w') as log:subprocess.run(command,env=env,stdout=data,stderr=log,check=True)
+        with ThreadPoolExecutor(max_workers=jobs) as pool:list(pool.map(shard,range(jobs)))
+        episodes=[];totals={}
+        for index in range(jobs):
+            for line in (out/f'{label}-part{index}.jsonl').read_text().splitlines():
+                record=json.loads(line)
+                if 'scenario' in record:episodes.append(record)
+                else:
+                    family=record['family'];acc=totals.setdefault(family,{'family':family})
+                    for key,value in record.items():
+                        if key!='family':acc[key]=acc.get(key,0)+value
+        (out/f'{label}.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in episodes+[totals[f] for f in range(5)]))
     records=[json.loads(line) for line in (out/f'{label}.jsonl').read_text().splitlines() if line.startswith('{')]
-    result={'command':command,'families':[v for v in records if 'attempted' in v]}
+    result={'command':command,'jobs':jobs,'families':[v for v in records if 'attempted' in v]}
     assert len(result['families'])==5 and sum('scenario' in v for v in records)==sum(f['attempted'] for f in result['families'])
     seen=set();initial=[];repeated=[]
     for record in records:

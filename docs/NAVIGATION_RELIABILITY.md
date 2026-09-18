@@ -125,7 +125,7 @@ uv run scripts/check_shared_training.py outputs/shared/UNIQUE_RUN/runs.json \
   --out outputs/reliability/training-audit.json
 AW_SHARED_FROZEN_DIR=outputs/shared/deployed uv run scripts/eval_shared.py \
   --models candidate=outputs/shared/UNIQUE_RUN/s373-c2 --contract 3 \
-  --seed 32001 --maps 8 --baselines --out outputs/reliability/selection
+  --seed 32001 --maps 8 --jobs 4 --reference --out outputs/reliability/selection
 ```
 
 The frozen directory must exactly match the five hashes in
@@ -135,6 +135,11 @@ Use `--contract 2` for old checkpoints; `--no-assist` measures the candidate
 without deterministic recovery assistance. `--scenarios-per-map 3` restricts the
 new evaluator to the first three preparations, but exact historical replay also
 requires compiling with `AW_NAV_VERSION=2`, as `check_flecs.py` does.
+`--jobs` shards whole scenarios across native processes. Every shard prepares the
+same complete map bank and advances the reset-only prefix so map options and
+equipment-dropout draws stay identical. A serial/sharded record comparison guards
+that equivalence. Random-action baselines remain serial because their RNG also
+depends on the duration of preceding missions.
 
 The September 18 run uses independent seeds 373, 474 and 575, 32 maps and
 128/256/512 PPO epochs across the three curricula. The first two stages completed
