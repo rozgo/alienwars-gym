@@ -42,6 +42,7 @@ static int aw_command_fleet_destination(AwCommandFleet*f,const AwMap*m,int i,AwS
     f->unit[i].previous_potential=aw_mission_project(&f->unit[i]);
     if(!automatic)f->home[i]=vehicle.position;
     f->destination[i]=f->route[i].point[f->route[i].count-1];f->automatic[i]=automatic;f->terminal[i]=1;f->status[i]=AW_MISSION_TRAVELLING;f->arrival_handled[i]=0;
+    f->recovery_attempts[i]=0;f->recovery_after[i]=0;
     aw_mission_observe(&f->world);(void)m;return 1;
 }
 static void aw_command_fleet_scout_route(AwCommandFleet*f,const AwMap*m,int start){
@@ -119,10 +120,13 @@ static void aw_command_fleet_continue(AwCommandFleet*f,const AwMap*m){
     /* Retry from the current pose; never respawn a stuck unit. Reuse the
      * full planner's fixed scratch outside the 10 Hz physics tick. */
     for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&!f->world.paused[i]&&!f->unit[i].vehicle.failed&&
-        f->unit[i].control_version>=3&&(f->unit[i].timeout||f->unit[i].max_deadlock_ticks>=100)&&
+        !f->unit[i].arrived&&f->unit[i].control_version>=3&&(f->unit[i].timeout||f->unit[i].deadlock_ticks>=100)&&
         f->world.ticks>=f->recovery_after[i]&&f->recovery_attempts[i]<3){
-        f->recovery_attempts[i]++;f->recovery_after[i]=f->world.ticks+300;
+        int attempts=f->recovery_attempts[i]+1,after=f->world.ticks+300;
         aw_command_fleet_destination(f,m,i,f->destination[i],f->automatic[i]);
+        /* This is the same mission: retain its bounded retry budget. A real
+         * new user/patrol destination starts a fresh budget instead. */
+        f->recovery_attempts[i]=attempts;f->recovery_after[i]=after;
     }
     for(int i=0;i<AW_UNITS;i++)if(f->active[i]&&f->unit[i].arrived&&!f->arrival_handled[i]){
         f->arrivals[i]++;f->recovery_attempts[i]=0;f->status[i]=AW_MISSION_ARRIVED;f->arrival_handled[i]=1;
