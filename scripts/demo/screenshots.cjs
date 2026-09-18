@@ -11,6 +11,7 @@ const scenes=[
  {name:'frozen',query:'seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0',caption:'Frozen terrain with connected roads, cliffs and water.'},
  {name:'tunnels',query:'seed=2279248715&sym=1&a=6&b=6&biome=3&sensors=0&isolate=1',caption:'Underground network isolated from the surface.',frameTunnels:true},
  {name:'sensors',query:'seed=73&sym=1&a=6&b=6&biome=1&sensors=15&sensorsAll=1&unit=7',caption:'Live LiDAR, sonar, RF and depth-camera overlays across the fleet.'},
+ {name:'explorer',query:'seed=73&sym=1&a=6&b=6&biome=1&sensors=15&unit=7&explorer=1',caption:'Official Flecs Explorer inspecting live unit components.',explorer:true},
  {name:'submarine',query:'seed=73&sym=1&a=6&b=6&biome=1&sensors=2&unit=11',caption:'Heavy submarine with sonar and visibility through water.',focus:true}
 ];
 (async()=>{
@@ -30,6 +31,10 @@ const scenes=[
     await page.click('#sensor-focus');
     await page.click('#follow');
     await page.evaluate(()=>{for(let i=0;i<5;i++)Module._aw_camera_control(1);});
+   }
+   if(scene.explorer){
+    const handle=await page.$('#explorer-frame');const frame=await handle.contentFrame();
+    await frame.waitForSelector('.entity-inspector-component');
    }
    await page.$eval('aside',e=>e.scrollTop=0);
    await new Promise(r=>setTimeout(r,1800));

@@ -10,6 +10,7 @@ out.mkdir(parents=True,exist_ok=True)
 with tarfile.open(src/'frontend.tar.gz') as tar:tar.extractall(out,filter='data')
 for name in ['alienwars_live.js','bootstrap.js']:shutil.copyfile(ROOT/'web/explorer'/name,out/name)
 shutil.copyfile(src/'LICENSE',out/'LICENSE')
+shutil.copyfile(src/'README.md',out/'NOTICES.md')
 shutil.copytree(src/'licenses',out/'licenses',dirs_exist_ok=True)
 def patch(name,old,new):
     path=out/name;text=path.read_text();assert old in text,name;path.write_text(text.replace(old,new))

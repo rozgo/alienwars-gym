@@ -97,3 +97,19 @@ The current ECS has fixed topology. Biological births/deaths, organs, cultivatio
 combat and faction warfare remain future work. Terrain cells and cosmetic props
 retain specialized storage. Flecs makes a foundation for that work; this port
 does not claim the design exploration is already implemented.
+
+## Live Explorer and Temperate refresh
+
+The subsequent viewer pass embeds the official Flecs Explorer against the live
+Map Lab ECS. Reflection and REST dispatch are compiled only for this browser
+viewer, with GET-only access. Native ASan/UBSan and WASM checks validate live
+component reads, query results, rejected writes, empty-world teardown, reset and
+world recreation. Both inspection-enabled traces retain the pre-port digests
+above. The ordinary shared-world adapter and five-policy inference checks pass.
+Actual Chrome inspection confirms live entity values and all sixteen query rows.
+
+Temperate now has greener foliage, warmer earth and brighter midtones, with
+restrained blue-green water. Desert and Frozen retain their previous grading;
+unit/sensor overlays retain their own rendering. Gallery images are recaptured
+from Chrome with viewer revision and image hashes in `demo/images/manifest.json`.
+The existing evaluated policies and recorded video remain unchanged.
