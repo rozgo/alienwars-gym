@@ -4,25 +4,43 @@
 <body><header><b>ALIENWARS / SHARED FLEET</b><nav><a href="../maplab/">Map Lab</a><a href="./">Scout observatory</a><a href="https://github.com/rozgo/alienwars-gym">Source</a></nav></header>
 <main><div class="eyebrow">Native PufferLib 5 · PPO · Raylib / WebAssembly Runtime</div><h1>Five learners. One shared world.</h1><p>Ground vehicles, boats, quadcopters, fixed wings and submarines learn local navigation together. A* supplies the global routes. Each vehicle acts on its own scheduled sensors and remembers its own trajectory; movement families share policy weights.</p>
 <div class="facts"><span>12 physical vehicles</span><span>3 training seeds</span><span>645 observation values</span><span>10 Hz decisions / 30 Hz physics</span></div>
-<p id="summary">Loading recorded evaluation…</p><div class="table-wrap"><table><thead><tr><th>Family</th><th>Deployed PPO</th><th>Three-seed range</th><th>Route tracker</th><th>Random actions</th><th>Contacts: PPO / tracker</th></tr></thead><tbody id="results"></tbody></table></div>
-<p class="note">Full mission arrivals, including unavailable requests in the denominator. Contact counts are blocked decisions, not unique impacts. All methods use the same global routes and low-level tracker; PPO and random actions choose local overrides. The reference has no learned avoidance. Wing arrivals are fly-throughs.</p>
-<h2>What learned together</h2><p>Every rollout advances all five learning policies in the same physical worlds. Each family has its own PPO optimizer and value function. Clear-route training progresses to opposing traffic and full missions. These policies learn individual navigation objectives; team tactics and combat are not part of this task.</p>
+<p id="summary">Loading recorded evaluation…</p><p id="release-status"></p><div class="table-wrap"><table><thead><tr><th>Family</th><th id="policy-heading">Deployed PPO</th><th>Three-seed range</th><th id="reference-heading">Route tracker</th><th id="comparison-heading">Random actions</th><th id="contact-heading">Contacts: PPO / tracker</th></tr></thead><tbody id="results"></tbody></table></div>
+<p class="note" id="metric-note">Full mission arrivals, including unavailable requests in the denominator. Contact counts are blocked decisions, not unique impacts. All methods use the same global routes and low-level tracker; PPO and random actions choose local overrides. The reference has no learned avoidance. Wing arrivals are fly-throughs.</p>
+<h2>What learned together</h2><p id="learning-note">Every rollout advances all five learning policies in the same physical worlds. Each family has its own PPO optimizer and value function. Clear-route training progresses to opposing traffic and full missions. These policies learn individual navigation objectives; team tactics and combat are not part of this task.</p>
 <h2>Command the fleet</h2><p>Click a vehicle in <a href="../maplab/">Map Lab</a>, select a family, and right-click a destination. Air and submarine units support explicit height/depth targets. Sensor equipment changes what the policy observes; range overlays only change what you see. Fixed-wing routes include heading and physical turn/climb limits.</p>
 <h2>Measured limits</h2><p id="target"></p><ul id="limitations"></ul><p id="endurance" class="note"></p>
-<footer><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/runs/shared-navigation-2026-09-16.md">Complete run report</a> · <a href="https://github.com/rozgo/alienwars-gym/releases/tag/shared-navigation-2026-09-16">Checkpoints &amp; records</a> · <a href="fleet.json">Recorded results JSON</a> · <a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/LOCAL_NAVIGATION.md">Historical v1 experiment</a></footer></main>
+<footer><a id="report-link" href="https://github.com/rozgo/alienwars-gym/blob/main/docs/runs/shared-navigation-2026-09-16.md">Complete run report</a> · <a id="records-link" href="https://github.com/rozgo/alienwars-gym/releases/tag/shared-navigation-2026-09-16">Checkpoints &amp; records</a> · <a href="fleet.json">Recorded results JSON</a> · <a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/LOCAL_NAVIGATION.md">Historical v1 experiment</a></footer></main>
 <script>
 fetch('fleet.json?v=c8ea114bf6ec2c80').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(data=>{
- const e=data.evaluation,selected=e.results[e.selected_label],reference=e.results.reference,random=e.results.random;
+ const e=data.evaluation,selected=e.results[e.selected_label],reference=e.results.reference;
+ const reliability=data.contract>=3,comparison=e.results[reliability?'deployed':'random'];
+ const metric=reliability?'collision_free_arrival_rate':'requested_arrival_rate';
+ const successes=p=>reliability?p.collision_free_arrivals:p.arrivals;
+ const rate=p=>`${(100*p[metric]).toFixed(1)}%`;
+ const score=p=>`${rate(p)} (${successes(p)}/${p.attempted})`;
  const names=['Ground vehicles','Surface boats','Quadcopters','Fixed wings','Submarines'];
- document.querySelector('#summary').textContent=`${data.training.total_agent_steps.toLocaleString()} agent steps across three independent training seeds on one RTX 4090. Final evaluation: ${e.maps} unseen maps × 3 scenarios, up to 240 simulated seconds per mission. Recorded September 16, 2026.`;
+ document.querySelector('#summary').textContent=`${data.training.total_agent_steps.toLocaleString()} agent steps across three independent training seeds on one RTX 4090. Final evaluation: ${e.maps} unseen maps × ${e.scenarios_per_map||3} scenarios, up to 240 simulated seconds per mission. Recorded ${data.date}.`;
+ if(reliability){
+  document.querySelector('#release-status').textContent=data.deployed?'These checkpoints are deployed in Map Lab.':'Experimental candidate — not deployed. Map Lab retains the prior release; the candidate did not pass the reliability and endurance gates.';
+  document.querySelector('#policy-heading').textContent=data.deployed?'Deployed PPO + recovery':'Candidate PPO + recovery';
+  document.querySelector('#reference-heading').textContent='Tracker + recovery';
+  document.querySelector('#comparison-heading').textContent='Prior release';
+  document.querySelector('#contact-heading').textContent='Contact episodes: PPO / prior';
+  document.querySelector('#metric-note').textContent='Collision-free arrivals, including unavailable requests and conditional return trips in the denominator. Initial trips are also reported separately in the complete report. Deterministic safety and recovery assist both PPO and the neutral tracker; the prior release uses its original local controls. Wing arrivals are fly-throughs.';
+  document.querySelector('#learning-note').textContent='Twelve learning units share worlds with up to four frozen historical actors. Five independent PPO optimizers train family-specific local controls with individual recurrent state. Lessons include opposing traffic, crossings, queues, tunnel approaches and repeated destinations. A* supplies routes; sensor-derived tracks, yielding, braking checks and bounded replanning assist local control. This is navigation training, not competitive faction self-play.';
+ }
  for(let f=0;f<5;f++){
-  const p=selected.families[f],b=reference.families[f],r=random.families[f],rates=e.policy_labels.map(label=>e.results[label].families[f].requested_arrival_rate*100);
+  const p=selected.families[f],b=reference.families[f],r=comparison.families[f],rates=e.policy_labels.map(label=>e.results[label].families[f][metric]*100);
   const tr=document.createElement('tr');
-  for(const text of [names[f],`${(100*p.requested_arrival_rate).toFixed(1)}% (${p.arrivals}/${p.attempted})`,`${Math.min(...rates).toFixed(1)}–${Math.max(...rates).toFixed(1)}%`,`${b.arrivals}/${b.attempted}`,`${r.arrivals}/${r.attempted}`,`${p.contact_decisions.toLocaleString()} / ${b.contact_decisions.toLocaleString()}`]){const td=document.createElement('td');td.textContent=text;tr.appendChild(td);}
+  const contacts=reliability?`${p.collision_events.toLocaleString()} / ${r.collision_events.toLocaleString()}`:`${p.contact_decisions.toLocaleString()} / ${b.contact_decisions.toLocaleString()}`;
+  for(const text of [names[f],score(p),`${Math.min(...rates).toFixed(1)}–${Math.max(...rates).toFixed(1)}%`,rate(b),rate(r),contacts]){const td=document.createElement('td');td.textContent=text;tr.appendChild(td);}
   const strong=document.createElement('strong');strong.textContent=tr.children[1].textContent;tr.children[1].replaceChildren(strong);document.querySelector('#results').appendChild(tr);
  }
- const passed=selected.families.filter(f=>f.requested_arrival_rate>=.95).length;
- document.querySelector('#target').textContent=`Target: 95% arrival in every family. The deployed checkpoint meets that threshold in ${passed} of 5 families on this test set. These remain experimental controllers; training completion does not establish reliable indefinite navigation.`;
+ const passed=selected.families.filter(f=>f[metric]>=.95).length;
+ if(reliability){const wins=selected.families.filter((p,i)=>reference.families[i][metric]>p[metric]).length;document.querySelector('#release-status').textContent+=` The tracker with recovery has higher clean-arrival rates in ${wins} of 5 families on this test.`;}
+ document.querySelector('#target').textContent=`Target: 95% ${reliability?'collision-free ':''}arrival in every family. The selected checkpoint meets that threshold in ${passed} of 5 families on this test set. These remain experimental controllers; training completion does not establish reliable indefinite navigation.`;
+ if(data.report_url)document.querySelector('#report-link').href=data.report_url;
+ if(data.records_url)document.querySelector('#records-link').href=data.records_url;
  for(const text of data.limitations){const li=document.createElement('li');li.textContent=text;document.querySelector('#limitations').appendChild(li);}
  document.querySelector('#endurance').textContent=data.validation.endurance_summary;
 }).catch(()=>{document.querySelector('#summary').textContent='Recorded results could not be loaded.'});
