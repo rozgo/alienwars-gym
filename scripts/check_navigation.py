@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Action-loop contract, shared-world immutability, and native/WASM parity."""
 import json
 import os

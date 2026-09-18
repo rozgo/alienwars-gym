@@ -17,6 +17,14 @@ policies remain navigation policies.
 
 ## Native development
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run
+`uv sync --locked` from the checkout. The committed `.python-version` selects
+Python 3.12.12; core tooling has no third-party Python dependencies. Invoke scripts
+with `uv run scripts/...py`. Image tools use `uv run --group art`; their Pillow
+dependency is locked separately from the core environment. Blender uses its own
+embedded Python. Native simulation and PPO remain C/CUDA; Python orchestrates
+builds, checks, training processes and reports.
+
 Map Lab is the standalone C terrain and shared-fleet policy viewer. See
 [SHARED_NAVIGATION.md](SHARED_NAVIGATION.md) for its five-learner PPO contract. Navigation Lab
 adds a native PufferLib scout task using the same terrain, support and sensors.
@@ -33,14 +41,14 @@ brew install libomp      # Only if missing.
 
 The smoke check builds Map Lab and the upstream Minimal example with ASan/UBSan,
 generates a headless world and runs Minimal for 1,024 steps. Use
-`python3 scripts/check_maplab.py` after the native and web builds for the full
+`uv run scripts/check_maplab.py` after the native and web builds for the full
 native/WASM terrain and navigation checks. See [MAPLAB.md](MAPLAB.md) and
 [WEB.md](WEB.md) for browser validation and publishing.
 
 The native environment interface is `src/pufferenv.h`; `ocean/minimal/minimal.h`
-provides a reference. Run `python3 scripts/check_navigation.py` for action motion,
+provides a reference. Run `uv run scripts/check_navigation.py` for action motion,
 terminal/reset contracts, recurrent-state reset and native/WASM route outcomes.
-Run `python3 scripts/check_flecs.py` for pre-port behavior, ECS ownership, memory
+Run `uv run scripts/check_flecs.py` for pre-port behavior, ECS ownership, memory
 and allocation-free step/reset checks. Shared fleet consumers link
 `ocean/alienwars/flecs_runtime.c` as C, including the CUDA trainer.
 

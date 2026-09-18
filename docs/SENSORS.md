@@ -142,7 +142,7 @@ selected unit and overlay settings, but not equipment edits.
 
 ## Validation and next stages
 
-Run `python3 scripts/check_sensors.py`. Native ASan/UBSan and WASM tests compare
+Run `uv run scripts/check_sensors.py`. Native ASan/UBSan and WASM tests compare
 704 rays against independently intersected terrain triangles across caves,
 roofs, bridges, breaches and slopes. They also cover sea boundaries, bathymetry,
 body hits, mount transforms, RF attenuation, odometry wrap/reset, fixed cadence,

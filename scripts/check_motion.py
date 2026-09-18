@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Validate rate-limited steering without launching a graphics context."""
 import json
 import os

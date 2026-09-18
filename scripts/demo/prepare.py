@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --group art
 """Prepare the 59-second revision from reviewed footage and supplied RL clips."""
 import hashlib
 import json

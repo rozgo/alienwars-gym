@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Local read-only dashboard for native PufferLib JSONL and AlienWars playback."""
 import argparse
 from functools import partial

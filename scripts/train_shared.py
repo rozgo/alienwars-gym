@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Bounded three-seed curriculum using the native five-learner PPO trainer.
 Run in a clean isolated GPU checkout; output retains all configs and weights.
 """

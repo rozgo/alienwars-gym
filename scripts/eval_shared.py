@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Evaluate exact shared-world checkpoint sets against matched baselines."""
 import argparse,hashlib,json,os,subprocess
 from pathlib import Path

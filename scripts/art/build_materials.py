@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --group art
 """Fetch four CC0 Poly Haven scans and pack RGB albedo + height in alpha.
 Build-time only: no external requests are made by the game. Requires Pillow.
 """

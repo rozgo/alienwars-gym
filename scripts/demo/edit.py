@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --group art
 """Assemble and verify the silent showcase for local review."""
 import hashlib
 import json

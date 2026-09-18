@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Validate A* / vehicle constraints in sanitized native C and WebAssembly."""
 from pathlib import Path
 import os,subprocess,json

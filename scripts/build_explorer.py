@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Package the pinned official Flecs Explorer with a read-only live-world bridge."""
 from pathlib import Path
 import hashlib,json,re,shutil,tarfile

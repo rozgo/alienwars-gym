@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Check the custom mesh boundary: size, winding, normals and physical bounds."""
 from pathlib import Path
 import hashlib,json,math,struct

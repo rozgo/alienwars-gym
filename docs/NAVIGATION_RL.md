@@ -69,7 +69,7 @@ Additional training seeds are required before claims of robustness.
 Run from the repository root. The default Map Lab builds remain available.
 
 ```sh
-python3 scripts/check_navigation.py
+uv run scripts/check_navigation.py
 ./build.sh alienwars build/nav-viewer --cpu --rl
 ./build/nav-viewer --env.controller=4 --env.maps=1 --env.map_seed=72
 # Explicit diagnostic controller, using the same collision/motion:
@@ -97,7 +97,7 @@ CUDA_HOME=/usr/local/cuda ./build.sh alienwars build/puffer-alienwars
   --env.task_kind=0 --env.maps=8 \
   --train.total_timesteps=8388608 --train.learning_rate=0.015 \
   --train.min_lr_ratio=0.2 --train.ent_coef=0.001
-python3 scripts/nav_dashboard.py --port=8767
+uv run scripts/nav_dashboard.py --port=8767
 ```
 
 Open `http://127.0.0.1:8767`. The dashboard reads actual streamed
@@ -134,7 +134,7 @@ fallback is used. Flat weights are not optimizer-resume snapshots.
 ```sh
 ./build/nav-viewer outputs/navigation/checkpoints/selected.bin \
   --env.maps=1 --env.map_seed=10001 --env.episode_seed=9001 --base.seed=9002
-python3 scripts/eval_navigation.py \
+uv run scripts/eval_navigation.py \
   --model outputs/navigation/checkpoints/selected.bin \
   --output outputs/navigation/evaluations/unique-run \
   --map-seed=10001 --maps=8 --episode-seed=9001 --sampling-seed=9002 \
@@ -161,7 +161,7 @@ For browser policy playback:
 source .local/emsdk/emsdk_env.sh
 AW_NAV_MODEL=outputs/navigation/checkpoints/selected.bin \
   ./build.sh alienwars --web --rl
-python3 scripts/nav_dashboard.py --port=8767
+uv run scripts/nav_dashboard.py --port=8767
 ```
 
 Open `/viewer/?seed=10001&kind=-1&episode_seed=9001&sampling_seed=9002` on that

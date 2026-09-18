@@ -103,8 +103,8 @@ that every family's weights change and every learner reports finite losses.
 
 ```sh
 ./build.sh alienwars_shared build/puffer-shared
-python3 scripts/train_shared.py --prefix UNIQUE_RUN_NAME
-python3 scripts/check_shared.py
+uv run scripts/train_shared.py --prefix UNIQUE_RUN_NAME
+uv run scripts/check_shared.py
 ```
 
 Run training from a clean isolated GPU checkout. The curriculum script records

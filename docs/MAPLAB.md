@@ -536,8 +536,8 @@ occluded overhead sightline and a clear sightline along the interior.
 ./build/maplab --seed=73 --floor-a=10
 ./build/maplab --headless --seed=73 --symmetry=0 --floor-a=10 --floor-b=3
 ./scripts/build_maplab.sh
-python3 scripts/check_maplab.py
-python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
+uv run scripts/check_maplab.py
+uv run python -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
 `tests/alienwars/diversity_test.c` holds settings constant across multiple

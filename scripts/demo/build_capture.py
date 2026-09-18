@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Build a local filming copy; leave production source and Pages untouched."""
 import hashlib
 import json

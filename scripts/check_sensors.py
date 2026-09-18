@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Renderer-independent sensor contracts, native/WASM parity and CPU cost."""
 import json
 import os

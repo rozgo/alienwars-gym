@@ -115,14 +115,14 @@ transport to Map Lab. No separate demo ECS world is created.
 ## Validation
 
 ```sh
-python3 scripts/check_explorer.py
-python3 scripts/check_flecs.py
-python3 scripts/check_shared.py
-python3 scripts/check_sensors.py
-python3 scripts/check_navigation.py
-python3 scripts/check_vehicles.py
+uv run scripts/check_explorer.py
+uv run scripts/check_flecs.py
+uv run scripts/check_shared.py
+uv run scripts/check_sensors.py
+uv run scripts/check_navigation.py
+uv run scripts/check_vehicles.py
 ./build.sh alienwars build/maplab --cpu --debug
-python3 scripts/build_fleet_site.py
+uv run scripts/build_fleet_site.py
 ```
 
 `check_flecs.py` archives the pre-port source from commit `179cbf02` into ignored

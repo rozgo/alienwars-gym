@@ -15,8 +15,8 @@ dependencies belong in ignored .local/ directories. The editor uses macOS Menlo.
 Run from the repository root:
 
 ```sh
-python3 scripts/demo/build_capture.py
-python3 -m http.server 8769 --bind 127.0.0.1 --directory build/demo-web
+uv run scripts/demo/build_capture.py
+uv run python -m http.server 8769 --bind 127.0.0.1 --directory build/demo-web
 ```
 
 For the current revision, reuse the reviewed revision 3 source footage and
@@ -24,8 +24,8 @@ recapture only the corrected closing card. With that server running:
 
 ```sh
 DEMO_OUT=outputs/demo-v4 node scripts/demo/record.cjs --shot=13-closing
-python3 scripts/demo/prepare.py
-python3 scripts/demo/edit.py
+uv run --group art scripts/demo/prepare.py
+uv run --group art scripts/demo/edit.py
 ```
 
 prepare.py reads the two supplied clips and manifest from the sibling
@@ -44,10 +44,10 @@ footage without overwriting a reviewed cut:
 
 ```sh
 DEMO_OUT=outputs/demo-source node scripts/demo/gallery.cjs
-DEMO_OUT=outputs/demo-source python3 scripts/demo/gallery.py
+DEMO_OUT=outputs/demo-source uv run --group art scripts/demo/gallery.py
 DEMO_OUT=outputs/demo-source node scripts/demo/record.cjs
-DEMO_SOURCE=outputs/demo-source python3 scripts/demo/prepare.py
-python3 scripts/demo/edit.py
+DEMO_SOURCE=outputs/demo-source uv run --group art scripts/demo/prepare.py
+uv run --group art scripts/demo/edit.py
 ```
 
 The build creates an ignored filming copy of the current Map Lab. Production

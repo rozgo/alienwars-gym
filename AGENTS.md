@@ -52,7 +52,11 @@ training stays on the GPU machine.
 
 Use the native C/CUDA API in this checkout. Do not add a legacy PufferLib 2/3
 Python package, Gymnasium wrapper, PyTorch trainer, or global Python environment
-as the default training path. Python here is optional standard-library tooling.
+as the default training path. Run project Python tooling through `uv run`, with
+the committed `.python-version`, `pyproject.toml` and `uv.lock`. Core tools use
+only the standard library; Pillow belongs to the optional `art` dependency group.
+Use `uv run --group art` for image tools, and Blender's embedded interpreter for
+`bpy` scripts. Keep historical run commands/configs unchanged as provenance.
 The website occasionally trails the source: there is no `binding.c` in the
 current minimal template. Inspect headers before following an older tutorial.
 
@@ -118,7 +122,7 @@ Run from the repository root (configuration/resources use relative paths).
 ./scripts/check.sh
 ./build.sh alienwars build/maplab --cpu --debug # terrain viewer, not training
 ./scripts/build_maplab.sh
-python3 scripts/check_maplab.py                # native/WASM parity + navigation
+uv run scripts/check_maplab.py                # native/WASM parity + navigation
 ```
 
 Use `--cpu --debug` with ASan/UBSan for environment development on Linux and

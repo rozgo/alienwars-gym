@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Native/WASM seed parity, map invariants and compiled page checks."""
 import hashlib
 from html.parser import HTMLParser

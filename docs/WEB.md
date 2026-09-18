@@ -15,7 +15,7 @@ GPU machine; the public Training Observatory serves recorded runs and evaluation
 - Authored interface: `web/maplab/shell.html`
 - Authored entry point: `docs/index.html`
 - Build: `scripts/build_maplab.sh`
-- Check: `python3 scripts/check_maplab.py`
+- Check: `uv run scripts/check_maplab.py`
 - Compiled output: `docs/maplab/index.html`, `maplab.js`, `maplab.wasm`,
   and `build.json`
 
@@ -36,7 +36,7 @@ training JSONL under `logs/alienwars/` and final evaluation JSONL under
 `outputs/navigation/evaluations/final-s173/` when rebuilding recorded data.
 
 ```sh
-python3 scripts/build_navigation_site.py
+uv run scripts/build_navigation_site.py
 ```
 
 Generated `docs/navigation/` includes the small evaluated policy in the
@@ -73,8 +73,8 @@ No Python ML packages or npm application dependencies are needed.
 ```sh
 ./build.sh alienwars build/maplab --cpu --debug
 ./scripts/build_maplab.sh
-python3 scripts/check_maplab.py
-python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
+uv run scripts/check_maplab.py
+uv run python -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
 Open <http://127.0.0.1:8781/>. The checker compares native and WASM generation,
@@ -90,7 +90,7 @@ and page units, and handles Chrome's Ctrl+wheel pinch without page zoom or a
 second GLFW wheel update. `camera_zoom.h` applies logarithmic scale changes with
 resistance at 16/280 and at most about 13% elastic stretch, then settles to the
 limit when input stops. Focus/reset controls clear pending zoom. Run
-`python3 scripts/check_camera.py` for input-boundary and native/WASM zoom checks;
+`uv run scripts/check_camera.py` for input-boundary and native/WASM zoom checks;
 also review drag release and wheel behavior in Chrome.
 
 ## Publish from main
@@ -101,7 +101,7 @@ documentation. Other build products remain ignored.
 
 ```sh
 ./scripts/build_maplab.sh
-python3 scripts/check_maplab.py
+uv run scripts/check_maplab.py
 git add docs/maplab/index.html docs/maplab/maplab.js docs/maplab/maplab.wasm docs/maplab/build.json
 git diff --cached --check
 git commit -m "Publish verified Map Lab build"

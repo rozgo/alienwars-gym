@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Build the trained Navigation Lab and a static, recorded Training Observatory."""
 import hashlib
 import json

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --group art
 """Compose twelve real world renders into two readable four-second boards."""
 import json
 import os

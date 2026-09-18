@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Build Map Lab with all five hash-verified shared-world controllers."""
 import hashlib,json,os,subprocess,urllib.request
 from pathlib import Path

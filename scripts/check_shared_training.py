@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Audit a completed native shared curriculum against its exact checkpoints."""
 import argparse,hashlib,json,math,struct
 from pathlib import Path

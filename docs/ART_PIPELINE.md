@@ -57,14 +57,14 @@ resetting the camera, world or simulation.
 
 ## Validation
 
-- `python3 scripts/art/check_assets.py`: packed file lengths/hashes, finite unit
+- `uv run scripts/art/check_assets.py`: packed file lengths/hashes, finite unit
   normals, triangle winding, material attributes and static and animated physical envelopes.
-- `python3 scripts/check_shared.py`: native/ASan and WASM route, collision,
+- `uv run scripts/check_shared.py`: native/ASan and WASM route, collision,
   command, allocation and five-policy inference contracts.
 - `./build.sh alienwars build/maplab-art --cpu` then
   `./build/maplab-art --seed=73 --biome=1 --frames=5`: bounded native GL smoke,
   including asset loading, shaders, rendering and cleanup.
-- `python3 scripts/build_fleet_site.py`: packages the same five verified
+- `uv run scripts/build_fleet_site.py`: packages the same five verified
   evaluated checkpoints with the art kit.
 - Real Chrome review: three biomes, close-ups, through-terrain bodies, sensor
   overlays, tunnel isolation, motion/pause, regeneration and Play view.

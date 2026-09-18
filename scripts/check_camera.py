@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Check browser input boundaries and native/WASM zoom without rendering."""
 import json
 import os

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Shared mission, physical planner and adapter contracts in native C / WASM."""
 from pathlib import Path
 import json,os,subprocess

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Compare Flecs to the saved pre-port runtime and audit storage/lifecycle.
 
 The baseline is archived into ignored build storage, never a user worktree.

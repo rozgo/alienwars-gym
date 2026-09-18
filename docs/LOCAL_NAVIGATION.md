@@ -97,7 +97,7 @@ receive the same sequence of evaluation scenarios:
 clang -O2 -std=c11 -I. -Isrc -Ivendor -Iraylib-5.5_linux_amd64/include \
   ocean/alienwars_local/local_eval.c ocean/alienwars_local/local_api.c -lm -o build/local-eval
 ./build/local-eval CHECKPOINT.bin 0 20001 8 128 1
-python3 scripts/check_vehicles.py
+uv run scripts/check_vehicles.py
 ```
 
 The generic 24-beam/visible-neighbor controller input is separate from the

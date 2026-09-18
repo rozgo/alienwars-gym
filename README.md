@@ -103,7 +103,11 @@ Open **[Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** — no instal
 
 ## Run locally
 
-Run from the repository root. On macOS, use the Xcode command-line tools and
+Run from the repository root. Install [uv](https://docs.astral.sh/uv/getting-started/installation/),
+then run `uv sync --locked`. `.python-version` pins Python 3.12.12; uv manages its
+isolated tooling environment. Core build/check/training-launch scripts use only
+the standard library. Use `uv sync --locked --group art` for the optional Pillow
+image tools; Blender scripts run inside Blender. On macOS, use the Xcode command-line tools and
 Homebrew `libomp`. Raylib 5.5 downloads on first use.
 
 ```sh
@@ -118,17 +122,17 @@ For the browser build, install the isolated Emscripten SDK in the
 [web guide](docs/WEB.md), then:
 
 ```sh
-python3 scripts/build_fleet_site.py  # five verified PPO checkpoints
-python3 scripts/check_maplab.py
-python3 scripts/check_shared.py
-python3 -m http.server 8781 --bind 127.0.0.1 --directory docs
+uv run scripts/build_fleet_site.py  # five verified PPO checkpoints
+uv run scripts/check_maplab.py
+uv run scripts/check_shared.py
+uv run python -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
 Open <http://127.0.0.1:8781/>. Training runs on an NVIDIA CUDA machine:
 
 ```sh
 ./build.sh alienwars_shared build/puffer-shared
-python3 scripts/train_shared.py --prefix UNIQUE_RUN_NAME
+uv run scripts/train_shared.py --prefix UNIQUE_RUN_NAME
 ```
 
 See the [shared-world training contract](docs/SHARED_NAVIGATION.md) and

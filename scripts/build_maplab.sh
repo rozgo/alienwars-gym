@@ -16,7 +16,7 @@ else
     rm -f docs/maplab/maplab.data
 fi
 chmod 644 docs/maplab/index.html docs/maplab/maplab.js docs/maplab/maplab.wasm
-python3 - <<'PY'
+uv run python - <<'PY'
 import hashlib, json, pathlib, subprocess
 paths=['resources/alienwars/art','scripts/art','build.sh','ocean/alienwars','vendor/flecs','vendor/flecs-explorer','web/explorer','scripts/build_explorer.py','web/maplab','scripts/build_maplab.sh','scripts/build_fleet_site.py','web/training']
 dirty=bool(subprocess.check_output(['git','status','--porcelain','--',*paths]))
@@ -32,4 +32,4 @@ pathlib.Path('docs/maplab/build.json').write_text(json.dumps(report,indent=2)+'\
 print(json.dumps(report,indent=2))
 PY
 
-python3 scripts/build_explorer.py
+uv run scripts/build_explorer.py

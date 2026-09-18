@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Stratified checkpoint/random/greedy evaluation with matched episode lists."""
 import argparse
 import hashlib

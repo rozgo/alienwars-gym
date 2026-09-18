@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Check native/WASM live reflection and fixed-slot behavior with viewer addons."""
 from pathlib import Path
 import subprocess
