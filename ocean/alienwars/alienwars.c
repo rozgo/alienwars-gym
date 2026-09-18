@@ -35,8 +35,8 @@ AW_EXPORT const char*aw_fleet_snapshot(void){
     static char json[8192];int n=snprintf(json,sizeof(json),"{\"seed\":%u,\"contract\":%d,\"ticks\":%d,\"trained\":%d,\"units\":[",world.seed,AW_NAV_VERSION,fleet.world.ticks,fleet.trained);
     if(fleet.ready)for(int i=0;i<AW_UNITS;i++){
         const AwMissionAgent*a=&fleet.unit[i];n+=snprintf(json+n,sizeof(json)-n,
-          "%s{\"id\":%d,\"family\":%d,\"active\":%d,\"arrivals\":%d,\"contacts\":%d,\"collisions\":%d,\"remaining\":%.3f,\"timeout\":%d,\"failed\":%d,\"replans\":%d,\"deadlocks\":%d,\"assists\":%d,\"position\":[%.3f,%.3f,%.3f]}",
-          i?",":"",i,a->vehicle.family,fleet.active[i],fleet.arrivals[i],fleet.total_contacts[i],fleet.total_collisions[i],a->remaining,a->timeout,a->vehicle.failed,a->replans,a->deadlock_events,a->safety_interventions,a->vehicle.position.x,a->vehicle.position.y,a->vehicle.position.z);
+          "%s{\"id\":%d,\"family\":%d,\"active\":%d,\"arrivals\":%d,\"contacts\":%d,\"collisions\":%d,\"terrain_contacts\":%d,\"unit_contacts\":%d,\"global_retries\":%d,\"confined_ticks\":%d,\"remaining\":%.3f,\"timeout\":%d,\"failed\":%d,\"replans\":%d,\"deadlocks\":%d,\"assists\":%d,\"position\":[%.3f,%.3f,%.3f]}",
+          i?",":"",i,a->vehicle.family,fleet.active[i],fleet.arrivals[i],fleet.total_contacts[i],fleet.total_collisions[i],fleet.total_terrain[i],fleet.total_units[i],fleet.recovery_attempts[i],a->deadlock_ticks,a->remaining,a->timeout,a->vehicle.failed,a->replans,a->deadlock_events,a->safety_interventions,a->vehicle.position.x,a->vehicle.position.y,a->vehicle.position.z);
     }
     snprintf(json+n,sizeof(json)-n,"]}");return json;
 }
