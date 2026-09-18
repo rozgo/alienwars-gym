@@ -306,6 +306,18 @@ endurance checks. Keep source/checkpoint contracts exact (645 inputs, 4/3/3/3
 heads); do not preload the historical 96-input policies into this viewer. Group
 commands are independent destinations, not learned formation coordination.
 
+Navigation contract 3 adds `navigation_tracking.h`, `navigation_control.h` and
+`navigation_recovery.h`. Tracks must come from actual timestamped RF or visible
+range/depth returns; never substitute hidden neighbor pose or velocity. Preserve
+body-center uncertainty, physical braking probes, forward-only wing motion and
+bounded allocation-free recovery. This assistance is deterministic, separate
+from learned PPO behavior. Use explicit checkpoint contract metadata despite
+unchanged tensor dimensions. Measure collision-free requested arrivals, contact
+episodes, unavailable routes, yielding and physical deadlocks separately. Keep
+the selection/final-world split in `docs/NAVIGATION_RELIABILITY.md`. Historical
+traffic is pinned in `config/alienwars_shared_frozen.json` and occupies extra
+physical slots, never learner PPO rows. Completed training is not a release gate.
+
 Version 12 shapes the global layout inside a seeded horizontal elliptical envelope.
 Keep the road search and lowland corridors inside that footprint before pinning
 heights; do not crop finished routes to an oval. Preserve noisy coastlines, lakes,
