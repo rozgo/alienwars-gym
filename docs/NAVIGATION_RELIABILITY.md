@@ -30,6 +30,10 @@ Do not assemble untested mixtures of families from different runs. Freeze that
 choice before opening final-world results. Report all three seeds on final worlds,
 and separate initial missions (fixed requested denominator) from conditional
 return missions so greater repeated-trip throughput cannot hide poor first trips.
+After freezing the choice, also stress the selected set on 42001–42004 with the
+September 16 seed-575 historical traffic set (`s575-selected`), which is absent
+from the current learners' traffic pool. This secondary check is reported
+separately; it does not influence checkpoint selection.
 
 ## Work sequence
 
