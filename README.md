@@ -7,7 +7,7 @@ simulation, sensing and policy inference in your browser.
 **[Explore Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** ·
 [Live Flecs Explorer](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&explorer=1) ·
 [Watch the showcase](https://rozgo.github.io/alienwars-gym/demo/) ·
-[Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html) ·
+[Navigation reliability results](https://rozgo.github.io/alienwars-gym/training/reliability.html) ·
 [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
 
 [![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=d509f2556754)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
@@ -37,9 +37,10 @@ presence. **Play view** expands the battlefield and tucks away the inspector.
 [![Biological scout among alien fungi in the live Temperate world](docs/demo/images/biological.webp?v=75d1951920c2)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&view=play&sensors=0)
 
 The [art pipeline](docs/ART_PIPELINE.md) includes reproducible Blender sources and
-asset licenses. Cultivation and combat remain planned. Rendering changes preserve
-the trained navigation policies; generator-v13 terrain has not been reevaluated
-for the historical training scores.
+asset licenses. Cultivation and combat remain planned. The public demo keeps its original trained navigation policies. The
+[September 18 reliability evaluation](docs/runs/navigation-reliability-2026-09-18.md)
+compares those policies with new candidates on generator-13 terrain; historical
+scores remain tied to their original worlds.
 
 ## Twelve vehicles. Five learning families. One shared world.
 
@@ -57,17 +58,21 @@ Select a unit or family and issue destinations, then follow their progress.
 | --- | --- |
 | [![Isolated volumetric tunnel network with ramps and underground chambers](docs/demo/images/tunnels.webp?v=09fba0d99610)](https://rozgo.github.io/alienwars-gym/maplab/?seed=2279248715&biome=3&isolate=1&sensors=0) | [![Heavy submarine visible through water with its sonar range](docs/demo/images/submarine.webp?v=770b0298e4d5)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=11&sensors=2) |
 
-The [recorded evaluation](docs/runs/shared-navigation-2026-09-16.md) covers three
-training seeds and 49.5 million steps. Local navigation remains experimental;
-combat and tactical coordination are future work.
+The [new reliability experiment](docs/runs/navigation-reliability-2026-09-18.md)
+adds sensor-history anticipation, yielding, braking checks and bounded recovery,
+with another 49.5 million steps across three seeds and frozen historical traffic.
+**The candidate failed the reliability and endurance gates, so it is not deployed.**
+The [public checkpoint release](docs/runs/shared-navigation-2026-09-16.md) remains
+available. Local navigation is experimental; combat and tactics are future work.
 
 The long-term goal is warfare between alien factions whose armies are **grown**:
 prepare soil and water nurseries, seed and nurture organisms, then harvest
 ammunition and awaken living craft. Humans do not exist in this world. Cultivation
 and combat are planned; see the [biological warfare direction](docs/BIOLOGICAL_WARFARE.md)
 and the proposed [Cultivate and Defend slice](docs/CULTIVATION_SLICE.md).
-The next RL iteration will explicitly consider implementing self-play; see the
-[self-play development direction](docs/SHARED_NAVIGATION.md#self-play-and-faction-warfare).
+Navigation training now includes frozen historical traffic. Competitive faction
+self-play remains planned for warfare objectives; every RL iteration should
+revisit it. See the [self-play direction](docs/SHARED_NAVIGATION.md#self-play-and-faction-warfare).
 
 ## See what the agents sense
 

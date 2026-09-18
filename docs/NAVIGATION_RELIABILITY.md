@@ -1,6 +1,8 @@
 # Fleet navigation reliability iteration
 
-Status: implementation and measurement in progress, September 18, 2026.
+Status: implementation, three-seed training and evaluation completed, September 18,
+2026. **Reliability gate failed; candidate policies are not deployed.** See the
+[measured report](runs/navigation-reliability-2026-09-18.md).
 
 The deployed contract-2 policies were trained on generator 10 and remain the
 published baseline. This iteration uses generator 13, including its coast-shaped
@@ -126,8 +128,10 @@ traffic, not competitive self-play.
 On diagnostic seeds 31001–31008, the exact deployed baseline at `463b3789` had
 collision-free requested arrival rates of 55.6% ground, 63.9% boat, 91.7% quad,
 72.9% fixed wing and 73.6% submarine. These are measurements on the current
-terrain, not the older release's original validation scores. Candidate results
-and three-seed training are pending; no new policy is approved for deployment.
+terrain, not the older release's original validation scores. The final
+[report](runs/navigation-reliability-2026-09-18.md) records all three candidates,
+the matched reference, assistance ablation and unfamiliar traffic. No new policy
+is approved for deployment.
 
 ## Reproduction
 
@@ -166,10 +170,10 @@ sensor-fusion and braking fixes. `train_shared.py --start-stage 2 --resume
 PARENT/runs.json` starts a fresh PPO optimizer from the exact stage-1 weights,
 retaining per-stage source commits and checkpoint hashes. It does not claim to
 resume optimizer state. Every running GPU checkout remains immutable. There are
-49,545,216 planned retained learner agent steps; the separate smoke runs and
+49,545,216 completed retained learner agent steps; the separate smoke runs and
 interrupted final-stage attempts are excluded.
 
-Validation completed so far: native ASan/UBSan and WASM agree on hull draft,
+Validation completed: native ASan/UBSan and WASM agree on hull draft,
 head-on passage, parked-obstacle detours, terminal/reset behavior, repeated goals,
 frozen inference and absence of reset/step allocations. Both native and WASM
 historical Flecs traces match their pre-port snapshots. These checks establish

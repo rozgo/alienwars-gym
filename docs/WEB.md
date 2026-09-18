@@ -47,6 +47,18 @@ The live local dashboard still uses its Python API; the public dashboard uses
 relative static data URLs and identifies its recorded runs. Optional replay
 queries remain available. Navigation runtime URLs carry their artifact digests.
 
+The September 18 fleet candidate did not pass its navigation release gates.
+Publish its measurements independently of the deployed checkpoint manifest:
+
+```sh
+uv run scripts/build_fleet_report.py \
+  docs/runs/navigation-reliability-2026-09-18.json --name reliability
+```
+
+This generates `docs/training/reliability.html` and its static JSON without
+rebuilding Map Lab or replacing its five public policies. The page identifies
+candidate results explicitly; experimental weights are prerelease assets.
+
 `docs/demo/` is an authored video page with a small poster. Its MP4 is a GitHub
 Release asset, alongside the selected checkpoint, configuration and training
 data bundle. Raw videos, logs and checkpoints remain outside Git history.

@@ -1,6 +1,8 @@
 # Shared-world navigation
 
-The deployed viewer uses contract 2, documented below. Development training now
+The deployed viewer uses contract 2, documented below. The
+[September 18 candidate evaluation](runs/navigation-reliability-2026-09-18.md) failed
+the reliability/endurance gates and did not replace those checkpoints. Development training now
 uses **contract 3**: gentler steering, sensor-history anticipation, bounded
 recovery, eight traffic preparations, repeated destinations and up to four frozen
 historical actors outside the learner batch. See

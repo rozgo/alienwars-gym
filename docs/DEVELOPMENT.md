@@ -2,6 +2,13 @@
 
 ## Next development slice
 
+The [navigation reliability iteration](runs/navigation-reliability-2026-09-18.md)
+implemented sensor-derived traffic anticipation and bounded recovery, then trained
+all five families across three seeds. It did not pass the reliability/endurance
+gates; candidate checkpoints remain experimental and public policies are unchanged.
+Further navigation work should focus on the recorded ground, submarine and
+aircraft conflicts before expanding tactical behavior.
+
 The fleet port to the [Flecs C runtime](FLECS.md) is validated, including native/WASM
 behavior and a five-family training smoke. The [first biological visual slice](ART_PIPELINE.md)
 adds an authored asset kit and terrain/water detail without changing the policy contract.
