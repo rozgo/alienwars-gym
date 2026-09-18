@@ -112,3 +112,6 @@ Build metadata includes the Flecs revision and hashes alongside Raylib, compiler
 and source provenance. GPU validation must include a bounded five-family update,
 finite metrics/weights, unchanged-checkpoint loading, and the flag-zero trainer
 path before publishing a runtime release.
+
+The [initial port report](runs/flecs-port-2026-09-17.md) records the completed
+native/WASM comparisons, Linux/CUDA smoke runs, browser checks and memory cost.

@@ -1,0 +1,441 @@
+{
+  "date": "2026-09-17",
+  "runtime_source_commit": "eebca7fe939210855ea0f45af9c3f38f4d37ad10",
+  "baseline_commit": "179cbf02af170937521aab492a6104699ce23e38",
+  "flecs": {
+    "repository": "https://github.com/SanderMertens/flecs",
+    "version": "4.1.6",
+    "commit": "fb55f3c25660425cfe1bc4cf5e6bff8b3f18a9b8",
+    "sha256": {
+      "flecs.c": "6005392eb13c0f3c7abdecb2f85271e50934f63919afebf0bbe85f6dfc7320d6",
+      "flecs.h": "526036a5a41678e2a43a3cb835e9eaa70fd1993868b1978950c0d275752f69b1",
+      "LICENSE": "5f89f3edd5d1e458cd48509818e23b57d85869f7d57d0ebe31bcfd3a73e5dd60"
+    }
+  },
+  "local_validation": {
+    "baseline_commit": "179cbf02af170937521aab492a6104699ce23e38",
+    "source_commit": "12af82624df47d23d5eea08ff5cabd63885180e1",
+    "source_dirty": false,
+    "flecs": {
+      "repository": "https://github.com/SanderMertens/flecs",
+      "version": "4.1.6",
+      "commit": "fb55f3c25660425cfe1bc4cf5e6bff8b3f18a9b8",
+      "sha256": {
+        "flecs.c": "6005392eb13c0f3c7abdecb2f85271e50934f63919afebf0bbe85f6dfc7320d6",
+        "flecs.h": "526036a5a41678e2a43a3cb835e9eaa70fd1993868b1978950c0d275752f69b1",
+        "LICENSE": "5f89f3edd5d1e458cd48509818e23b57d85869f7d57d0ebe31bcfd3a73e5dd60"
+      }
+    },
+    "trace": {
+      "native": {
+        "result": "TRACE worlds=2 steps=1200 resets=12 digest=4c97cac7",
+        "baseline_seconds": [
+          0.729883,
+          0.711432,
+          0.711108
+        ],
+        "flecs_seconds": [
+          0.700237,
+          0.700657,
+          0.698961
+        ],
+        "median_time_ratio": 0.9842641320604077
+      },
+      "wasm": {
+        "result": "TRACE worlds=2 steps=1200 resets=12 digest=1e3a8cff",
+        "baseline_seconds": [
+          1.087641,
+          1.067969,
+          1.069585
+        ],
+        "flecs_seconds": [
+          1.073428,
+          1.072679,
+          1.074103
+        ],
+        "median_time_ratio": 1.0035929823249206
+      }
+    },
+    "lifecycle": {
+      "native": {
+        "result": "FLECS_WORLD worlds=24 slots=16 component_ownership=PASS independent_worlds=PASS stable_slots=PASS no_step_reset_allocations=PASS teardown=PASS",
+        "metrics": "FLECS_MEMORY world_struct=56448 heap_per_world=256139 peak_heap=6149168 reset_tick_seconds=0.123116"
+      },
+      "wasm": {
+        "result": "FLECS_WORLD worlds=24 slots=16 component_ownership=PASS independent_worlds=PASS stable_slots=PASS no_step_reset_allocations=PASS teardown=PASS",
+        "metrics": "FLECS_MEMORY world_struct=56416 heap_per_world=229107 peak_heap=5500384 reset_tick_seconds=0.139971"
+      }
+    }
+  },
+  "gpu_validation": {
+    "source_commit": "eebca7fe939210855ea0f45af9c3f38f4d37ad10",
+    "source_dirty": false,
+    "commands": [
+      {
+        "name": "gather-build",
+        "argv": [
+          "/usr/local/cuda/bin/nvcc",
+          "-std=c++17",
+          "-I.",
+          "tests/alienwars/joint_gather_test.cu",
+          "-o",
+          "build/joint-gather-flecs"
+        ],
+        "exit_code": 0,
+        "process_seconds": 0.9589747302234173
+      },
+      {
+        "name": "gather",
+        "argv": [
+          "build/joint-gather-flecs"
+        ],
+        "exit_code": 0,
+        "process_seconds": 0.1665991200134158
+      },
+      {
+        "name": "lifecycle-build",
+        "argv": [
+          "clang",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-I.",
+          "tests/alienwars/flecs_world_test.c",
+          "ocean/alienwars/flecs_runtime.c",
+          "-lm",
+          "-o",
+          "build/flecs-world-linux"
+        ],
+        "exit_code": 0,
+        "process_seconds": 31.476774803362787
+      },
+      {
+        "name": "lifecycle",
+        "argv": [
+          "build/flecs-world-linux"
+        ],
+        "exit_code": 0,
+        "process_seconds": 0.21161141525954008
+      },
+      {
+        "name": "minimal-build",
+        "argv": [
+          "bash",
+          "build.sh",
+          "minimal",
+          "build/puffer-minimal-flecs"
+        ],
+        "exit_code": 0,
+        "process_seconds": 5.867548529990017
+      },
+      {
+        "name": "joint",
+        "argv": [
+          "build/puffer-shared",
+          "train",
+          "--base.seed=6373",
+          "--base.run_id=flecs-joint",
+          "--base.checkpoint_dir=outputs/flecs-validation/run-20260917/checkpoints",
+          "--base.log_dir=outputs/flecs-validation/run-20260917/logs",
+          "--base.async=0",
+          "--base.eval_episodes=0",
+          "--train.total_timesteps=147456",
+          "--env.maps=2",
+          "--env.map_seed=301",
+          "--env.curriculum=1",
+          "--base.load_model_dir=outputs/flecs-validation/models",
+          "--train.learning_rate=0.004",
+          "--train.ent_coef=0.008"
+        ],
+        "exit_code": 0,
+        "process_seconds": 10.02510823123157
+      },
+      {
+        "name": "single",
+        "argv": [
+          "build/puffer-minimal-flecs",
+          "train",
+          "--base.seed=6373",
+          "--base.run_id=flecs-single",
+          "--base.checkpoint_dir=outputs/flecs-validation/run-20260917/checkpoints",
+          "--base.log_dir=outputs/flecs-validation/run-20260917/logs",
+          "--base.async=0",
+          "--base.eval_episodes=0",
+          "--train.total_timesteps=8192",
+          "--vec.total_agents=128",
+          "--vec.num_buffers=2",
+          "--vec.num_threads=2",
+          "--vec.num_policies=1",
+          "--vec.train_all_policies=0",
+          "--train.horizon=16",
+          "--train.minibatch_size=128",
+          "--train.replay_ratio=1"
+        ],
+        "exit_code": 0,
+        "process_seconds": 0.5354277696460485
+      }
+    ],
+    "runs": {
+      "joint": {
+        "agent_steps": 147456,
+        "metrics_finite": true,
+        "last_metrics": {
+          "type": "metrics",
+          "SPS": 50969.53034,
+          "agent_steps": 147456,
+          "uptime": 3.197785854,
+          "epoch": 8,
+          "env/perf": 1,
+          "env/score": 4.299791336,
+          "env/contacts": 1.8125,
+          "env/blocked": 64.625,
+          "env/family_0_success": 0,
+          "env/family_1_success": 1,
+          "env/family_2_success": 1,
+          "env/family_3_success": 0,
+          "env/family_4_success": 1,
+          "env/n": 16,
+          "policy_0/loss/policy": 0.002599759959,
+          "policy_0/loss/value": 0.01385445055,
+          "policy_0/loss/entropy": 1.159712434,
+          "policy_0/loss/total": 0.02103095874,
+          "policy_0/loss/old_kl": 0.001571444096,
+          "policy_0/loss/kl": 0.0007910033455,
+          "policy_0/loss/clipfrac": 0.006510416977,
+          "policy_0/importance": 0.9992195964,
+          "policy_1/loss/policy": 0.01408160478,
+          "policy_1/loss/value": 0.03096977994,
+          "policy_1/loss/entropy": 1.645235538,
+          "policy_1/loss/total": 0.06285927445,
+          "policy_1/loss/old_kl": 0.001658763154,
+          "policy_1/loss/kl": 0.0008613923565,
+          "policy_1/loss/clipfrac": 0.00634765625,
+          "policy_1/importance": 0.9992026687,
+          "policy_2/loss/policy": 0.08839499205,
+          "policy_2/loss/value": 0.008106197231,
+          "policy_2/loss/entropy": 0.6870777011,
+          "policy_2/loss/total": 0.09911075979,
+          "policy_2/loss/old_kl": -0.0002377506753,
+          "policy_2/loss/kl": 7.967307465e-05,
+          "policy_2/loss/clipfrac": 0,
+          "policy_2/importance": 1.000317454,
+          "policy_3/loss/policy": 0.002113504568,
+          "policy_3/loss/value": 0.007290120237,
+          "policy_3/loss/entropy": 0.5830948353,
+          "policy_3/loss/total": 0.01202898659,
+          "policy_3/loss/old_kl": -0.0002691580739,
+          "policy_3/loss/kl": 0.000362654333,
+          "policy_3/loss/clipfrac": 0.003662109375,
+          "policy_3/importance": 1.000631809,
+          "policy_4/loss/policy": -0.001043983386,
+          "policy_4/loss/value": 0.001864179038,
+          "policy_4/loss/entropy": 0.8586182594,
+          "policy_4/loss/total": -0.004184571095,
+          "policy_4/loss/old_kl": 0.0001264181628,
+          "policy_4/loss/kl": 0.000249278004,
+          "policy_4/loss/clipfrac": 0.0008138021221,
+          "policy_4/importance": 1.000122905,
+          "loss/policy": 0.01162784547,
+          "loss/value": 0.01356263831,
+          "loss/entropy": 1.070330501,
+          "loss/total": 0.03019047529,
+          "loss/old_kl": 0.0007744840696,
+          "loss/kl": 0.0005425002892,
+          "loss/clipfrac": 0.004028320312,
+          "importance": 0.9997681379,
+          "util/gpu_percent": 21,
+          "util/vram_used_gb": 4.734802246,
+          "util/vram_total_gb": 23.48358154,
+          "util/cpu_mem_gb": 0.6968193054,
+          "perf/rollout": 0.3223834038,
+          "perf/eval_model": 0.006638720632,
+          "perf/eval_env": 0.2868939936,
+          "perf/eval_copy": 0.00333684776,
+          "perf/train_misc": 7.782399916e-05,
+          "perf/train_model": 0.0344616957,
+          "perf/train": 0.03453952074
+        },
+        "families": [
+          {
+            "family": 0,
+            "bytes": 730624,
+            "final_sha256": "b8a49b8309030f6af684d5158b627ae57ada70bd6428cf86bc032c2286a1db69",
+            "finite_weights": true,
+            "initial_sha256": "169e609c77cf7077f69611a07c1c3d373638212936ddbc8d3fab302b67f00e33",
+            "warm_initialization_exact": true,
+            "weights_changed": true
+          },
+          {
+            "family": 1,
+            "bytes": 730624,
+            "final_sha256": "4b51e5785f08ea56f70d8d1e07315c504c62691a339923b6ac6e40d051462414",
+            "finite_weights": true,
+            "initial_sha256": "b9a3cbe122f7e776311b97f50c5353e64ab326342b828681729bedf8a1f1423c",
+            "warm_initialization_exact": true,
+            "weights_changed": true
+          },
+          {
+            "family": 2,
+            "bytes": 730624,
+            "final_sha256": "063d5e97d52fdaf6412b85b698fff8d9cc900bbd724f4201d60ed5fb6d668a88",
+            "finite_weights": true,
+            "initial_sha256": "f21577ae179aa246b0ed04a845d88a4696c937c83d58607e7c90f057fda70c9d",
+            "warm_initialization_exact": true,
+            "weights_changed": true
+          },
+          {
+            "family": 3,
+            "bytes": 730624,
+            "final_sha256": "d2bcbf01a29c078b4079b94ce65deba0b166710210a641bdc7ce99220f1bfcbd",
+            "finite_weights": true,
+            "initial_sha256": "559b9527e87b75a38833566c0d2b07c16b406ec0e8dcb9506f9d6f6c05f0ff5f",
+            "warm_initialization_exact": true,
+            "weights_changed": true
+          },
+          {
+            "family": 4,
+            "bytes": 730624,
+            "final_sha256": "cdb54071897c4d2c01ab57e65e16e724aa0835146eb256a8053c779bea1b206a",
+            "finite_weights": true,
+            "initial_sha256": "68cff730a9e6b55f0ac02de0660bc47749db119256f8a8399d186b78efe235ce",
+            "warm_initialization_exact": true,
+            "weights_changed": true
+          }
+        ],
+        "resolved_config": "\n[base]\nenv_name = alienwars_shared\ngpu_offset = 0\nprofile = 0\ncheckpoint_dir = outputs/flecs-validation/run-20260917/checkpoints\nlog_dir = outputs/flecs-validation/run-20260917/logs\ncheckpoint_interval = 100\neval_episodes = 0\neval_agents = -1\nload_model_path = None\nload_enemy_model_path = None\nload_model_dir = outputs/flecs-validation/models\nrun_id = flecs-joint\nresult_fd = 0\ncudagraphs = 1\nseed = 6373\nreset_every_horizon = 0\nasync = 0\n\n[vec]\ntotal_agents = 288\nnum_buffers = 2\nnum_threads = 8\nnum_policies = 5\ntrain_all_policies = 1\nhist_policy_hidden_size = 0\nhist_policy_num_layers = 0\nhist_policy_percent = 0\n\n[selfplay]\nenabled = 0\nmax_size = 16\nseed = 42\nopp_timeout_steps = 500_000_000\neval_pool_size = 8\neval_games = 0\neval_bot_games = 0\neval_bots = 0\neval_bot_envs = 8192\neval_bot_threads = 0\n\n[bot_eval]\n\n[env]\ndr = 0\nnum_agents = 12\nnum_bots = 0\nmaps = 2\nmap_seed = 301\ncurriculum = 1\n\n[policy]\nhidden_size = 128\nnum_layers = 2\n\n[train]\ngpus = 1\ntotal_timesteps = 147456\nlearning_rate = 0.004\nanneal_lr = 1\nmin_lr_ratio = 0.25\ngamma = 0.999\ngae_lambda = 0.95\nreplay_ratio = 4\nclip_coef = 0.2\nvf_coef = 2.0\nvf_clip_coef = 0.2\nmax_grad_norm = 1.5\nent_coef = 0.008\nanneal_ent_coef = 0\nmin_ent_coef_ratio = 0.1\nmomentum = 0.95\nminibatch_size = 768\nhorizon = 64\nvtrace = 0\nvtrace_rho_clip = 1.0\nvtrace_c_clip = 1.0\nverb_eps = 0.0\nverb_eps_anneal_start = 0.4\nverb_eps_anneal_end = 1.0\n\n[sweep]\nmetric = score\nmetric_distribution = linear\ngoal = maximize\nmax_suggestion_cost = 3600\nmax_runs = 1200\ngpus = -1\ndownsample = 5\nprune_pareto = 1\nearly_stop_quantile = 0.3\n\n[sweep.train.total_timesteps]\ndistribution = log_normal\nmin = 3e7\nmax = 1e11\nscale = time\n\n[sweep.policy.hidden_size]\ndistribution = uniform_pow2\nmin = 32\nmax = 1024\nscale = auto\n\n[sweep.policy.num_layers]\ndistribution = uniform\nmin = 1\nmax = 8\nscale = auto\n\n[sweep.vec.total_agents]\ndistribution = uniform_pow2\nmin = 256\nmax = 16384\nscale = auto\n\n[sweep.train.horizon]\ndistribution = uniform_pow2\nmin = 32\nmax = 512\nscale = auto\n\n[sweep.train.minibatch_size]\ndistribution = uniform_pow2\nmin = 4096\nmax = 65536\nscale = auto\n\n[sweep.train.learning_rate]\ndistribution = log_normal\nmin = 0.0001\nmax = 1.0\nscale = 0.5\n\n[sweep.train.ent_coef]\ndistribution = log_normal\nmin = 0.00001\nmax = 0.1\nscale = auto\n\n[sweep.train.gamma]\ndistribution = logit_normal\nmin = 0.8\nmax = 0.9999\nscale = auto\n\n[sweep.train.gae_lambda]\ndistribution = logit_normal\nmin = 0.2\nmax = 0.995\nscale = auto\n\n[sweep.train.replay_ratio]\ndistribution = uniform\nmin = 0.25\nmax = 4.0\nscale = auto\n\n[sweep.train.clip_coef]\ndistribution = uniform\nmin = 0.1\nmax = 0.9\nscale = auto\n\n[sweep.train.vf_clip_coef]\ndistribution = uniform\nmin = 0.01\nmax = 5.0\nscale = auto\n\n[sweep.train.vf_coef]\ndistribution = uniform\nmin = 0.1\nmax = 4.0\nscale = auto\n\n[sweep.train.max_grad_norm]\ndistribution = uniform\nmin = 0.1\nmax = 1.5\nscale = auto\n\n[sweep.train.momentum]\ndistribution = logit_normal\nmin = 0.5\nmax = 0.999\nscale = auto\n"
+      },
+      "single": {
+        "agent_steps": 8192,
+        "metrics_finite": true,
+        "last_metrics": {
+          "type": "metrics",
+          "SPS": 204832.7526,
+          "agent_steps": 8192,
+          "uptime": 0.1818649769,
+          "epoch": 4,
+          "env/perf": 0.7464032173,
+          "env/score": -43.20000076,
+          "env/n": 10,
+          "loss/policy": -0.2727426291,
+          "loss/value": 0.7561025023,
+          "loss/entropy": 3.652543545,
+          "loss/total": 1.235810041,
+          "loss/old_kl": 0.007620188873,
+          "loss/kl": 0.006500547752,
+          "loss/clipfrac": 0.09537760913,
+          "importance": 0.9988803267,
+          "util/gpu_percent": 8,
+          "util/vram_used_gb": 4.445739746,
+          "util/vram_total_gb": 23.48358154,
+          "util/cpu_mem_gb": 0.5556602478,
+          "perf/rollout": 0.004132509232,
+          "perf/eval_model": 0.00200239988,
+          "perf/eval_env": 0.0003211500007,
+          "perf/eval_copy": 0.001136271982,
+          "perf/train_misc": 2.867199873e-05,
+          "perf/train_model": 0.02180096135,
+          "perf/train": 0.02182963304
+        },
+        "families": [
+          {
+            "family": 0,
+            "bytes": 802688,
+            "final_sha256": "513255c6392e46e4e247696e8b4456fc79b48e266bce72e2a5ff5ac4ab4500dd",
+            "finite_weights": true
+          }
+        ],
+        "resolved_config": "\n[base]\nenv_name = minimal\ngpu_offset = 0\nprofile = 0\ncheckpoint_dir = outputs/flecs-validation/run-20260917/checkpoints\nlog_dir = outputs/flecs-validation/run-20260917/logs\ncheckpoint_interval = 500\neval_episodes = 0\neval_agents = -1\nload_model_path = None\nload_enemy_model_path = None\nload_model_dir = None\nrun_id = flecs-single\nresult_fd = 0\ncudagraphs = 1\nseed = 6373\nreset_every_horizon = 1\nasync = 0\n\n[vec]\ntotal_agents = 128\nnum_buffers = 2\nnum_threads = 2\nnum_policies = 1\ntrain_all_policies = 0\nhist_policy_hidden_size = 0\nhist_policy_num_layers = 0\nhist_policy_percent = 0\n\n[selfplay]\nenabled = 0\nmax_size = 16\nseed = 42\nopp_timeout_steps = 500_000_000\neval_pool_size = 8\neval_games = 0\neval_bot_games = 0\neval_bots = 0\neval_bot_envs = 8192\neval_bot_threads = 0\n\n[bot_eval]\n\n[env]\ndr = 0\nnum_agents = 1\nnum_bots = 0\n\n[policy]\nhidden_size = 128\nnum_layers = 4\n\n[train]\ngpus = 1\ntotal_timesteps = 8192\nlearning_rate = 0.015\nanneal_lr = 1\nmin_lr_ratio = 0.0\ngamma = 0.995\ngae_lambda = 0.90\nreplay_ratio = 1\nclip_coef = 0.2\nvf_coef = 2.0\nvf_clip_coef = 0.2\nmax_grad_norm = 1.5\nent_coef = 0.001\nanneal_ent_coef = 0\nmin_ent_coef_ratio = 0.1\nmomentum = 0.95\nminibatch_size = 128\nhorizon = 16\nvtrace = 0\nvtrace_rho_clip = 1.0\nvtrace_c_clip = 1.0\nverb_eps = 0.0\nverb_eps_anneal_start = 0.4\nverb_eps_anneal_end = 1.0\n\n[sweep]\nmetric = score\nmetric_distribution = linear\ngoal = maximize\nmax_suggestion_cost = 3600\nmax_runs = 1200\ngpus = -1\ndownsample = 5\nprune_pareto = 1\nearly_stop_quantile = 0.3\n\n[sweep.train.total_timesteps]\ndistribution = log_normal\nmin = 3e7\nmax = 1e11\nscale = time\n\n[sweep.policy.hidden_size]\ndistribution = uniform_pow2\nmin = 32\nmax = 1024\nscale = auto\n\n[sweep.policy.num_layers]\ndistribution = uniform\nmin = 1\nmax = 8\nscale = auto\n\n[sweep.vec.total_agents]\ndistribution = uniform_pow2\nmin = 256\nmax = 16384\nscale = auto\n\n[sweep.train.horizon]\ndistribution = uniform_pow2\nmin = 32\nmax = 512\nscale = auto\n\n[sweep.train.minibatch_size]\ndistribution = uniform_pow2\nmin = 4096\nmax = 65536\nscale = auto\n\n[sweep.train.learning_rate]\ndistribution = log_normal\nmin = 0.0001\nmax = 1.0\nscale = 0.5\n\n[sweep.train.ent_coef]\ndistribution = log_normal\nmin = 0.00001\nmax = 0.1\nscale = auto\n\n[sweep.train.gamma]\ndistribution = logit_normal\nmin = 0.8\nmax = 0.9999\nscale = auto\n\n[sweep.train.gae_lambda]\ndistribution = logit_normal\nmin = 0.2\nmax = 0.995\nscale = auto\n\n[sweep.train.replay_ratio]\ndistribution = uniform\nmin = 0.25\nmax = 4.0\nscale = auto\n\n[sweep.train.clip_coef]\ndistribution = uniform\nmin = 0.1\nmax = 0.9\nscale = auto\n\n[sweep.train.vf_clip_coef]\ndistribution = uniform\nmin = 0.01\nmax = 5.0\nscale = auto\n\n[sweep.train.vf_coef]\ndistribution = uniform\nmin = 0.1\nmax = 4.0\nscale = auto\n\n[sweep.train.max_grad_norm]\ndistribution = uniform\nmin = 0.1\nmax = 1.5\nscale = auto\n\n[sweep.train.momentum]\ndistribution = logit_normal\nmin = 0.5\nmax = 0.999\nscale = auto\n"
+      }
+    },
+    "gpu": "NVIDIA GeForce RTX 4090, 580.173.02",
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+    "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Wed_Aug_20_01:58:59_PM_PDT_2025\nCuda compilation tools, release 13.0, V13.0.88\nBuild cuda_13.0.r13.0/compiler.36424714_0",
+    "precision": "bf16 learner; fp32 checkpoint",
+    "self_play": false,
+    "shared_build": {
+      "argv": [
+        "bash",
+        "build.sh",
+        "alienwars_shared",
+        "build/puffer-shared"
+      ],
+      "environment": {
+        "CUDA_HOME": "/usr/local/cuda"
+      },
+      "exit_code": 0
+    }
+  },
+  "local_compilers": {
+    "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "node": "v23.11.0",
+    "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)"
+  },
+  "native_memory": {
+    "baseline_world_bytes": 202568,
+    "flecs_world_bytes": 56448,
+    "flecs_heap_per_world_bytes": 256139,
+    "increase_per_world_bytes": 110019,
+    "notes": "Retained payload allocations; excludes allocator metadata and shared map/route banks."
+  },
+  "browser": {
+    "browser": "Chrome",
+    "cases": [
+      "seed=73&sym=1&a=6&b=6&biome=2&tunnels=1",
+      "seed=73&sym=0&a=6&b=6&biome=3&tunnels=1"
+    ],
+    "checks": [
+      "All twelve units and five deployed policies loaded",
+      "Moving fixed wing, quadrotor and submarine; live sensor telemetry",
+      "Single/all-unit range overlays and underwater visibility",
+      "Camera attachment removal/restoration updates readings",
+      "Tunnel isolation preserves map framing",
+      "Fleet restart and layout/palette reconstruction retain trained controllers",
+      "Rejected destination retains running mission",
+      "Accepted quadrotor destination via canvas (1/1 routed), retaining live PPO control"
+    ],
+    "observed_frame_rates": [
+      48,
+      51,
+      59,
+      60
+    ],
+    "initial_generation_ms": 30551,
+    "notes": "Interactive spot checks during concurrent native tests. Not a controlled frame-rate benchmark or a new autonomy evaluation.",
+    "runtime_console_errors": 0
+  },
+  "checks": [
+    "check_flecs.py native/WASM baseline parity and lifecycle",
+    "check_shared.py native/WASM adapter, commands and inference",
+    "check_navigation.py historical task",
+    "check_sensors.py native/WASM",
+    "check_vehicles.py native/WASM",
+    "check_maplab.py 256 seeds and 48 diversity worlds",
+    "check.sh native debug/headless",
+    "Linux ASan/UBSan lifecycle",
+    "CUDA joint gather",
+    "147456-step five-family warm update",
+    "8192-step Minimal single-policy regression"
+  ],
+  "policies_replaced": false,
+  "generator_version": 11,
+  "artifacts": {
+    "index.html": {
+      "bytes": 44923,
+      "sha256": "aadc4d22bcc8d5fa5ae37d0a1d5722289ae8e48dffae15c6c0201f12a8e4e897"
+    },
+    "maplab.js": {
+      "bytes": 240020,
+      "sha256": "2a1c6a9c2ff8f845d7020808731fafa5160433280d99ef6c01c158ffc2f028e5"
+    },
+    "maplab.wasm": {
+      "bytes": 1041168,
+      "sha256": "089a662f15bd1b92aad8f0629018a35a053b37a70fde541f25493e3194760f93"
+    },
+    "maplab.data": {
+      "bytes": 3653120,
+      "sha256": "63500fcca54cc4cdcb33ac7925fc1004abf4b22485befac91ef3c4b4cd459b8b"
+    }
+  }
+}
