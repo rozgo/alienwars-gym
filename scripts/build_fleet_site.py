@@ -2,6 +2,7 @@
 """Build Map Lab with all five hash-verified shared-world controllers."""
 import hashlib,json,os,subprocess,urllib.request
 from pathlib import Path
+from build_fleet_report import build_report
 ROOT=Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
 manifest=json.loads((ROOT/'web/maplab/policies.json').read_text())
@@ -23,16 +24,4 @@ report=json.loads((ROOT/'docs/maplab/build.json').read_text())
 report['controllers']=manifest
 (ROOT/'docs/maplab/build.json').write_text(json.dumps(report,indent=2)+'\n')
 
-results=(ROOT/manifest.get('evaluation_report','docs/runs/shared-navigation-2026-09-16.json')).read_bytes()
-page=(ROOT/"web/training/fleet.html").read_text()
-assert '__FLEET_RESULT_VERSION__' in page
-page=page.replace('__FLEET_RESULT_VERSION__',hashlib.sha256(results).hexdigest()[:16])
-(ROOT/"docs/training/fleet.html").write_text(page)
-(ROOT/"docs/training/fleet.json").write_bytes(results)
-training_manifest=ROOT/'docs/training/manifest.json'
-if training_manifest.exists():
-    training=json.loads(training_manifest.read_text())
-    for name in ['fleet.html','fleet.json']:
-        training['files'][name]=hashlib.sha256((ROOT/'docs/training'/name).read_bytes()).hexdigest()
-    training['fleet_source']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-    training_manifest.write_text(json.dumps(training,separators=(',',':'))+'\n')
+build_report(ROOT/manifest.get('evaluation_report','docs/runs/shared-navigation-2026-09-16.json'))
