@@ -121,10 +121,11 @@ static const Color aw_palette[AW_TILES]={
 static Color aw_material_color(const AwMap*m,int material){
     if(m->options.biome==AW_TEMPERATE){
         switch(material){
-            case AW_GRASS:return (Color){106,139,79,255};
-            case AW_FOREST:return (Color){71,106,59,255};
-            case AW_DIRT:return (Color){145,125,96,255};
-            case AW_MUD:return (Color){111,98,75,255};
+            case AW_GRASS:return (Color){91,137,119,255};
+            case AW_FOREST:return (Color){61,104,92,255};
+            case AW_DIRT:return (Color){143,112,103,255};
+            case AW_MUD:return (Color){103,88,85,255};
+            case AW_ROCK:return (Color){113,123,128,255};
         }
     }
     if(m->options.biome==AW_DESERT){

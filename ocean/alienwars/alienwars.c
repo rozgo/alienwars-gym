@@ -372,11 +372,13 @@ AW_EXPORT int aw_inspect_patrol(void){
 
 static void aw_draw_vehicle(int i){
     if(!fleet.active[i])return;AwVehicle pose=aw_command_fleet_pose(&fleet,i);const AwVehicle*v=&pose;
-    int asset=v->family==AW_VEHICLE_GROUND&&v->variant==0?0:v->family==AW_VEHICLE_BOAT&&v->variant==0?1:v->family==AW_VEHICLE_WING&&v->variant==1?2:-1;
-    if(asset>=0){aw_bio_draw(asset,v,i,Vector3Subtract(camera.position,camera.target));return;}
-    rlPushMatrix();rlTranslatef(v->position.x,v->position.y,v->position.z);rlRotatef(v->yaw*RAD2DEG,0,1,0);rlRotatef(-v->pitch*RAD2DEG,1,0,0);
-    if(v->family==AW_VEHICLE_WING)rlRotatef(-v->yaw_rate*42,0,0,1);
-    aw_patrol_model(i?patrols.units[i-1].layer:0,v->variant,animation_time);rlPopMatrix();
+    static const int assets[AW_VEHICLE_FAMILIES][3]={
+        {AW_ART_SCOUT,AW_ART_ROVER,AW_ART_HAULER},
+        {AW_ART_SKIFF,AW_ART_PATROL_BOAT,AW_ART_CUTTER},
+        {AW_ART_QUAD,AW_ART_QUAD,AW_ART_QUAD},
+        {AW_ART_WING,AW_ART_WING,AW_ART_TRANSPORT},
+        {AW_ART_RECON_SUB,AW_ART_PATROL_SUB,AW_ART_HEAVY_SUB}};
+    aw_bio_draw(assets[v->family][v->variant],v,i,Vector3Subtract(camera.position,camera.target));
 }
 /* Small contact shadows follow the existing support surface, including bridges.
  * Cosmetic only, with no additions to collision or perception geometry. */

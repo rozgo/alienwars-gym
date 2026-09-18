@@ -6,7 +6,7 @@ requests are needed beyond the site's own files.
 
 ## Original biological meshes
 
-`scout.awm`, `skiff.awm`, `wing.awm`, `nursery.awm` are original AlienWars assets,
+The thirteen `.awm` meshes listed in `models.json` are original AlienWars assets,
 covered by the repository's MIT license. Rebuild with Blender 5.0.1:
 
 ```sh
@@ -19,12 +19,12 @@ ignored `outputs/art/`. The runtime format is `AWM1`, a little-endian uint32
 vertex count followed by triangle vertices: position (3 floats), normal (3),
 material class (1), articulation weight (1), RGBA (4 bytes). Game coordinates
 are +Y up, +Z forward. `models.json` records bounds, counts and SHA-256 hashes.
-The four meshes total 23,606 triangles and approximately 2.43 MiB. Each unit is
+The thirteen meshes total 89,142 triangles and approximately 9.18 MiB. Each unit is
 one reusable GPU mesh. The nursery is incorporated into the scenery and its
 existing static shadow/reflection and occlusion passes.
 
-The scout, surface skiff and recon wing are the first biological replacements.
-Other fleet roles still use their existing development models. The nursery is
+All twelve current Map Lab units use these authored biological bodies.
+Each variant has a distinct silhouette and shares the same +Z forward convention. The nursery is
 a visual base form; cultivation, growth, combat and faction species are not
 implemented by these assets.
 

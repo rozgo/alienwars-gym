@@ -21,8 +21,7 @@ occupants or separate creature/vehicle pairing. Use unit/entity, body and organ
 language for new content. Economy follows habitat preparation, seeding, tending, maturation,
 collection, sustainment and bounded recycling. Preserve meaningful mass, recoil,
 metabolism and ammunition tradeoffs. See [the biological warfare direction](docs/BIOLOGICAL_WARFARE.md)
-and [the proposed next slice](docs/CULTIVATION_SLICE.md). Existing vehicle models
-are development stand-ins; species names and detailed traits remain open.
+and [the proposed next slice](docs/CULTIVATION_SLICE.md). Current Map Lab unit models are biological; historical viewers may retain development stand-ins. Species names and detailed traits remain open.
 These are design documents, not evidence of implemented combat or cultivation.
 
 The current fleet stores mission, perception, active and pause state in Flecs

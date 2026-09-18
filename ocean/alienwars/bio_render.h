@@ -13,7 +13,7 @@ static void aw_bio_draw(int asset,const AwVehicle*v,int unit,Vector3 view){
             "in vec3 vertexPosition,vertexNormal;in vec4 vertexColor;in vec2 vertexTexCoord;uniform mat4 mvp,matModel,matNormal;"
             "uniform float phase,motion;uniform int specimen;out vec3 n;out vec4 c;out vec2 uv;"
             "void main(){vec3 p=vertexPosition;float w=vertexTexCoord.y;"
-            "if(specimen==0){float step=sin(phase+sign(p.x)*1.57+floor((p.z+.4)*9.0)*3.14);p.z=clamp(p.z+step*.025*w*motion,-.595,.595);p.y+=max(0.0,step)*.023*w*motion;}"
+            "if(specimen==0){float step=sin(phase+sign(p.x)*1.57+floor((p.z+.4)*9.0)*3.14);p.z+=step*.018*w*motion;p.y+=max(0.0,step)*.023*w*motion;}"
             "if(specimen==1){p.y+=sin(phase+p.z*7.0)*.032*w*motion;}"
             "if(specimen==2){p.y+=sin(phase*.22+p.x*1.3)*.018*w*motion;}"
             "n=normalize((matNormal*vec4(vertexNormal,0.0)).xyz);c=vertexColor;uv=vertexTexCoord;gl_Position=mvp*vec4(p,1.0);}";
@@ -35,10 +35,11 @@ static void aw_bio_draw(int asset,const AwVehicle*v,int unit,Vector3 view){
     float motion=fminf(1,aw_bio_speed[unit]*2);
     SetShaderValue(aw_bio_shader,aw_bio_locs[0],&aw_bio_phase[unit],SHADER_UNIFORM_FLOAT);
     SetShaderValue(aw_bio_shader,aw_bio_locs[1],&motion,SHADER_UNIFORM_FLOAT);
-    SetShaderValue(aw_bio_shader,aw_bio_locs[2],&asset,SHADER_UNIFORM_INT);
+    int articulation=v->family==AW_VEHICLE_GROUND?0:(v->family==AW_VEHICLE_BOAT||v->family==AW_VEHICLE_SUB)?1:2;
+    SetShaderValue(aw_bio_shader,aw_bio_locs[2],&articulation,SHADER_UNIFORM_INT);
     SetShaderValue(aw_bio_shader,aw_bio_locs[3],&view,SHADER_UNIFORM_VEC3);
     SetShaderValue(aw_bio_shader,aw_bio_locs[4],&aw_bio_through,SHADER_UNIFORM_INT);
-    Matrix transform=MatrixMultiply(MatrixMultiply(MatrixRotateZ(asset==2?-v->yaw_rate*42*DEG2RAD:0),MatrixRotateX(-v->pitch)),MatrixRotateY(v->yaw));
+    Matrix transform=MatrixMultiply(MatrixMultiply(MatrixRotateZ(v->family==AW_VEHICLE_WING?-v->yaw_rate*42*DEG2RAD:0),MatrixRotateX(-v->pitch)),MatrixRotateY(v->yaw));
     transform=MatrixMultiply(transform,MatrixTranslate(v->position.x,v->position.y,v->position.z));
     aw_art_material.shader=aw_bio_shader;rlDrawRenderBatchActive();DrawMesh(aw_art_mesh[asset],aw_art_material,transform);
 }

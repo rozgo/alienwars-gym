@@ -1,10 +1,9 @@
-# Biological visual slice
+# Biological fleet and alien ecologies
 
-The first authored asset slice replaces the inspection scout, skiff and recon
-wing, plus both bases, with biological bodies. Segmented shells, structural ribs,
+All twelve current fleet roles and both bases have authored biological bodies. Segmented shells, structural ribs,
 membranes and small luminous forward organs establish a shared visual language.
 All units face +Z in model space and retain their existing physics dimensions.
-The remaining nine roles keep their development models for now.
+Ground roles use distinct limb and shell arrangements; surface swimmers use frills and flotation organs; the hover body has four radial lift organs; fixed wings have forward flight membranes; submarines have different pressure bodies, fins and storage lobes.
 
 The Blender source, runtime format, material provenance and rebuild commands
 are in [the asset kit](../resources/alienwars/art/README.md). Art is owned by the
@@ -29,6 +28,7 @@ fern clumps and groundcover retain subtle shader motion. Additional small rock c
 outside roads, bridges and cave/trail cells. Props
 remain cosmetic; this pass adds no new navigation obstacles.
 
+Temperate combines blue-green groundcover, warm fungal soil and cool stone.
 Desert stone has muted plum strata and warm ribbed soil; frozen ground has
 blue-violet stone and fine blue mineral seams. A signed shore-distance mask
 blends dry ground through damp beach material into shallow water, including
@@ -58,7 +58,7 @@ resetting the camera, world or simulation.
 ## Validation
 
 - `python3 scripts/art/check_assets.py`: packed file lengths/hashes, finite unit
-  normals, triangle winding, material attributes and static physical envelopes.
+  normals, triangle winding, material attributes and static and animated physical envelopes.
 - `python3 scripts/check_shared.py`: native/ASan and WASM route, collision,
   command, allocation and five-policy inference contracts.
 - `./build.sh alienwars build/maplab-art --cpu` then
@@ -72,8 +72,8 @@ resetting the camera, world or simulation.
 ## Boundaries and next art work
 
 This establishes an art pipeline and a first reusable kit, not finished AAA art.
-Next: replace the remaining fleet silhouettes, sculpt distinctive faction
-materials, add proper skeletal gait/foot placement and author biological bridge
+Next: sculpt distinctive faction materials, add proper skeletal gait/foot
+placement and author biological bridge
 and resource forms. Avoid raising environmental contrast at the expense of units
 and sensors. Vegetation is still generated geometry; groundcover motion uses static shadows
 and cached reflections. Large fungal crowns are static. Moving units do not appear in the
