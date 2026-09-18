@@ -9,7 +9,7 @@ if args.no_assist:os.environ['AW_EVAL_NO_ASSIST']='1'
 assert 1<=args.maps<=32
 out=Path(args.out);out.mkdir(parents=True,exist_ok=True)
 Path('build').mkdir(exist_ok=True)
-binary='build/shared-eval'
+binary=str(out/'shared-eval')
 subprocess.run(['clang','-std=c11','-O3','-I.','-Isrc','-Ivendor','-Iraylib-5.5_macos/include','-Iraylib-5.5_linux_amd64/include','ocean/alienwars_shared/shared_eval.c','ocean/alienwars/flecs_runtime.c','-lm','-o',binary],check=True)
 runs=[(v,v) for v in ['reference','random']] if args.baselines else []
 for item in args.models:
@@ -17,7 +17,7 @@ for item in args.models:
     metadata=Path(directory)/'contract.json'
     assert (json.loads(metadata.read_text())['contract']==args.contract if metadata.exists() else args.contract==2),'Explicit checkpoint contract required'
     runs.append((label,directory))
-report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
+report={'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'source_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).strip()),'map_seed':args.seed,'maps':args.maps,'scenarios':args.scenarios_per_map*args.maps,'curriculum':args.curriculum,'contract':args.contract,'assistance':not args.no_assist,'scenarios_per_map':args.scenarios_per_map,'frozen_pool':os.environ.get('AW_SHARED_FROZEN_DIR'),'results':{}}
 for label,directory in runs:
     command=[binary,directory,str(args.seed),str(args.maps),str(args.scenarios_per_map*args.maps),str(args.curriculum),'json']
     with (out/f'{label}.jsonl').open('w') as data,(out/f'{label}.log').open('w') as log:subprocess.run(command,stdout=data,stderr=log,check=True)
