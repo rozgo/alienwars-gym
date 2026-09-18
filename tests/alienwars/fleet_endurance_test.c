@@ -17,7 +17,7 @@ int main(int argc,char**argv){
             for(int j=i+1;j<12;j++)if(fleet.active[j])assert(!aw_bodies_overlap(aw_vehicle_body(v),aw_vehicle_body(&fleet.unit[j].vehicle),0));
         }
     }
-    for(int i=0;i<12;i++)printf("{\"unit\":%d,\"family\":%d,\"active\":%d,\"arrivals\":%d,\"contacts\":%d,\"collisions\":%d,\"timeout\":%d,\"failed\":%d,\"remaining\":%.3f,\"global_retries\":%d}\n",i,fleet.unit[i].vehicle.family,fleet.active[i],fleet.arrivals[i],fleet.total_contacts[i],fleet.total_collisions[i],fleet.unit[i].timeout,fleet.unit[i].vehicle.failed,fleet.unit[i].remaining,fleet.recovery_attempts[i]);
+    for(int i=0;i<12;i++)printf("{\"unit\":%d,\"family\":%d,\"active\":%d,\"arrivals\":%d,\"contacts\":%d,\"collisions\":%d,\"timeout\":%d,\"failed\":%d,\"remaining\":%.3f,\"global_retries\":%d,\"terrain_contacts\":%d,\"unit_contacts\":%d}\n",i,fleet.unit[i].vehicle.family,fleet.active[i],fleet.arrivals[i],fleet.total_contacts[i],fleet.total_collisions[i],fleet.unit[i].timeout,fleet.unit[i].vehicle.failed,fleet.unit[i].remaining,fleet.recovery_attempts[i],fleet.total_terrain[i],fleet.total_units[i]);
     assert(fleet.world.ticks==decisions);printf("ENDURANCE seed=%u decisions=%d initial_active=%d trained=%d no_resets=PASS finite=PASS nonoverlap=PASS\n",seed,decisions,initial,fleet.trained);
     aw_command_fleet_close(&fleet);
 }

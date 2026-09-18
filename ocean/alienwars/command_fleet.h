@@ -21,6 +21,7 @@ typedef struct {
     int ready,trained,arrivals[AW_UNITS],automatic[AW_UNITS],status[AW_UNITS],arrival_handled[AW_UNITS];
     int selection,command_result,command_requested;
     int recovery_attempts[AW_UNITS],recovery_after[AW_UNITS];
+    int total_terrain[AW_UNITS],total_units[AW_UNITS];
     int total_contacts[AW_UNITS],total_blocked[AW_UNITS],total_collisions[AW_UNITS];
 } AwCommandFleet;
 static void aw_command_fleet_close(AwCommandFleet*f){
@@ -135,9 +136,9 @@ static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int sc
     if(!f->ready)return;
     aw_command_fleet_continue(f,m);
     f->accumulator+=dt;
-    while(f->accumulator>=.1f){f->accumulator-=.1f;float actions[16][4];int contacts[AW_UNITS],blocked[AW_UNITS],collisions[AW_UNITS];
+    while(f->accumulator>=.1f){f->accumulator-=.1f;float actions[16][4];int contacts[AW_UNITS],blocked[AW_UNITS],collisions[AW_UNITS],terrain[AW_UNITS],units[AW_UNITS];
         for(int i=0;i<AW_UNITS;i++){
-            contacts[i]=f->unit[i].contacts;blocked[i]=f->unit[i].blocked_total;collisions[i]=f->unit[i].collision_events;
+            terrain[i]=f->unit[i].terrain_contacts;units[i]=f->unit[i].unit_contacts;contacts[i]=f->unit[i].contacts;blocked[i]=f->unit[i].blocked_total;collisions[i]=f->unit[i].collision_events;
             f->previous[i]=f->unit[i].vehicle;f->world.paused[i]=!(i?others_live:scout_live);
             actions[i][0]=2;actions[i][1]=actions[i][2]=actions[i][3]=1;
             if(!f->active[i]||f->world.paused[i])continue;
@@ -149,7 +150,7 @@ static void aw_command_fleet_step(AwCommandFleet*f,const AwMap*m,float dt,int sc
         }
         aw_mission_tick(&f->world,m,actions);
         for(int i=0;i<AW_UNITS;i++)if(f->active[i]){
-            f->total_contacts[i]+=f->unit[i].contacts-contacts[i];f->total_blocked[i]+=f->unit[i].blocked_total-blocked[i];f->total_collisions[i]+=f->unit[i].collision_events-collisions[i];
+            f->total_terrain[i]+=f->unit[i].terrain_contacts-terrain[i];f->total_units[i]+=f->unit[i].unit_contacts-units[i];f->total_contacts[i]+=f->unit[i].contacts-contacts[i];f->total_blocked[i]+=f->unit[i].blocked_total-blocked[i];f->total_collisions[i]+=f->unit[i].collision_events-collisions[i];
             if(f->unit[i].vehicle.failed)f->status[i]=AW_MISSION_IMPACT;
             else if(f->unit[i].timeout)f->status[i]=AW_MISSION_STALLED;
         }
