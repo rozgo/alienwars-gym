@@ -72,7 +72,7 @@ The unmodified upstream distribution and MIT license are in `vendor/flecs`.
 `version.json` records its exact commit and file hashes. Compile through
 `ocean/alienwars/flecs_runtime.c` with the shared configuration header.
 
-The build selects core ECS plus the platform OS API, with `FLECS_LOW_FOOTPRINT`
+The training build selects core ECS plus the platform OS API, with `FLECS_LOW_FOOTPRINT`
 for many small environments. Scripting, REST services, reflection and rendering
 addons are not part of the rollout. Queries and all component storage are created
 before stepping. No ECS structural changes occur during current step/reset calls.
@@ -83,9 +83,39 @@ The adapter test also checks both application allocations and Flecs's OS counter
 Keep memory and throughput measurements alongside behavioral checks when changing
 the configuration, capacities or component organization.
 
+## Live browser Explorer
+
+Open **Flecs Explorer** in the Map Lab header, or use
+[Map Lab with Explorer](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&explorer=1).
+The embedded official Flecs Explorer reads the same running WebAssembly world.
+Expand `Fleet`, select a unit, and inspect `AwMission` and `AwPerception` for
+pose, velocity, mission progress, PPO inputs, odometry and attached sensor modules.
+The Queries view accepts expressions such as `AwMission, AwActive`.
+There are sixteen fixed slots, twelve active units and four reserved slots.
+
+This viewer defines `AW_FLECS_EXPLORER`, enabling reflection, documentation,
+query parsing and the REST dispatcher. Requests run directly in process; there
+is no listening socket or external server. Writes are rejected in C to preserve
+fixed entity topology. Use Map Lab controls to command or reconfigure units.
+Closing the webview stops its polling. Rebuilding a map reconnects it to the
+new world. Pointer-owned routes and large sensor beam buffers are not reflected.
+
+These inspection addons are **absent from training**. The approximately 107 KiB
+per-world overhead measured below describes the minimal training runtime; the
+viewer has additional inspection metadata and query overhead. ECS storage and
+queries are real, while fixed-step numeric kernels still drive simulation rather
+than a Flecs system scheduler. Explorer's system timing views are not exposed.
+
+The official frontend is pinned in `vendor/flecs-explorer/version.json`, with
+unmodified selected assets in `frontend.tar.gz` and its MIT license.
+`scripts/build_explorer.py` applies the read-only UI adaptations and packages
+`docs/explorer/`. `web/explorer/alienwars_live.js` bridges its existing WASM
+transport to Map Lab. No separate demo ECS world is created.
+
 ## Validation
 
 ```sh
+python3 scripts/check_explorer.py
 python3 scripts/check_flecs.py
 python3 scripts/check_shared.py
 python3 scripts/check_sensors.py

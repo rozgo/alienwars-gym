@@ -32,6 +32,9 @@ shallow-copy or memset a live owning world. `AwSensors` borrows its unit buffer.
 Compile the shared `flecs_runtime.c` in every fleet consumer, including CUDA
 training, standalone checks and capture/browser builds. Retain allocation guards,
 the pre-port traces and exact checkpoint compatibility during changes.
+`AW_FLECS_EXPLORER` enables viewer-only reflection and in-process inspection; do
+not enable it in training. Keep Explorer read-only and retain fixed slot order.
+`docs/explorer/` is a deliberate Pages artifact built by `scripts/build_explorer.py`.
 
 The public Navigation Lab packages the evaluated checkpoint selected by
 `web/navigation/release.json`. Build with `scripts/build_navigation_site.py`.

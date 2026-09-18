@@ -25,6 +25,11 @@
     .brand { font-size:12px; letter-spacing:.08em; font-weight:700; text-decoration:none; white-space:nowrap; }
     .brand span { font-size:11px; font-weight:400; color:var(--muted); margin-left:10px; letter-spacing:.02em; }
     nav { display:flex; gap:16px; font-size:11px; color:var(--muted); }
+    nav { align-items:center; }
+    #explorer-panel { position:fixed; z-index:20; right:8px; top:52px; bottom:8px; width:min(850px,calc(100vw - 16px)); background:var(--panel); border:1px solid var(--border); box-shadow:0 8px 32px #0008; }
+    #explorer-panel[hidden] { display:none; }
+    .explorer-heading { height:40px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 8px; border-bottom:1px solid var(--line); }
+    #explorer-frame { border:0; width:100%; height:calc(100% - 40px); background:#202020; }
     nav a { text-decoration:none; }
     .workspace { display:grid; grid-template-columns:minmax(0,1fr) 288px; min-height:0; height:calc(100svh - 44px); }
     .viewport { position:relative; min-width:0; overflow:hidden; background:#141414; isolation:isolate; }
@@ -126,8 +131,12 @@
 <body>
   <header>
     <a class="brand" href="../">ALIENWARS<span>MAP LAB / 011</span></a>
-    <nav aria-label="Project"><a href="../navigation/?kind=1">Navigation Lab</a><a href="../training/">Training</a><a href="../demo/">Demo</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
+    <nav aria-label="Project"><button id="open-explorer" aria-controls="explorer-panel" aria-expanded="false">Flecs Explorer</button><a href="../navigation/?kind=1">Navigation Lab</a><a href="../training/">Training</a><a href="../demo/">Demo</a><a href="https://github.com/rozgo/alienwars-gym">Source ↗</a></nav>
   </header>
+  <section id="explorer-panel" aria-label="Flecs live world inspector" hidden>
+    <div class="explorer-heading"><span>FLECS EXPLORER · LIVE / READ ONLY</span><button id="close-explorer">Close explorer</button></div>
+    <iframe id="explorer-frame" title="Official Flecs Explorer — live AlienWars entities"></iframe>
+  </section>
   <main class="workspace">
     <section class="viewport" aria-label="Interactive 3D battlefield">
       <canvas id="canvas" tabindex="0" aria-label="3D procedural map. Drag or right-drag to pan, Shift-drag to orbit, scroll to zoom. Camera buttons are also available."></canvas>
@@ -326,6 +335,27 @@
     $('symmetry').value=bounded('sym',1,0,1);$('floor-a').value=bounded('a',6,1,10);$('floor-b').value=bounded('b',6,1,10);
     $('biome').value=bounded('biome',1,1,3);$('tunnels').checked=bounded('tunnels',1,0,1)===1;
     $('cutaway').value=bounded('cut',1,0,2);$('ocean-access').checked=bounded('ocean',0,0,1)===1;
+    let explorerRequest;
+    window.awExplorerRequest=(method,path)=>{
+      if(!ready||rebuilding)return JSON.stringify({error:'World is rebuilding',status:503});
+      explorerRequest??=Module.cwrap('aw_explorer_request','string',['string','string']);
+      return explorerRequest(method,path);
+    };
+    function showExplorer(open){
+      $('explorer-panel').hidden=!open;$('open-explorer').setAttribute('aria-expanded',String(open));
+      const url=new URL(location.href);
+      if(open){
+        url.searchParams.set('explorer','1');
+        const unit=$('sensor-unit').selectedOptions[0].textContent.trim().replaceAll(' ','_');
+        $('explorer-frame').src='../explorer/?host=alienwars_live.wasm&entities.path=Fleet.'+encodeURIComponent(unit)+'&queries.expr=AwMission';
+      }else{
+        url.searchParams.delete('explorer');$('explorer-frame').removeAttribute('src');
+        $('open-explorer').focus();
+      }
+      history.replaceState(null,'',url);
+    }
+    $('open-explorer').addEventListener('click',()=>showExplorer($('explorer-panel').hidden));
+    $('close-explorer').addEventListener('click',()=>showExplorer(false));
     function syncIsolation(){
       const isolated=$('isolate-tunnels').checked;
       $('isolation-options').hidden=!isolated;
@@ -408,6 +438,7 @@
           Module._aw_option(8,Number($('tunnel-ceilings').checked));
           Module._aw_option(7,Number($('isolate-tunnels').checked));
           $('sensor-unit').value=selectedSensor;applySensorView();
+          if(params.get('explorer')==='1')showExplorer(true);
         });
         syncSettings();syncUrl();
       }

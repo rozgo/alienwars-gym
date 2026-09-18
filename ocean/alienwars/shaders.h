@@ -9,7 +9,8 @@
 #define AW_GLSL "#version 330\nprecision highp float;\n"
 #endif
 #define AW_ENVIRONMENT_GRADE \
-    "vec3 environmentGrade(vec3 c,float emission){float hi=max(c.r,max(c.g,c.b)),lo=min(c.r,min(c.g,c.b));float chroma=(hi-lo)/max(hi,.001);float saturation=mix(.82,.58,smoothstep(.08,.50,chroma));saturation=mix(saturation,.88,clamp(emission,0.0,1.0));vec3 linear=pow(max(c,vec3(0)),vec3(2.2));float luminance=dot(linear,vec3(.2126,.7152,.0722));return pow(mix(vec3(luminance),linear,saturation),vec3(1.0/2.2));}\n"
+    "uniform float temperate;\n" \
+    "vec3 environmentGrade(vec3 c,float emission){float hi=max(c.r,max(c.g,c.b)),lo=min(c.r,min(c.g,c.b));float chroma=(hi-lo)/max(hi,.001);float saturation=mix(.82,.58,smoothstep(.08,.50,chroma));saturation=mix(saturation,mix(.96,.86,smoothstep(.08,.50,chroma)),temperate);saturation=mix(saturation,.88,clamp(emission,0.0,1.0));vec3 linear=pow(max(c,vec3(0)),vec3(2.2));float luminance=dot(linear,vec3(.2126,.7152,.0722));return pow(mix(vec3(luminance),linear,saturation),vec3(1.0/2.2));}\n"
 
 static const char *aw_vertex_shader = AW_GLSL
     "in vec3 vertexPosition;\n"
@@ -91,7 +92,7 @@ static const char *aw_land_fragment = AW_GLSL
     "   roughness=clamp(roughness+(micro.r-.5)*.14-stone*.035,.48,.99);\n"
     "  }\n"
     " }\n"
-    " if(kind>2.5&&kind<3.5){albedo*=.87+fine*.18;roughness=.80;}\n"
+    " if(kind>2.5&&kind<3.5){albedo*=mix(vec3(1),vec3(1.10,1.16,1.08),temperate);albedo*=.87+fine*.18;roughness=.80;}\n"
     " if(kind>3.5&&kind<4.5){float bark=fbm(position*vec3(18,.8,18));albedo*=.78+.34*bark;}\n"
     " if(kind>4.5&&kind<5.5){metal=.55;roughness=.46;albedo*=.91+fine*.13;}\n"
     " if(kind>5.5&&kind<6.5){metal=.75;roughness=.22;}\n"
@@ -115,7 +116,7 @@ static const char *aw_land_fragment = AW_GLSL
     " vec3 spec=D*G*F/max(4.0*nl*nv,.001)*nl;\n"
     " vec3 lit=ambient+(diffuse+spec*.55)*vec3(.48,.46,.42)*mix(.40,1.0,visibility);\n"
     " if(kind>2.5&&kind<3.5)lit+=linear*vec3(.16,.20,.09)*pow(max(dot(-n,sun),0.0),2.0);\n"
-    " lit*=.62;lit+=linear*emission;\n"
+    " lit*=mix(.62,.70,temperate);lit+=linear*emission;\n"
     /* Guides and navigation overlays keep a stable, bright response rather
      * than inheriting the terrain's subdued lighting. Scout/UI use other passes. */
     " if(kind>1.5&&kind<2.5)lit=linear*(1.0+emission);\n"
@@ -154,7 +155,7 @@ static const char *aw_water_fragment = AW_GLSL
     " vec3 reflected=texture(texture1,clamp(r,.002,.998)).rgb;\n"
     " vec3 sky=vec3(.39,.48,.53);reflected=mix(reflected,sky,.13);\n"
     " float depth=1.0-exp(-dist*.24);\n"
-    " vec3 body=mix(vec3(.14,.28,.265),vec3(.022,.082,.11),depth);\n"
+    " vec3 body=mix(mix(vec3(.14,.28,.265),vec3(.14,.32,.30),temperate),mix(vec3(.022,.082,.11),vec3(.025,.098,.13),temperate),depth);\n"
     " float caustic=pow(1.0-abs(sin(phase2+sin(phase1)*.9)),9.0);\n"
     " body+=vec3(.20,.26,.19)*caustic*.08*(1.0-depth);\n"
     " vec3 base=mix(body,reflected,clamp(.2+fresnel*.72,.0,.83));\n"

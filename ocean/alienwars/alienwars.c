@@ -26,6 +26,9 @@ static AwMap world;
 static AwScene scene;
 static AwPatrols patrols;
 static AwCommandFleet fleet;
+#ifdef AW_FLECS_EXPLORER
+AW_EXPORT const char*aw_explorer_request(const char*method,const char*path){return aw_inspect_request(&fleet.world,method,path);}
+#endif
 #define sensors fleet.world.sensors
 static AwMotion unit_motion[AW_UNITS];
 static int sensor_selected=0,sensor_layers=1,sensor_all=0,sensor_xray=1;

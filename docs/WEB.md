@@ -125,3 +125,11 @@ loads the matching JavaScript and WASM. Existing tabs need a reload to update.
 Keep asset URLs relative to support the `/alienwars-gym/` project path.
 `.nojekyll` serves compiled files directly; no custom server or cross-origin
 isolation headers are required by this single-threaded build.
+
+## Flecs Explorer webview
+
+The Map Lab header opens the official Flecs Explorer against its live world.
+`?explorer=1` opens it on load. The fleet build also runs
+`scripts/build_explorer.py`, packaging the pinned frontend into `docs/explorer/`.
+These are deliberate Pages artifacts. The bridge is same-origin, in-process and
+read-only; no REST port or service is deployed. See [FLECS.md](FLECS.md).

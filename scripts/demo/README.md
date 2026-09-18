@@ -149,3 +149,8 @@ the browser executable. The capture uses production controls without changes to
 rendering, vehicle physics, policy weights or sensor equipment. Refresh the
 screenshots after material visual changes, and inspect each capture before
 publishing. The recorded showcase keeps its original footage and release asset.
+
+The September 17 refresh uses the live Chrome browser at its normal 1728 × 942
+viewport, captured through the browser UI after the final fleet build. It adds a
+Flecs Explorer view and refreshes all six scene images. The manifest records
+per-image viewer provenance; the video remains the existing recorded showcase.

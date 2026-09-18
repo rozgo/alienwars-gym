@@ -10,12 +10,13 @@ if [ -n "${AW_MISSION_MODELS:-}" ]; then
 fi
 mkdir -p build/web/alienwars
 emcc ocean/alienwars/alienwars.c ocean/alienwars/flecs_runtime.c -o build/web/alienwars/maplab.html \
-    -std=c11 -O3 -Wall -Wextra -Wno-unused-function \
+    -std=c11 -O3 -Wall -Wextra -Wno-unused-function -DAW_FLECS_EXPLORER \
     -I. -Iocean/alienwars "${INCLUDES[@]}" "${LINK_ARCHIVES[@]}" \
     -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 \
     -sUSE_GLFW=3 -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=1MB \
     -sASSERTIONS=1 -sENVIRONMENT=web,node \
+    -sEXPORTED_RUNTIME_METHODS=cwrap \
     --shell-file web/maplab/shell.html "${LOCAL_PRELOAD[@]}"
 # Keep each page paired with its compiled runtime even when Pages or the
 # browser still caches the previous build under the same asset filenames.

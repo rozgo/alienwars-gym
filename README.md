@@ -5,6 +5,7 @@ native PPO controllers; **Flecs** manages live unit state; **Raylib** renders th
 simulation, sensing and policy inference in your browser.
 
 **[Explore Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** ·
+[Live Flecs Explorer](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&explorer=1) ·
 [Watch the showcase](https://rozgo.github.io/alienwars-gym/demo/) ·
 [Fleet training results](https://rozgo.github.io/alienwars-gym/training/fleet.html) ·
 [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
@@ -64,6 +65,14 @@ Generation, collision, navigation and sensing share a renderer-independent C
 model. Sensor sampling uses fixed buffers and runs without graphics during
 training. The depth camera measures geometric depth; trees and rocks are
 currently decorative rather than sensor occluders.
+
+## Inspect the living simulation
+
+Open **Flecs Explorer** in Map Lab to inspect the selected unit's live body state,
+mission, odometry, sensors and PPO inputs. The official Explorer reads the same
+Flecs world used by the viewer; the training build keeps these inspection addons disabled.
+
+[![Official Flecs Explorer inspecting a live unit beside the Temperate battlefield](docs/demo/images/explorer.webp)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1&unit=7&explorer=1)
 
 ## Try it
 

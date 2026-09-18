@@ -21,6 +21,10 @@ typedef struct {
     ecs_query_t *units;
     ecs_entity_t entities[AW_SENSOR_UNITS];
     ecs_entity_t mission_id,sensor_id,active_id,paused_id;
+#ifdef AW_FLECS_EXPLORER
+    ecs_http_server_t *inspection_server;
+    char *inspection_reply;
+#endif
     /* Borrowed views of Flecs component columns, not mirrored entity state.
      * All 16 slots are created together; topology is fixed until close. */
     AwMissionAgent *agents;
@@ -33,6 +37,9 @@ static ecs_entity_t aw_mission_component(ecs_world_t*ecs,const char*name,size_t 
     ecs_entity_t entity=ecs_entity_init(ecs,&(ecs_entity_desc_t){.name=name});
     return ecs_component_init(ecs,&(ecs_component_desc_t){.entity=entity,.type={.size=(ecs_size_t)size,.alignment=(ecs_size_t)alignment}});
 }
+#ifdef AW_FLECS_EXPLORER
+#include "flecs_inspect.h"
+#endif
 /* Obtain typed contiguous columns through the C query API. Never infer an actor
  * slot from an ECS numeric ID or carry a pointer across a structural change. */
 static void aw_mission_world_bind(AwMissionWorld*w){
@@ -49,14 +56,26 @@ static void aw_mission_world_bind(AwMissionWorld*w){
     assert(rows==AW_SENSOR_UNITS);
 }
 static int aw_mission_world_init(AwMissionWorld*w){
-    assert(!w->ecs);w->ecs=ecs_mini();if(!w->ecs)return 0;
+    assert(!w->ecs);
+#ifdef AW_FLECS_EXPLORER
+    w->ecs=ecs_init();
+#else
+    w->ecs=ecs_mini();
+#endif
+    if(!w->ecs)return 0;
     w->mission_id=aw_mission_component(w->ecs,"AwMission",sizeof(AwMissionAgent),_Alignof(AwMissionAgent));
     w->sensor_id=aw_mission_component(w->ecs,"AwPerception",sizeof(AwSensorUnit),_Alignof(AwSensorUnit));
     w->active_id=aw_mission_component(w->ecs,"AwActive",sizeof(unsigned char),_Alignof(unsigned char));
     w->paused_id=aw_mission_component(w->ecs,"AwPaused",sizeof(unsigned char),_Alignof(unsigned char));
+#ifdef AW_FLECS_EXPLORER
+    aw_inspect_types(w);
+#endif
     const ecs_entity_t*ids=ecs_bulk_init(w->ecs,&(ecs_bulk_desc_t){.count=AW_SENSOR_UNITS,
         .ids={w->mission_id,w->sensor_id,w->active_id,w->paused_id}});
     assert(ids);memcpy(w->entities,ids,sizeof(w->entities));
+#ifdef AW_FLECS_EXPLORER
+    aw_inspect_names(w);
+#endif
     w->units=ecs_query_init(w->ecs,&(ecs_query_desc_t){.cache_kind=EcsQueryCacheNone,
         .terms={{.id=w->mission_id},{.id=w->sensor_id},{.id=w->active_id},{.id=w->paused_id}}});
     assert(w->units);aw_mission_world_bind(w);
@@ -74,6 +93,10 @@ static void aw_mission_world_reset(AwMissionWorld*w,const AwMap*m,int count){
     aw_sensors_init(&w->sensors,m,count,w->perception);
 }
 static void aw_mission_world_close(AwMissionWorld*w){
+#ifdef AW_FLECS_EXPLORER
+    if(w->inspection_server)ecs_rest_server_fini(w->inspection_server);
+    if(w->inspection_reply)ecs_os_free(w->inspection_reply);
+#endif
     if(w->units)ecs_query_fini(w->units);
     if(w->ecs)ecs_fini(w->ecs);
     memset(w,0,sizeof(*w));

@@ -116,6 +116,18 @@ static const Color aw_palette[AW_TILES]={
     {122,124,116,255},{214,222,222,255},{129,167,179,255},{99,91,74,255},
     {82,119,115,255},{32,68,82,255},{103,107,102,255}
 };
+/* Temperate art direction is independent of other biome palettes. */
+static Color aw_material_color(const AwMap*m,int material){
+    if(m->options.biome==AW_TEMPERATE){
+        switch(material){
+            case AW_GRASS:return (Color){106,139,79,255};
+            case AW_FOREST:return (Color){71,106,59,255};
+            case AW_DIRT:return (Color){145,125,96,255};
+            case AW_MUD:return (Color){111,98,75,255};
+        }
+    }
+    return aw_palette[material];
+}
 static float aw_world_q(const AwMap*m,float x,float z){
     x=fminf(AW_SIZE-0.0001f,fmaxf(0,x));z=fminf(AW_SIZE-0.0001f,fmaxf(0,z));
     int c=(int)z*AW_SIZE+(int)x;return aw_surface_q(m,c,x-(int)x,z-(int)z);
@@ -132,7 +144,7 @@ static Color aw_vertex_color(const AwMap*m,int vx,int vz){
         int x=vx+dx,z=vz+dz;if(x<0||z<0||x>=AW_SIZE||z>=AW_SIZE)continue;
         int c=z*AW_SIZE+x,mat=m->cells[c].material;
         /* The seabed shares the adjacent soil tint; the water is separate. */
-        Color color=aw_palette[mat==AW_DEEP?AW_SAND:mat];r+=color.r;g+=color.g;b+=color.b;n++;
+        Color color=aw_material_color(m,mat==AW_DEEP?AW_SAND:mat);r+=color.r;g+=color.g;b+=color.b;n++;
     }
     return (Color){r/n,g/n,b/n,255};
 }
@@ -274,7 +286,7 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     AwTreeBake*trees=aw_ao_alloc(AW_CELLS,sizeof(*trees));int tree_count=0;
     for(int index=0;index<AW_CELLS;index++){
         int c=m->order[index],x=c%AW_SIZE,z=c/AW_SIZE;float rank=index;
-        const AwCell*t=&m->cells[c];int mat=t->material;Color ground=aw_palette[mat];
+        const AwCell*t=&m->cells[c];int mat=t->material;Color ground=aw_material_color(m,mat);
         Vector3 v[4]={{x*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,z*AW_UNIT},{(x+1)*AW_UNIT,0,(z+1)*AW_UNIT},{x*AW_UNIT,0,(z+1)*AW_UNIT}};
         for(int k=0;k<4;k++)v[k].y=aw_y(t->q[k]/4.0f);
         AwVolumeRender render={&terrain,&tunnels,m,rank};aw_volume_cell(m,c,aw_render_volume_triangle,&render);
@@ -367,6 +379,9 @@ static void aw_build_scene(AwScene*s,const AwMap*m){
     s->terrain=aw_upload(&terrain);s->scenery=aw_upload(&scenery);s->overlay=aw_upload(&overlay);s->ocean_overlay=aw_upload(&ocean_overlay);s->water=aw_upload(&water);
     s->land_shader=LoadShaderFromMemory(aw_vertex_shader,aw_land_fragment);
     s->water_shader=LoadShaderFromMemory(aw_vertex_shader,aw_water_fragment);
+    float temperate=m->options.biome==AW_TEMPERATE?1.0f:0.0f;
+    SetShaderValue(s->land_shader,GetShaderLocation(s->land_shader,"temperate"),&temperate,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(s->water_shader,GetShaderLocation(s->water_shader,"temperate"),&temperate,SHADER_UNIFORM_FLOAT);
     s->detail_location=GetShaderLocation(s->land_shader,"detailEnabled");s->detail_enabled=1;
     SetShaderValue(s->land_shader,s->detail_location,&s->detail_enabled,SHADER_UNIFORM_INT);
     s->ao_location=GetShaderLocation(s->land_shader,"aoEnabled");s->ao_enabled=1;
