@@ -4,7 +4,11 @@
 #include <time.h>
 #include "frozen_policy.h"
 
+#if AW_NAV_VERSION >= 3
 #define AW_SHARED_SCENARIOS 8
+#else
+#define AW_SHARED_SCENARIOS 3
+#endif
 /* corridor, head-on, overtaking, crossing, queue, tunnel approach, long trip, repeated destination */
 typedef struct {
     AwMap map;
@@ -38,11 +42,14 @@ static int aw_shared_index(const AwLocalRoute*r,float distance){
     int i=0;while(i<r->count-1&&r->distance[i]<distance)i++;return i;
 }
 static int aw_shared_prepare(AwSharedMap*w,AwMissionPlanner*p,int curriculum){
-    AwPatrols*patrol=calloc(1,sizeof(*patrol));AwLocalRoute*base=calloc(AW_SHARED_AGENTS,sizeof(*base));
+    AwPatrols*patrol=calloc(1,sizeof(*patrol));AwLocalRoute*base=calloc(AW_SHARED_AGENTS+1,sizeof(*base));
     if(!patrol||!base){free(patrol);free(base);return 0;}
     aw_patrol_build(&w->map,patrol);AwPatrol scout={0};
     if(aw_patrol_scout(&w->map,&scout,w->map.spawns[0],w->map.spawns[1]))aw_local_route(&w->map,&scout,&base[0]);
     for(int i=1;i<AW_SHARED_AGENTS;i++)aw_local_route(&w->map,&patrol->units[i-1],&base[i]);
+    #if AW_NAV_VERSION >= 3
+    if(w->map.cave_count&&aw_patrol_scout(&w->map,&scout,AW_CELLS+w->map.cave_entrances[0],AW_CELLS+w->map.cave_hubs[1]))aw_local_route(&w->map,&scout,&base[12]);
+    #endif
     w->map.density_cache=calloc(AW_DENSITY_CACHE,sizeof(AwDensitySample));
     if(!aw_mission_planner_init(p,&w->map)){free(w->map.density_cache);w->map.density_cache=NULL;free(patrol);free(base);return 0;}
     for(int scenario=0;scenario<AW_SHARED_SCENARIOS;scenario++)for(int unit=0;unit<AW_SHARED_AGENTS;unit++){
@@ -54,11 +61,14 @@ static int aw_shared_prepare(AwSharedMap*w,AwMissionPlanner*p,int curriculum){
         float length=r->distance[r->count-1];
         float fraction=curriculum==0?.12f+.24f*variant:.18f+.29f*variant;
         fraction=fminf(.88f,fraction+scenario*.035f);
+        #if AW_NAV_VERSION >= 3
         if(scenario==2||scenario==4)fraction=.2f+.07f*variant;
         if(scenario==3)fraction=.30f+.11f*variant;
-        if(scenario==5&&family==0)source=0; /* actual base-to-base passage route */
+
         if(scenario==5&&family==0&&base[0].count>2){r=&base[0];length=r->distance[r->count-1];fraction=.12f+.20f*variant;}
-        int first=aw_shared_index(r,length*fraction),reverse=curriculum>0&&variant==1&&scenario!=2&&scenario!=4;
+        if(scenario==5&&unit==0&&base[12].count>2){r=&base[12];length=r->distance[r->count-1];fraction=0;}
+        #endif
+        int first=aw_shared_index(r,length*fraction),reverse=curriculum>0&&variant==1&&(AW_NAV_VERSION<3||(scenario!=2&&scenario!=4));
         float goal_distance=curriculum==0?12:curriculum==1?48:length;
         if(family==AW_VEHICLE_WING)goal_distance=curriculum==0?35:curriculum==1?65:length*.45f;
         if(scenario==4)goal_distance=18+variant*6;
@@ -106,6 +116,7 @@ static int aw_shared_prepare(AwSharedMap*w,AwMissionPlanner*p,int curriculum){
         int family=(slot+scenario)%5,unit=family==0?slot%3:family==1?3+slot%3:family==2?6:family==3?7+slot%2:9+slot%3;
         const AwMissionRoute*r=&w->route[scenario][unit];if(r->count<4)continue;
         AwVehicle vehicle=r->start;int start=aw_clamp(r->count/3,1,r->count-2);vehicle.position=r->point[start];vehicle.yaw=r->heading[start+1];
+        if(family==AW_VEHICLE_WING){float speed=aw_vehicle_spec(family,vehicle.variant).reverse;vehicle.velocity=(AwSVec){sinf(vehicle.yaw)*speed,0,cosf(vehicle.yaw)*speed};}
         int clear=1;for(int j=0;j<12+slot;j++)if(w->route[scenario][j].count>1&&aw_bodies_overlap(aw_vehicle_body(&vehicle),aw_vehicle_body(&w->route[scenario][j].start),.5f))clear=0;
         if(!clear)continue;
         AwSVec goal=r->point[r->count-1];goal.x+=7+slot*3;goal.z+=7;
@@ -114,11 +125,14 @@ static int aw_shared_prepare(AwSharedMap*w,AwMissionPlanner*p,int curriculum){
             if(aw_sv_length(aw_sv_add(goal,aw_sv_scale(o->point[o->count-1],-1)))<aw_vehicle_spec(family,vehicle.variant).length+aw_vehicle_spec(o->family,o->variant).length+2)clear=0;}
         if(clear)aw_mission_plan(p,&vehicle,goal,&w->route[scenario][12+slot]);
     }
+    #if AW_NAV_VERSION >= 3
     for(int i=0;i<12;i++){
         const AwMissionRoute*r=&w->route[7][i];if(r->count<2)continue;
         AwVehicle vehicle=r->start;vehicle.position=r->point[r->count-1];vehicle.yaw=r->heading[r->count-1];
+        if(vehicle.family==AW_VEHICLE_WING){float speed=aw_vehicle_spec(vehicle.family,vehicle.variant).reverse;vehicle.velocity=(AwSVec){sinf(vehicle.yaw)*speed,0,cosf(vehicle.yaw)*speed};}
         aw_mission_plan(p,&vehicle,r->point[0],&w->return_route[i]);
     }
+    #endif
     aw_mission_planner_close(p);free(w->map.density_cache);w->map.density_cache=NULL;free(patrol);free(base);return 1;
 }
 AwSharedTask*aw_shared_create(int maps,unsigned seed,unsigned instance,int curriculum){
@@ -195,7 +209,7 @@ void aw_shared_step(AwSharedTask*t){
         /* A completed aircraft departs the episodic scenario. Ground/water
          * arrivals remain parked obstacles for the remaining participants. */
         if(done&&a->vehicle.family==AW_VEHICLE_WING)t->world.active[i]=0;
-    }aw_mission_observe(&t->world);if(!running)t->reset_pending=1;
+    }int refresh=0;for(int i=0;i<12;i++)refresh|=t->pending_renew[i];if(refresh)aw_mission_observe(&t->world);if(!running)t->reset_pending=1;
 }
 void aw_shared_read(AwSharedTask*t,int unit,float*obs,float*reward,int*terminal,int*event,int*arrived,int*contacts,int*blocked){
     AwMissionAgent*a=&t->world.agents[unit];memcpy(obs,a->observation,sizeof(a->observation));*reward=t->event[unit]?t->event_reward[unit]:a->reward;
