@@ -4,6 +4,7 @@ A gym for training AlienWars agents in procedural 3D worlds. **PufferLib 5** tra
 native PPO controllers; **Flecs** manages live unit state; **Raylib** renders the world; **WebAssembly** runs the
 simulation, sensing and policy inference in your browser.
 
+**[Learn with your coding agent](https://rozgo.github.io/alienwars-gym/learn/)** ·
 **[Explore Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** ·
 [Live Flecs Explorer](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&explorer=1) ·
 [Watch the showcase](https://rozgo.github.io/alienwars-gym/demo/) ·
@@ -11,6 +12,21 @@ simulation, sensing and policy inference in your browser.
 [Training Observatory](https://rozgo.github.io/alienwars-gym/training/)
 
 [![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=d509f2556754)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
+
+## Make your first discovery
+
+[Start in the browser workshop](https://rozgo.github.io/alienwars-gym/learn/):
+hide a submarine’s sonar overlay, detach its sonar, and discover the difference
+between seeing a measurement and supplying it to a policy. No installation or GPU.
+
+Bring your coding agent into a clone and give it this prompt:
+
+> Read AGENTS.md and .agents/skills/alienwars-start/SKILL.md. Help me run AlienWars
+> locally and complete docs/lessons/sensor-equipment.md. Explain what we observe
+> and show me the code behind it.
+
+[Start here](docs/START_HERE.md) · [First experiment](docs/lessons/sensor-equipment.md) ·
+[Contribute an experiment](CONTRIBUTING.md)
 
 ## Worlds worth exploring
 
@@ -109,6 +125,22 @@ Open **[Map Lab](https://rozgo.github.io/alienwars-gym/?seed=73)** — no instal
 - Choose a terrain palette and **New world** to explore another seed.
 
 ## Run locally
+
+For the quickest local preview, clone the repo, install
+[uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
+
+```sh
+uv sync --locked
+uv run scripts/doctor.py
+uv run python -m http.server 8781 --bind 127.0.0.1 --directory docs
+```
+
+Open <http://127.0.0.1:8781/learn/>. This serves the included browser build and
+trained policies: **no compiler or GPU needed**. Source edits need a rebuild;
+see [the start guide](docs/START_HERE.md). The doctor also supports `--target
+native`, `--target web`, `--target train`, and `--json` for coding agents.
+
+### Build source changes
 
 Run from the repository root. Install [uv](https://docs.astral.sh/uv/getting-started/installation/),
 then run `uv sync --locked`. `.python-version` pins Python 3.12.12; uv manages its

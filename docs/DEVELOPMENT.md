@@ -1,5 +1,10 @@
 # Development and GPU workflow
 
+New here? [Start with a local preview](START_HERE.md) and the
+[browser workshop](https://rozgo.github.io/alienwars-gym/learn/). Run
+`uv run scripts/doctor.py --target native` (or `web` / `train`) for focused
+prerequisite checks. The default `preview` target requires no compiler or GPU.
+
 ## Next development slice
 
 The [navigation reliability iteration](runs/navigation-reliability-2026-09-18.md)

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#181818">
+  <meta name="description" content="Learn AlienWars by experimenting. Explore sensors in the browser, run a local world, and make your first change with a coding agent.">
+  <title>Learn · AlienWars Gym</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="learn.css">
+  <script src="learn.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to experiments</a>
+<header>
+  <a class="brand" href="../maplab/">ALIENWARS <span>/ FIELD NOTES</span></a>
+  <nav aria-label="Project"><a href="../maplab/">Map Lab ↗</a><a href="../demo/">Showcase</a><a href="../training/reliability.html">Training</a><a href="https://github.com/rozgo/alienwars-gym">GitHub ↗</a></nav>
+</header>
+<main id="main">
+  <section class="hero" aria-labelledby="title">
+    <div class="hero-copy">
+      <p class="eyebrow">THE ALIENWARS WORKSHOP / 01</p>
+      <h1>A world to explore.<br>A system to understand.</h1>
+      <p class="lead">Take the controls, make a prediction, and see what happens. Then bring your coding agent and change a little of the world yourself.</p>
+      <div class="actions"><a class="button primary" href="#sensor-lab">Start the first experiment ↓</a><a class="button" href="#local">Run your own copy</a></div>
+      <p class="fine">Browser experiments need no installation, account or GPU.</p>
+    </div>
+    <figure class="hero-image"><img src="../demo/images/submarine.webp" width="1728" height="941" alt="A biological submarine revealed below the ocean, with its sonar range visible"><figcaption><span>SUBJECT 11 / HEAVY SUBMARINE</span><span>SONAR ONLINE</span></figcaption></figure>
+  </section>
+
+  <nav class="pathways" aria-label="Choose your next step">
+    <a href="#sensor-lab"><span class="index">01</span><div><strong>Explore</strong><span>Five minutes. One useful discovery.</span></div><span aria-hidden="true">↘</span></a>
+    <a href="#local"><span class="index">02</span><div><strong>Modify</strong><span>Your machine. Your agent. Your experiment.</span></div><span aria-hidden="true">↘</span></a>
+    <a href="#training"><span class="index">03</span><div><strong>Train</strong><span>Measure what a policy actually learns.</span></div><span aria-hidden="true">↘</span></a>
+  </nav>
+
+  <section id="sensor-lab" class="section" aria-labelledby="sensor-title">
+    <div class="section-heading"><div><p class="eyebrow">FIRST EXPERIMENT / BROWSER ONLY</p><h2 id="sensor-title">Seeing is not the same as sensing.</h2></div><span class="tag">~5 MIN</span></div>
+    <p class="section-lead">A submarine can sense its surroundings even when you hide the lines on screen. Discover which controls change the picture—and which change the policy’s inputs.</p>
+    <div class="experiment">
+      <div class="prediction panel">
+        <span class="step-label">01 / PREDICT</span>
+        <h3>You hide the sonar overlay.<br>What does the submarine lose?</h3>
+        <div class="answers" role="group" aria-label="Predict what hiding sonar does">
+          <button type="button" data-answer="measurements" aria-pressed="false">Its sonar measurements</button>
+          <button type="button" data-answer="drawing" aria-pressed="false">Only the drawing on screen</button>
+          <button type="button" data-answer="both" aria-pressed="false">Both the drawing and measurements</button>
+        </div>
+        <p id="prediction-result" class="feedback" role="status">Choose a prediction, then test it in the world.</p>
+        <noscript><p>Make your prediction, then compare it with the table below.</p></noscript>
+      </div>
+      <div class="procedure panel">
+        <span class="step-label">02 / OBSERVE</span>
+        <h3>Put the idea to the test.</h3>
+        <ol>
+          <li>Open the submarine world, wait for generation, then click <strong>Focus</strong> under Selected unit.</li>
+          <li>Note its <strong>Sonar</strong> reading. Toggle the sonar range overlay off, then on. Does the reading disappear?</li>
+          <li>Expand <strong>Sensor equipment</strong> and turn <strong>Sonar attached</strong> off. Compare the reading.</li>
+          <li>Reattach sonar. Valid readings resume on the next scheduled sample.</li>
+        </ol>
+        <a class="button primary" href="../maplab/?seed=73&amp;sym=1&amp;a=6&amp;b=6&amp;biome=1&amp;tunnels=1&amp;cut=1&amp;unit=11&amp;sensors=2" target="_blank" rel="noopener">Try the sensor experiment ↗</a>
+        <p class="fine">Opens Map Lab in a new tab. Leave this guide beside it. First generation can take tens of seconds.</p>
+      </div>
+    </div>
+    <div class="explanation panel">
+      <span class="step-label">03 / EXPLAIN</span>
+      <div class="table-scroll"><table><caption>Two switches, two different effects</caption><thead><tr><th scope="col">Your change</th><th scope="col">On screen</th><th scope="col">Inside the policy</th></tr></thead><tbody>
+        <tr><th scope="row">Hide the overlay</th><td>Sonar fan disappears</td><td>Measurements remain available</td></tr>
+        <tr><th scope="row">Detach the module</th><td>“Not attached”</td><td>Missing-equipment mask; no sonar returns</td></tr>
+        <tr><th scope="row">Reattach sonar</th><td>Valid returns resume</td><td>Scheduled measurements resume</td></tr>
+      </tbody></table></div>
+      <p>The unit still has other sensors and A* route guidance, so removing sonar does not guarantee an immediate turn. This experiment tests perception, not navigation quality. Zero hits can be a valid reading; sonar also needs a submerged mount above the seabed.</p>
+      <p class="fine">Seed links save the world and overlay settings, not equipment edits. Reload Map Lab to restore default equipment.</p>
+    </div>
+    <details class="code-trail"><summary>Follow a reading into the code</summary><p><code>sensors.h</code> attaches the module, samples geometry, and packs its observation. <code>missions.h</code> builds the policy input. <code>alienwars.c</code> connects the inspector; <code>web/maplab/shell.html</code> handles the two switches.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/lessons/sensor-equipment.md">Read the full lesson and optional range experiment ↗</a></p></details>
+  </section>
+
+  <section class="section" aria-labelledby="more-title">
+    <div class="section-heading"><div><p class="eyebrow">KEEP EXPLORING</p><h2 id="more-title">Two more questions for this world.</h2></div></div>
+    <div class="mini-labs">
+      <article class="mini-lab panel"><a href="../maplab/?seed=2279248715&amp;sym=1&amp;a=6&amp;b=6&amp;biome=3&amp;tunnels=1&amp;isolate=1&amp;sensors=0" target="_blank" rel="noopener"><img src="../demo/images/tunnels.webp" width="1728" height="941" loading="lazy" alt="An isolated network of underground passages"></a><div><span class="step-label">GEOMETRY / ~3 MIN</span><h3>Where does a tunnel fit?</h3><p>Toggle <strong>Isolate tunnels</strong> without moving the camera. Trace entrances and ramps back to the terrain. Which passages keep a ceiling, and which open to the sky?</p><a href="../maplab/?seed=2279248715&amp;sym=1&amp;a=6&amp;b=6&amp;biome=3&amp;tunnels=1&amp;isolate=1&amp;sensors=0" target="_blank" rel="noopener">Inspect this network ↗</a></div></article>
+      <article class="mini-lab panel"><a href="../maplab/?seed=175847449&amp;sym=0&amp;a=2&amp;b=9&amp;biome=2&amp;tunnels=1&amp;sensors=0" target="_blank" rel="noopener"><img src="../demo/images/desert.webp" width="1728" height="997" loading="lazy" alt="Asymmetric desert terrain with different base heights"></a><div><span class="step-label">GENERATION / ~3 MIN</span><h3>What changes with symmetry?</h3><p>Start with unequal base heights, then select <strong>Symmetric</strong> and load the same seed. Compare bases and routes. Wave Function Collapse joins local tiles; global planning sets the larger layout.</p><a href="../maplab/?seed=175847449&amp;sym=0&amp;a=2&amp;b=9&amp;biome=2&amp;tunnels=1&amp;sensors=0" target="_blank" rel="noopener">Compare the layouts ↗</a></div></article>
+    </div>
+  </section>
+
+  <section id="local" class="section" aria-labelledby="local-title">
+    <div class="section-heading"><div><p class="eyebrow">YOUR OWN WORKSHOP</p><h2 id="local-title">Bring your coding agent.</h2></div><span class="tag">GIT + UV</span></div>
+    <p class="section-lead">Start with the included browser build and trained policies. No compiler or GPU needed. Install <a href="https://git-scm.com/downloads">Git</a> and <a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>, then run:</p>
+    <div class="copy-block"><div class="copy-heading"><span>TERMINAL / LOCAL PREVIEW</span><button type="button" data-copy="preview-command">Copy commands</button></div><pre id="preview-command">git clone https://github.com/rozgo/alienwars-gym.git
+cd alienwars-gym
+uv sync --locked
+uv run scripts/doctor.py
+uv run python -m http.server 8781 --bind 127.0.0.1 --directory docs</pre></div>
+    <p>Open <a href="http://127.0.0.1:8781/learn/">http://127.0.0.1:8781/learn/</a>. Stop with Ctrl+C. If the port is busy, use 8782. The doctor explains missing prerequisites before you build anything.</p>
+    <div class="copy-block prompt"><div class="copy-heading"><span>PASTE INTO YOUR CODING AGENT</span><button type="button" data-copy="agent-prompt">Copy agent prompt</button></div><pre id="agent-prompt">Read AGENTS.md and .agents/skills/alienwars-start/SKILL.md. Help me run AlienWars locally and complete docs/lessons/sensor-equipment.md. Explain the prediction, show me the result, and point me to the code behind it.</pre></div>
+    <p class="fine">The skill lives in the repo. If your agent does not discover it automatically, this explicit file-reading prompt gives it the same workflow. You can also follow every step by hand.</p>
+    <p id="copy-status" class="feedback" role="status" aria-live="polite"></p>
+    <details class="code-trail"><summary>Ready to edit source?</summary><p>Serving the included build will not show C or web-shell edits. Run <code>uv run scripts/doctor.py --target web</code>, follow the compiler setup, then rebuild with <code>uv run scripts/build_fleet_site.py</code>. Native development is available on macOS and Linux.</p><p><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/START_HERE.md#build-an-edit">Build your first edit ↗</a> · <a href="https://github.com/rozgo/alienwars-gym/blob/main/CONTRIBUTING.md">Share an experiment ↗</a></p></details>
+  </section>
+
+  <section id="training" class="section" aria-labelledby="training-title">
+    <div class="section-heading"><div><p class="eyebrow">FROM EXPLORATION TO LEARNING</p><h2 id="training-title">Know what each piece does.</h2></div></div>
+    <div class="architecture" aria-label="Architecture">
+      <article><span class="index">WORLD</span><h3>C + Flecs</h3><p>Shared terrain, bodies, collision and live entity state.</p></article>
+      <article><span class="index">PERCEPTION</span><h3>Sensors</h3><p>LiDAR, sonar, radio and depth measurements, plus odometry.</p></article>
+      <article><span class="index">CONTROL</span><h3>A* + PPO</h3><p>Planned global routes with learned local control adjustments.</p></article>
+      <article><span class="index">LEARNING</span><h3>PufferLib 5</h3><p>Five family policies train together on a CUDA host.</p></article>
+      <article><span class="index">BROWSER</span><h3>Raylib + WASM</h3><p>Local simulation, policy inference and a view into the world.</p></article>
+    </div>
+    <div class="training-note panel"><div><h3>Training starts with a question.</h3><p>Does a change improve arrivals on unseen worlds? Compare against the route tracker, count contacts and stalls, and keep evaluation separate from training.</p><p>The current demo uses evaluated contract-2 policies. Newer contract-3 candidates failed their release gates. Automatic patrol restarts keep the demo running; they are not successful arrivals or learned recovery.</p></div><div class="training-links"><a class="button" href="../training/reliability.html">Explore the measured results ↗</a><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/START_HERE.md#training">Set up your own GPU experiment ↗</a></div></div>
+    <p class="fine">Cultivation and combat are future work. Every military unit is a biological entity; this universe has no humans or pilots.</p>
+  </section>
+  <footer><span>ALIENWARS GYM / LEARN BY CHANGING SOMETHING</span><a href="https://github.com/rozgo/alienwars-gym/blob/main/docs/START_HERE.md">Start guide ↗</a><a href="https://github.com/rozgo/alienwars-gym/blob/main/CONTRIBUTING.md">Contribute ↗</a></footer>
+</main>
+</body>
+</html>

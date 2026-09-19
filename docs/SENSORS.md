@@ -2,8 +2,9 @@
 
 Sensor contract v1 is a renderer-independent C module in
 [`sensors.h`](../ocean/alienwars/sensors.h). The twelve physical Map Lab units carry
-the same modules that a future PufferLib environment can sample without Raylib,
-WebGL, image readback or Python. This is not yet an AlienWars training task.
+the same modules used by the shared-world PPO environment without Raylib,
+WebGL, image readback or Python. See [shared navigation](SHARED_NAVIGATION.md)
+for the current training and policy contract.
 
 ## Equipment and measurements
 
@@ -14,8 +15,8 @@ Euler-angle increments, linear/angular velocity and distance travelled. It is
 currently noiseless; it is not a simulated wheel encoder, IMU or drifting SLAM
 estimate. Teleporting or changing the inspection tour resets odometry and
 invalidates the old measurements.
-The viewer's `motion.h` steering state supplies the same smoothly changing
-yaw/pitch to rendered bodies and sensor mounts; odometry observes those changes.
+Physical heading comes from `vehicles.h`; rendered bodies and sensor mounts
+follow that pose, and odometry observes its changes.
 
 Each unit has four independent module slots. Any of the four types can be
 attached to any ground, naval or air unit. Each mount has local translation,
@@ -29,7 +30,10 @@ changes attachment and visibility; mount calibration is configured in C.
 | RF | Equipped peer detections, range, bearing, elevation and strength | 64 | 2 Hz |
 | Depth camera | 8 × 6 pinhole image, 90° horizontal FOV | 36 | 2 Hz |
 
-Ground and air units start with LiDAR, RF and a depth camera. Naval units start
+These are module defaults; fleet profiles can override range and mounts. Use the
+selected unit's live inspector for its effective configuration.
+
+Ground and air units start with LiDAR, RF and a depth camera. Naval and submarine units start
 with sonar, RF and a depth camera. Sonar requires a mount below the water surface
 and above the bed. A dry cave below sea level is not treated as water. Optical
 rays stop at the water surface; underwater sonar rays reach bathymetry and hull
@@ -43,8 +47,8 @@ not model multipath, frequency bands, interference or an actual antenna pattern.
 Only active units with an attached RF module transmit. Sonar similarly models
 geometric range, not acoustic propagation. Decorative trees, rocks and bridge
 seams are not authoritative collision objects and do not occlude sensors.
-Unit detection currently uses spherical body proxies; patrols still do not
-avoid one another.
+Fleet sensing uses oriented hull proxies; standalone fixtures can fall back to
+spheres. Learned local navigation remains experimental.
 
 ## Geometry and runtime cost
 
@@ -65,8 +69,8 @@ height-bound array. Stepping performs no allocations, rendering, network I/O or
 map/RNG mutations. All unit poses must be supplied before a step. Scheduled
 samples are cached with timestamps; module phases spread work after the initial
 snapshot. A late step samples once and advances its deadline without a catch-up
-burst. The training caller should use a fixed simulation timestep; Map Lab uses
-its bounded frame timestep.
+burst. The shared fleet advances at fixed simulation steps; rendering interpolates
+between physical poses.
 
 ```c
 static AwSensors sensors;  // Per environment; allocate once, not on the step stack.
