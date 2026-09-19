@@ -1,14 +1,16 @@
-# Sensors: seeing versus sensing
+# Sensor equipment and overlays
 
-**About five minutes · browser only · no training.** Learn which controls change
-what you see and which change what a unit can measure.
+**About five minutes · browser only.** In this exercise you will compare two
+sonar controls and use the readout to check which one affects the unit’s
+measurements. A policy is the trained controller that uses those measurements
+to help choose movement.
 
-## Predict
+## Before you start
 
 If you hide the sonar overlay, does the submarine lose its sonar readings?
 What if you detach the sonar module instead? Make a prediction before trying it.
 
-## Try
+## Procedure
 
 1. Open [the heavy submarine in Map Lab](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&sym=1&a=6&b=6&biome=1&tunnels=1&cut=1&unit=11&sensors=2).
    For a local copy, use that query after `http://127.0.0.1:8781/maplab/`.
@@ -26,7 +28,7 @@ What if you detach the sonar module instead? Make a prediction before trying it.
 | Change | Display | Policy input |
 | --- | --- | --- |
 | Hide sonar overlay | Fan disappears | Sonar still sampled |
-| Detach sonar module | Fan disappears; “Not attached” | Missing-equipment mask; no sonar returns |
+| Detach sonar module | Fan disappears; “Not attached” | Missing-sensor flag; no sonar readings |
 | Reattach sonar | Fan/returns resume when valid | Valid readings become available again |
 
 The unit keeps moving during this exercise. Reading counts may change because
@@ -34,12 +36,13 @@ its pose and neighbors change. This is a measurement experiment, not a paired
 navigation benchmark. A detached sensor does not guarantee an immediate visible
 turn: other sensors and A* route guidance still provide information.
 
-## Explain
+## What the results mean
 
-An overlay is a view of measurements. Equipment determines which measurements
-exist. PPO receives a fixed observation layout, including flags for missing or
-invalid sensors. Hiding graphics does not make the agent blind. Removing sonar
-does not remove its other sensors or route guidance.
+The sensor samples the world and stores its readings. The overlay draws those
+stored readings. Hiding the overlay leaves sampling active. Detaching the module
+disables that source of measurements. The controller receives its usual input
+layout, with a flag indicating that sonar is missing. Other sensors and route
+guidance remain available.
 
 The current depth camera is an **8 × 6 radial depth image**, not RGB. Sonar needs
 a submerged mount above the seabed. Decorative flora do not currently occlude
@@ -65,7 +68,7 @@ Useful starting points:
 - [`shell.html`](../../web/maplab/shell.html): equipment and overlay handlers.
 - [Sensor contract](../SENSORS.md): layout, sampling and validation.
 
-## Optional next experiment: a longer reach
+## Optional exercise: increase sonar range
 
 With a working source-build setup, ask your agent to increase only the heavy
 submarine's sonar range by 25%, locating its effective configuration first.

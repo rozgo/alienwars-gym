@@ -13,13 +13,13 @@ simulation, sensing and policy inference in your browser.
 
 [![Temperate battlefield in AlienWars Map Lab, with raised bases, roads, lakes and an extended ocean](docs/demo/images/temperate.webp?v=d509f2556754)](https://rozgo.github.io/alienwars-gym/maplab/?seed=73&biome=1)
 
-## Make your first discovery
+## Start with the sensor lesson
 
-[Start in the browser workshop](https://rozgo.github.io/alienwars-gym/learn/):
-hide a submarine’s sonar overlay, detach its sonar, and discover the difference
-between seeing a measurement and supplying it to a policy. No installation or GPU.
+[The first lesson](https://rozgo.github.io/alienwars-gym/learn/) uses a submarine
+to explain sensor equipment and overlays. Change each control and watch the
+readout, then trace the measurement into the controller. It runs in your browser.
 
-Bring your coding agent into a clone and give it this prompt:
+To follow the lesson with a coding agent, open a clone of the repo and use:
 
 > Read AGENTS.md and .agents/skills/alienwars-start/SKILL.md. Help me run AlienWars
 > locally and complete docs/lessons/sensor-equipment.md. Explain what we observe

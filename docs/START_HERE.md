@@ -1,11 +1,12 @@
 # Start here
 
-AlienWars is a workshop for procedural worlds and learning biological units.
-You can explore and use the trained policies without a GPU. Pick your next step:
+This guide covers running AlienWars, inspecting its sensors and building a source
+change. The browser version includes trained navigation policies, so you can
+start with the sensor exercise before setting up a development environment.
 
 | I want to… | Start with | You need |
 | --- | --- | --- |
-| Explore and learn | [Browser workshop](https://rozgo.github.io/alienwars-gym/learn/) | A browser with WebGL 2 |
+| Explore and learn | [Browser lessons](https://rozgo.github.io/alienwars-gym/learn/) | A browser with WebGL 2 |
 | Run my own copy | Preview below | Git and uv |
 | Change the world or interface | [Build an edit](#build-an-edit) | macOS/Linux, compiler; Emscripten for web |
 | Train policies | [Training](#training) | Linux NVIDIA GPU and CUDA development tools |
@@ -23,9 +24,9 @@ uv run scripts/doctor.py
 uv run python -m http.server 8781 --bind 127.0.0.1 --directory docs
 ```
 
-Open <http://127.0.0.1:8781/learn/>. Choose **Try the sensor experiment**.
-Success means a rendered map, a selectable unit and live sensor readings in the
-inspector. The viewer loads five packaged trained policies. Generation can take
+Open <http://127.0.0.1:8781/learn/>. Choose **Open the submarine exercise**.
+When the map has loaded, select a unit and check that its sensor readings appear
+in the inspector. The viewer loads five packaged trained policies. Generation can take
 tens of seconds, especially on slower machines; leave the tab open while it loads.
 Stop the local server with Ctrl+C. If port 8781 is occupied, use 8782 instead.
 
@@ -33,13 +34,13 @@ This serves the committed WebAssembly build. It needs no CUDA, Node, Emscripten
 or Python ML packages. uv manages the pinned Python interpreter; Python only
 serves files here. Editing C or `web/maplab/shell.html` needs a rebuild.
 
-## Bring your coding agent
+## Work with a coding agent
 
 Open this checkout in your agent and paste:
 
 > Read AGENTS.md and .agents/skills/alienwars-start/SKILL.md. Help me run this repo
-> locally and walk me through docs/lessons/sensor-equipment.md. Explain the
-> prediction, show me the result, and point me to the code behind it.
+> locally and walk me through docs/lessons/sensor-equipment.md. Explain what
+> each control changes, help me check the readings, and show me the relevant code.
 
 The repository skill follows the [Agent Skills format](https://agentskills.io/specification).
 In Codex, start a session in the checkout and invoke `$alienwars-start`;
@@ -50,7 +51,7 @@ is client-dependent; a valid skill file is not a guarantee every client loads it
 
 ## Your first experiment
 
-[Sensors: seeing versus sensing](lessons/sensor-equipment.md) takes about five
+[Sensor equipment and overlays](lessons/sensor-equipment.md) takes about five
 minutes in the browser. Hide sonar, detach it, and compare the two operations.
 Then trace one measurement through the C code. No training or source edits needed.
 
@@ -116,4 +117,4 @@ are measurements of specific past runs, not a promise for a new experiment.
   or stuck episodes; pauses and manual missions have different lifecycle behavior.
 - **No GPU:** every browser experiment and the pretrained preview still works.
 
-Ready to share an experiment? See [CONTRIBUTING.md](../CONTRIBUTING.md).
+For contribution instructions, see [CONTRIBUTING.md](../CONTRIBUTING.md).

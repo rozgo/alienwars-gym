@@ -7,8 +7,8 @@ for (const button of document.querySelectorAll('[data-answer]')) {
       choice.setAttribute('aria-pressed', String(choice === button));
     }
     prediction.textContent = button.dataset.answer === 'drawing'
-      ? 'Exactly. The overlay draws measurements; the attached module keeps sensing. Now verify it in Map Lab.'
-      : 'Try separating the two switches: the overlay controls the drawing; “Sonar attached” controls the measurement. Verify the difference in Map Lab.';
+      ? 'The drawing disappears, while the attached sensor keeps sampling. You can check this by watching the Sonar reading with the overlay hidden.'
+      : 'Hiding the overlay leaves the sensor attached, so measurements continue. The “Sonar attached” control disables the module. Compare the readout after using each switch.';
   });
 }
 

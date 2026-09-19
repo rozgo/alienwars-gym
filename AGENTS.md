@@ -7,6 +7,10 @@ For onboarding, use [START_HERE.md](docs/START_HERE.md) and the repository skill
 [alienwars-start](.agents/skills/alienwars-start/SKILL.md). Read only the subsystem
 docs needed for the task. Commands below run from the repository root.
 
+Write learning material in a teacher's voice: explain what the reader will do,
+what to observe and why it happens. Define unfamiliar terms when first used.
+Use concrete explanations instead of marketing slogans or motivational filler.
+
 ```sh
 uv sync --locked
 uv run scripts/doctor.py                       # Preview prerequisites; no installs

@@ -1,13 +1,13 @@
-# Make one interesting change
+# Contributing
 
-Start with [the browser workshop](https://rozgo.github.io/alienwars-gym/learn/)
+Start with [the browser lessons](https://rozgo.github.io/alienwars-gym/learn/)
 or [run the repo locally](docs/START_HERE.md). Coding agents are welcome: give
 them [AGENTS.md](AGENTS.md) and the [onboarding skill](.agents/skills/alienwars-start/SKILL.md).
 The same walkthrough works by hand.
 
 Good first contributions include a reproducible sensor experiment, a clearer
 inspection control, an alien material variation or a minimal failing navigation
-scenario. Pick a visible outcome and keep one change easy to understand.
+scenario. Describe the behavior you want to change and how you will check it.
 
 1. Fork the repository and create a branch for your change.
 2. Record the starting seed/settings or baseline result. Explain your prediction.
