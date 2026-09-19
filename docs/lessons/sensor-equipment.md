@@ -18,12 +18,31 @@ What if you detach the sonar module instead? Make a prediction before trying it.
 2. Find the **Sonar** reading under Unit sensors. Note its range, sampling rate
    and hit count. If the mount is temporarily invalid, let the unit move until
    there is a valid reading. Zero hits is valid; it is not “Not attached.”
+
+   [![Sonar fan visible, with a valid 40u · 2Hz · 22 hits reading and Sonar attached enabled](../learn/images/sonar-visible.webp)](../learn/images/sonar-visible.webp)
+
+   Here the range is 40 world units, the sensor samples twice per second, and
+   22 rays hit something. Click any screenshot to see its controls at full size.
+
 3. Turn **Show sonar ranges** off. The drawn fan disappears; the module remains
    attached and its reading is still available. Turn the overlay back on.
+
+   [![Sonar overlay hidden while the valid reading and attached equipment remain](../learn/images/sonar-hidden.webp)](../learn/images/sonar-hidden.webp)
+
+   The fan is gone, but the Sonar row still shows measurements.
+
 4. Expand **Sensor equipment**, then turn **Sonar attached** off. The reading now
    says **Not attached** and sonar measurements are masked in the policy input.
+
+   [![Sonar attached switched off, with Not attached in the readout and no fan despite the overlay being enabled](../learn/images/sonar-detached.webp)](../learn/images/sonar-detached.webp)
+
+   The overlay is enabled here, but there are no sonar measurements to draw.
+
 5. Reattach sonar. On a valid submerged mount, readings resume at its scheduled
    sampling rate. Try the same distinction with RF or the depth camera.
+
+Traffic was paused for the screenshots to keep the view fixed. In your live run,
+the readings can change as the submarine and nearby units move.
 
 | Change | Display | Policy input |
 | --- | --- | --- |

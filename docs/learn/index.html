@@ -51,24 +51,30 @@
       </div>
       <div class="procedure panel">
         <span class="step-label">02 / PROCEDURE</span>
-        <h3>Compare the two controls</h3>
-        <ol>
-          <li>Open the submarine world, wait for generation, then click <strong>Focus</strong> under Selected unit.</li>
-          <li>Note its <strong>Sonar</strong> reading. Toggle the sonar range overlay off, then on. Does the reading disappear?</li>
-          <li>Expand <strong>Sensor equipment</strong> and turn <strong>Sonar attached</strong> off. Compare the reading.</li>
-          <li>Reattach sonar. Valid readings resume on the next scheduled sample.</li>
-        </ol>
+        <h3>Open the submarine world</h3>
+        <p>Wait for the map to load, then click <strong>Focus</strong> under Selected unit. Scroll the inspector down and expand <strong>Sensor equipment</strong>.</p>
+        <p>Follow the three steps below. Each screenshot opens at full size when clicked.</p>
         <a class="button primary" href="../maplab/?seed=73&amp;sym=1&amp;a=6&amp;b=6&amp;biome=1&amp;tunnels=1&amp;cut=1&amp;unit=11&amp;sensors=2" target="_blank" rel="noopener">Open the submarine exercise ↗</a>
         <p class="fine">Opens Map Lab in a new tab. Leave this guide beside it. First generation can take tens of seconds.</p>
       </div>
     </div>
+    <ol id="sensor-steps" class="illustrated-steps">
+      <li>
+        <div class="step-copy"><span class="step-label">STEP 1</span><h3>Find the sonar reading</h3><p>Leave the <strong>Sonar</strong> overlay and <strong>Sonar attached</strong> enabled. The blue fan shows the sampled directions around the submarine.</p><p>Find the Sonar row in the inspector. Here it reads <strong>40u · 2Hz · 22 hits</strong>: a range of 40 world units, two samples per second, and 22 rays that hit something.</p></div>
+        <figure class="lesson-shot"><a href="images/sonar-visible.webp" target="_blank" rel="noopener" aria-label="Open screenshot: sonar overlay and equipment enabled"><img src="images/sonar-visible.webp" width="1200" height="856" loading="lazy" alt="Heavy submarine with a blue sonar fan. The inspector shows Sonar enabled, 40u · 2Hz · 22 hits, and Sonar attached checked."></a><figcaption>The fan is visible and sonar has a valid reading. <a href="images/sonar-visible.webp" target="_blank" rel="noopener">Full size ↗</a></figcaption></figure>
+      </li>
+      <li>
+        <div class="step-copy"><span class="step-label">STEP 2</span><h3>Hide the overlay</h3><p>Turn off the blue <strong>Sonar</strong> switch beside LiDAR, RF and Camera. Leave the attachment switch alone.</p><p>The fan disappears, but the Sonar row still shows measurements. Hiding the drawing has not removed the sensor.</p></div>
+        <figure class="lesson-shot"><a href="images/sonar-hidden.webp" target="_blank" rel="noopener" aria-label="Open screenshot: sonar overlay hidden"><img src="images/sonar-hidden.webp" width="1200" height="856" loading="lazy" alt="The same submarine without its sonar fan. The overlay switch is off, the readout still says 40u · 2Hz · 22 hits, and Sonar attached remains checked."></a><figcaption>No fan; the reading and attached equipment remain. <a href="images/sonar-hidden.webp" target="_blank" rel="noopener">Full size ↗</a></figcaption></figure>
+      </li>
+      <li>
+        <div class="step-copy"><span class="step-label">STEP 3</span><h3>Detach sonar</h3><p>Turn the overlay back on. Under <strong>Sensor equipment</strong>, turn <strong>Sonar attached</strong> off.</p><p>The readout now says <strong>Not attached</strong>. There is no fan, even with the overlay enabled, because the sensor is no longer supplying measurements.</p><p>Reattach sonar to finish. Valid readings resume on the next scheduled sample.</p></div>
+        <figure class="lesson-shot"><a href="images/sonar-detached.webp" target="_blank" rel="noopener" aria-label="Open screenshot: sonar equipment detached"><img src="images/sonar-detached.webp" width="1200" height="856" loading="lazy" alt="The sonar overlay switch is on but no fan is drawn. The Sonar row says Not attached and the Sonar attached switch is off."></a><figcaption>“Not attached” means the controller has no sonar readings. <a href="images/sonar-detached.webp" target="_blank" rel="noopener">Full size ↗</a></figcaption></figure>
+      </li>
+    </ol>
+    <p class="fine">Traffic was paused for these screenshots to keep the view fixed. In your live run, the hit count can change as the submarine and nearby units move.</p>
     <div class="explanation panel">
       <span class="step-label">03 / WHAT THE RESULTS MEAN</span>
-      <div class="table-scroll"><table><caption>Expected observations</caption><thead><tr><th scope="col">Your change</th><th scope="col">On screen</th><th scope="col">Input to the controller</th></tr></thead><tbody>
-        <tr><th scope="row">Hide the overlay</th><td>Sonar fan disappears</td><td>Measurements remain available</td></tr>
-        <tr><th scope="row">Detach the module</th><td>“Not attached”</td><td>A flag marks sonar as missing; no sonar readings are supplied</td></tr>
-        <tr><th scope="row">Reattach sonar</th><td>Valid returns resume</td><td>Scheduled measurements resume</td></tr>
-      </tbody></table></div>
       <p>The overlay draws the measurements already produced by the sensor. Hiding it leaves the sampling process running. Detaching the module disables that source of measurements, so the controller receives a flag indicating that sonar is missing.</p>
       <p>The submarine may keep moving along the same route after you detach sonar: it still has other sensors and route guidance. To see whether losing sonar affects navigation, you would need to compare repeated missions from the same starting conditions.</p>
       <p class="fine">A reading of zero hits means none of the sampled rays hit a surface within range. It is different from a missing or invalid sensor. Sonar needs a submerged mount above the seabed.</p>
